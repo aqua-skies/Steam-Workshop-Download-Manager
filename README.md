@@ -1,6 +1,7 @@
 # SWDM — Steam 工坊下载管理器
 
-> 一套桌面程序：浏览/搜索 Steam 创意工坊、**无需 Steam 账号**匿名下载 mod、本地 mod 库分类管理。
+> 一套基于python的桌面程序：浏览/搜索 Steam 创意工坊、**无需 Steam 账号**匿名下载 mod、本地 mod 库分类管理。
+> 由Atria-Dawn-Preview完成。
 
 ## 核心能力
 
