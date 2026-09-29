@@ -1,8 +1,18 @@
 # SWDM 1.4.0 多 Provider 下载架构
 
-> 状态：已实现（t21），待 t23 讨论组评审 + t24 打包。
-> 设计依据：research/provider_adaptation.md · 调研：research/provider_research.md
-> 测试：tests/test_providers.py（74 项 ALL PASS）+ 五套回归全 PASS
+> **English summary**: This document specifies SWDM's multi-provider download architecture
+> (introduced in 1.4.0). A download runs a *channel chain* built by `ProviderRegistry`:
+> the user's preferred channel first, then other enabled channels by priority, always with
+> `steamcmd` as the terminal fallback. One chain counts as one attempt — failing over inside
+> the chain does not consume the auto-retry budget. A circuit breaker (3 failures → 60s
+> cooldown) skips channels that are currently failing. Channel set: `steamcmd` (ENGINE,
+> anonymous, terminal), `cdn` (HTTP direct link, needs login), `ggnetwork` (anonymous
+> third-party PROXY, experimental, rate-limited to 20 req/min, bad-package detection with
+> in-chain fallback). The legacy `cdn_downloader.py` remains as a compatibility facade until
+> 1.4.1. Sections below are in Chinese.
+
+> 状态：已实现（t21），1.4.0 已交付（t27 六方一致）。设计依据：research/provider_adaptation.md · 调研：research/provider_research.md
+> 测试：tests/test_providers.py（84 项 ALL PASS）+ 全量回归零新增失败
 
 ## 1. 架构
 

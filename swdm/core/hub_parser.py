@@ -1,12 +1,13 @@
-"""新 Steam 之旅 hub 页解析器。
+"""Parser for the new Steam Workshop hub page (新 hub 页解析器).
 
-新 hub 页（/workshop/browse/?appid=X）把首屏数据以 React Query 脱水状态
-内联在 HTML 里，其中 results 数组含每个物品的完整字段：
-publishedfileid / title / preview_url / file_size / subscriptions / tags 等。
-文本经过多层 JS+HTML 转义，统一用 unescape 还原后 json.loads。
+The new hub page (``/workshop/browse/?appid=X``) inlines first-screen data as a
+React Query dehydrated state inside the HTML; its ``results`` array carries full
+per-item fields: publishedfileid / title / preview_url / file_size / subscriptions / tags.
+Text is escaped through several JS+HTML layers; ``unescape`` is applied uniformly
+before ``json.loads``.
 
-经典页（旧卡片 HTML）对部分游戏已停止 SSR 渲染（返回 0 卡片），
-本解析器用于补齐这些切换到新 hub 的游戏（Rust / DST / DBFZ 等）。
+Classic pages (old card HTML) stopped server-side rendering for some games (0 cards),
+so this parser covers games that migrated to the new hub (Rust / DST / DBFZ and others).
 """
 from __future__ import annotations
 

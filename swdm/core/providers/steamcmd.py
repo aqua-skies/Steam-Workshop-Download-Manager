@@ -1,8 +1,9 @@
-"""SteamCMD 通道 provider（包装现有 SteamCMDEngine，行为不变）。
+"""SteamCMD channel provider — wraps the existing SteamCMDEngine, behavior unchanged (链尾兜底).
 
-链尾兜底：匿名可用、稳定。所有 provider 里唯一不需要 URL 解析的
-ENGINE 型——下载由 steamcmd 子进程完成，provider 只做参数装配与
-stop_event → engine.cancel 的桥接。
+The terminal tail of every chain: anonymous-capable and stable. It is the only ENGINE-kind
+provider that needs no URL resolution at all — the download is performed by the steamcmd
+subprocess; the provider only assembles parameters and bridges stop_event → engine.cancel.
+``should_fallback()`` is always False: when the chain reaches this provider, it ends here.
 """
 from __future__ import annotations
 
@@ -17,6 +18,8 @@ log = get_logger("swdm.core.providers.steamcmd")
 
 
 class SteamCMDProvider(DownloadProvider):
+    """Terminal ENGINE channel: wraps SteamCMDEngine; always the last fallback in a chain."""
+
     meta = ProviderMeta(
         name="steamcmd",
         display_name="SteamCMD（内置，匿名稳定）",

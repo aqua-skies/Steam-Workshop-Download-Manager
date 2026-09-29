@@ -1,4 +1,10 @@
-"""主窗口：标签页集成（工坊 / 下载 / 模组库 / 设置 / 调试）。"""
+"""Main window: tab integration (Workshop / Downloads / Library / Settings / Debug) plus tray, single instance and crash handling (主窗口).
+
+The Debug tab (调试页) is hidden by default since t22 and toggled from Settings.
+Tray exit goes through ``_do_real_quit()`` so a hidden window still quits cleanly (t11).
+Cross-tab signals are wired here: ``library_changed`` (download → library refresh) and
+``records_removed`` (library → download row removal, t13 双向互通).
+"""
 from __future__ import annotations
 
 import sys
@@ -32,6 +38,8 @@ APP_MUTEX_NAME = "SWDM_SingleInstance_Mutex"
 
 
 class MainWindow(QMainWindow):
+    """Top-level window: builds every tab, the tray icon and the signal wiring between tabs."""
+
     def __init__(self) -> None:
         super().__init__()
         self._force_quit = False

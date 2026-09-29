@@ -1,8 +1,8 @@
-"""按游戏配置 mod 下载目录（需求：开放不同游戏 mod 下载目录的修改接口）。
+"""Per-game mod download directory configuration (按游戏配置 mod 下载目录).
 
-每个游戏（appid）可单独指定 steamcmd 的 force_install_dir；未单独配置时
-回退到全局库目录（LIBRARY_DIR）。配置持久化在 config.json 的 game_dirs 段，
-键为 appid，值为目录路径。
+Each game (appid) may override steamcmd's ``force_install_dir``; games without
+an override fall back to the global library dir (``LIBRARY_DIR``). Persisted in
+the ``game_dirs`` section of config.json, keyed by appid.
 """
 from __future__ import annotations
 

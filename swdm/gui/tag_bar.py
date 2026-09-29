@@ -1,12 +1,14 @@
-"""标签栏组件：搜索栏下方的横向滚动标签选择条。
+"""Tag bar: horizontally scrollable tag selection strip under the search bar (标签栏组件).
 
-需求（用户 bug2）：
-- 集成在搜索栏下，选择游戏时自动拉取，不再用"按钮 + 滚动对话框"
-- 横向滚动展现，单击选择（多选）
-- 已选标签在栏内高亮、右侧带 ✕，再点一次（或点 ✕）即取消
-- 标签后标注热度（带该标签的 mod 数量，无数据时省略）
-- 过滤"创意工坊/商店"等无关导航项
-- 不重复添加相同标签
+Requirements (user bug2):
+- Integrated under the search bar, fetched automatically when a game is selected
+  (no more "button + scroll dialog")
+- Horizontal scroll; single click to select (multi-select)
+- Selected tags are highlighted in the bar with a trailing ✕; clicking again (or the ✕)
+  deselects
+- Each tag shows its popularity count (number of mods carrying the tag; omitted when unknown)
+- Navigation junk ("创意工坊/商店") is filtered out
+- No duplicate tags added
 """
 from __future__ import annotations
 

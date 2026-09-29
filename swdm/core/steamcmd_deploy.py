@@ -1,8 +1,8 @@
-"""内置 steamcmd 部署：随程序分发的官方 steamcmd.zip，首次使用时自动解压。
+"""Bundled steamcmd deployment: the official steamcmd.zip shipped with the app, auto-extracted on first use (内置 steamcmd 部署).
 
-需求 2：内置 steamcmd 下载模式，提高泛用性——用户无需自行下载安装
-steamcmd，安装程序已内附；首次下载时自动解压到数据目录（steamcmd 首次
-运行会自更新补齐组件，全程匿名、无需账号）。
+Requirement 2: raise out-of-the-box usability — the installer already bundles steamcmd, so
+users never install it manually. First download extracts it into the data dir; steamcmd then
+self-updates its components on first run. Fully anonymous, no account needed.
 """
 from __future__ import annotations
 

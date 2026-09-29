@@ -1,18 +1,20 @@
-"""Mod 详情页对话框（非模态）：可与工坊列表页同时开启。
+"""Mod detail dialog (non-modal): can stay open alongside the workshop list (Mod 详情页对话框).
 
-布局：
-    顶部：预览图（左，固定宽度按比例缩放） + 标题/作者/订阅/大小/更新时间（右）
-    标签 chips（FlowLayout 横向自动换行）
-    简介（只读富文本，保留换行）
-    冲突警告（默认隐藏，传入冲突列表后以黄/红底显示）
-    前置依赖（id + 标题，每项可单独下载）
-    评论（可滚动列表：作者/时间/内容，空态友好）
-    底部按钮：下载（含依赖）/ 加入队列 / 关闭
+Layout:
+    Top:    preview image (left, scaled to a fixed width) + title / author / subscribers /
+            size / update time (right)
+    Tag chips (FlowLayout, wrapping horizontally)
+    Description (read-only rich text, newlines preserved)
+    Conflict warning (hidden by default; yellow/red background when a conflict list is passed)
+    Required items (前置依赖: id + title, each downloadable individually)
+    Comments (scrollable list: author / time / body, with a friendly empty state)
+    Buttons: Download (with dependencies) / Add to queue / Close
 
-约定：
-    - PySide6 枚举一律使用完整路径（Qt.WindowModality.NonModal 等）
-    - QPixmap 只在主线程构造：子线程仅下载原始字节，通过队列信号回到主线程
-    - 网络在 QThread 中执行，UI 只收信号
+Conventions:
+    - PySide6 enums always spelled out in full (Qt.WindowModality.NonModal …)
+    - QPixmap is constructed only on the main thread: worker threads download raw bytes and
+      hand them back via a queued signal
+    - Network runs in QThread; the UI only receives signals
 """
 from __future__ import annotations
 

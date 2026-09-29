@@ -1,10 +1,18 @@
-"""GGNetwork 通道（试点第三方 provider，匿名 PROXY 型）。
+"""GGNetwork channel — a pilot third-party provider of the anonymous PROXY kind (匿名代理通道).
 
-实测调研见 research/provider_research.md：
-- POST https://api.ggntw.com/steam.request，body {"url": 工坊物品页 URL}
-- 匿名无需 Key（实测 200），返回官方 CDN 直链 + id/game/name/size/update
-- ToS §5.2.2 禁 excessive server load → 自律限速（默认 20 req/min）
-- 返回内容若为压缩包则先解压再落地；.gma 魔数弱校验 + size 差异 >1% 判坏包回退
+Empirical research: see research/provider_research.md:
+- POST https://api.ggntw.com/steam.request with body {"url": <workshop item page URL>}
+- Anonymous, no key required (verified 200); returns an official CDN direct link plus
+  id / game / name / size / update
+- ToS §5.2.2 forbids excessive server load → self-imposed rate limit (default 20 req/min;
+  the limiter only covers the resolve POST, not CDN transfer, so download speed is unaffected)
+- If the response body is a zip archive it is extracted before landing; a .gma magic-number
+  weak check plus a >1% size discrepancy mark the content bad (t28: FAILED with in-chain
+  fallback, not just a warning); a queue.position > 0 response yields an empty URL and a
+  clean fallback to steamcmd
+
+Honest disclosure: this channel has only been validated against offline mocks; the real
+network path was never exercised end-to-end from this machine (proxy environment).
 """
 from __future__ import annotations
 
@@ -73,6 +81,8 @@ class _RateLimiter:
 
 
 class GGNetworkProvider(DownloadProvider):
+    """Anonymous third-party PROXY channel (pilot, experimental): resolves via api.ggntw.com."""
+
     meta = ProviderMeta(
         name="ggnetwork",
         display_name="GGNetwork 代理（匿名加速，实验性）",

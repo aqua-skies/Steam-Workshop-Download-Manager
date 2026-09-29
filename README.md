@@ -88,9 +88,16 @@ swdm/
 
 ## 开发
 
-- 提交规范与双语文档政策：[docs/git_workflow.md](docs/git_workflow.md)
+- 提交规范与双语文档政策（含中英文注释规范）：[docs/git_workflow.md](docs/git_workflow.md)
 - 完整变更历史：[docs/changelog_1.3.8.md](docs/changelog_1.3.8.md) → [1.3.9](docs/changelog_1.3.9.md) → [1.4.0](docs/changelog_1.4.0.md)
-- 测试：`tests/run_all.ps1`（offscreen Qt，约 59 脚本）
+- 测试：`tests/run_all.ps1`（offscreen Qt，约 59 脚本；本机运行需 `PYTHONUTF8=1`）
+
+## 1.4.1 路线（开发中）
+
+- 源码注释与 docstring 中英文适配（t30）：`swdm/` 全部模块 docstring 英化 + 公共 API docstring 补齐，已完成
+- GGNetwork 实网端到端补测（真实网络环境一方）
+- `cdn_downloader.py` 兼容门面移除（新代码改用 `swdm.core.providers.cdn`）
+- 下载页批量暂停/继续等 polish 项
 
 ## 许可证
 

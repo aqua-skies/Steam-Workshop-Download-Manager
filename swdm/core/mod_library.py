@@ -1,10 +1,10 @@
-"""本地 mod 库：SQLite 存储，支持分类、检索、启用/禁用、收藏。
+"""Local mod library: SQLite storage with categorization, search, enable/disable and favorites (本地 mod 库).
 
-设计目标（需求 2）：下载出的 mod 文件便于分类/检索。
-- 每条记录绑定 publishedfileid（全局唯一）与 appid（游戏）
-- 支持按游戏/标签/分类/状态/关键词多维检索
-- 磁盘组织：<library>/<game_name>/steamapps/workshop/content/<appid>/<item_id>/
-- 元数据 JSON 与内容同目录存放，便于离线检索与迁移
+Design goal (requirement 2): downloaded mods must be easy to categorize and search.
+- Each record is keyed by publishedfileid (globally unique) plus appid (game)
+- Multi-dimensional search by game / tag / category / status / keyword
+- Disk layout: <library>/<game_name>/steamapps/workshop/content/<appid>/<item_id>/
+- A metadata JSON sits next to the content, enabling offline search and migration
 """
 from __future__ import annotations
 
@@ -71,6 +71,8 @@ _MIGRATIONS = [
 
 @dataclass
 class ModRecord:
+    """One library row: workshop metadata plus local state (本地 mod 记录)."""
+
     item_id: str
     appid: str
     title: str = ""

@@ -1,14 +1,18 @@
-"""退避 / 抖动 / 并发自适应 / 进度平滑策略。
+"""Backoff / jitter / adaptive concurrency / progress smoothing strategies (退避/抖动/并发自适应/进度平滑).
 
-目标（需求 1、3）：让 SWDM 的下载请求尽量"不像机器人"，避免被 Steam 拒绝：
-- ``jittered``            任务间随机抖动间隔，打散规律性请求特征
-- ``Backoff``            连续失败时全局指数退避（带上限），成功后逐级缓慢恢复
-- ``AdaptiveConcurrency``  出现拒绝/失败特征时并发立刻降到 1，持续成功后逐步回升
-- ``classify_steamcmd_line``  识别 steamcmd 输出中的 RateLimit / Timeout /
-  TimeoutException / Retrying 特征（实测样本见 tests/fixtures/steamcmd_*.txt）
-- ``ProgressSmoother``   UI 进度限流（~10Hz）+ 字节不倒退 + 速度/ETA 估算
+Goal (requirements 1 and 3): keep SWDM's request pattern from looking robotic so Steam
+does not refuse us:
+- ``jittered`` — randomized inter-task jitter that breaks up regular request cadence
+- ``Backoff`` — global exponential backoff on consecutive failures (capped), recovering
+  slowly after successes
+- ``AdaptiveConcurrency`` — drop concurrency to 1 the moment a rejection/failure signature
+  appears, and ramp back up only after sustained success
+- ``classify_steamcmd_line`` — recognize RateLimit / Timeout / TimeoutException / Retrying
+  signatures in steamcmd output (samples in tests/fixtures/steamcmd_*.txt)
+- ``ProgressSmoother`` — UI progress throttling (~10Hz) with monotonic bytes plus
+  speed/ETA estimation (deque rolling window, 滚动窗口速度采样)
 
-全部为纯逻辑、无 IO、线程安全，可直接单元测试（见 tests/test_throttle.py）。
+All pure logic, no IO, thread-safe — directly unit-testable (tests/test_throttle.py).
 """
 from __future__ import annotations
 

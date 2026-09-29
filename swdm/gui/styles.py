@@ -1,8 +1,8 @@
-"""应用主题：深色/浅色 QSS 样式表。
+"""Application themes: dark / light QSS stylesheets (应用主题).
 
-深色主题参考 VS Code / Discord 风格：背景 #1e1e22 系列、蓝紫强调色、
-8px 圆角、细边框。配色常量在 DARK_COLORS 中集中维护，供 widgets.py
-等模块引用，保证控件与 QSS 视觉一致。
+The dark theme follows VS Code / Discord styling: #1e1e22 background family, a blue-violet
+accent, 8px corner radii, thin borders. Color constants live centrally in DARK_COLORS and are
+reused by widgets.py so custom-drawn controls stay visually consistent with the QSS.
 """
 
 # ============================================================ 深色配色

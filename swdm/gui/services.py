@@ -1,4 +1,10 @@
-"""GUI 共享服务容器：所有页面通过此对象访问核心层。"""
+"""Shared GUI service container: every tab reaches the core layer through this object (GUI 共享服务容器).
+
+Holds the single SteamAPI / DownloadManager / ModLibrary / AuthManager / SteamCMDEngine
+instances and the throttle/circuit-breaker handles, so tabs share one source of truth
+instead of constructing their own clients. Since 1.4.0 the DownloadManager takes the
+SteamAPI instance it needs (services.py:78 injects api=api).
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,6 +25,8 @@ log = get_logger("swdm.gui.services")
 
 @dataclass
 class Services:
+    """Container holding the single shared instances of every core service for the GUI."""
+
     config: object
     api: SteamAPI
     auth: AuthManager
@@ -59,6 +67,7 @@ class Services:
 
 
 def build_services() -> Services:
+    """Construct and wire all core services (config → auth → api → library → engine → downloader)."""
     cfg = get_config()
     cfg.load()
     auth = AuthManager()

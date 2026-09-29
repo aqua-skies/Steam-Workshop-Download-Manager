@@ -1,4 +1,10 @@
-"""模组库页：本地 mod 的分类、检索、启用/禁用、导入导出。"""
+"""Library tab: categorize, search, enable/disable and import/export local mods (模组库页).
+
+Multi-dimensional filters (game / category / tag / status / keyword) with selection
+restored on refresh; batch enable/disable/categorize/delete via context menu; open folder;
+export the currently filtered results (t16 决议 B③). Deleting emits ``records_removed`` so
+the downloads tab stays in sync (t13 双向互通).
+"""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal

@@ -1,4 +1,10 @@
-"""下载页：实时显示下载队列、进度、日志与历史记录。"""
+"""Downloads tab: live download queue, progress, logs and history (下载页).
+
+Batch buttons: pause/resume merged into a single toggle since t22 (C②), retry-failed,
+clear-completed, cancel-all. Removing an already-imported successful task prompts whether
+to also remove it from the mod library (t13 删除互通); ``records_removed`` from the library
+tab removes the corresponding row here.
+"""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal

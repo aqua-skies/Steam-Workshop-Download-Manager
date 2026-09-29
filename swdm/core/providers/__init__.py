@@ -1,7 +1,7 @@
-"""多 provider 下载抽象（1.4.0）。
+"""Multi-provider download abstraction (多 provider 下载抽象, introduced in 1.4.0).
 
-通道注册表 + 链式回退。设计文档：research/provider_adaptation.md
-调研结论：research/provider_research.md
+Registry-based channel chain with fallback. Design doc: research/provider_adaptation.md;
+research conclusions: research/provider_research.md.
 """
 from .base import (
     Availability,

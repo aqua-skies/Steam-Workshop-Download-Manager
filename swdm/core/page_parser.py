@@ -1,19 +1,22 @@
-"""Steam 工坊页面解析：描述正文 / 评论 / 浏览页可用标签。
+"""Steam Workshop page parsing: description body / comments / browse-page tags (工坊页面解析).
 
-设计要点（与 deps_parser.py 同风格：纯函数 + 明确锚点 + 兜底）：
-- parse_description / parse_comments / parse_available_tags 均为纯函数，
-  无网络、无副作用，可直接用 tests/fixtures 下的真实页面做回归。
-- fetch_comments 接收外部传入的 SteamAPI 实例（依赖注入，便于测试与限流复用）。
-- 文本清洗统一走 _to_text()：块级标签闭合转换行、去标签、还原 HTML 实体。
+Design (same style as deps_parser.py: pure functions, explicit anchors, graceful fallbacks):
+- ``parse_description`` / ``parse_comments`` / ``parse_available_tags`` are pure: no network,
+  no side effects — regression-tested directly against real pages in tests/fixtures.
+- ``fetch_comments`` takes an injected SteamAPI instance (dependency injection, for testing
+  and throttle reuse).
+- Text cleaning funnels through ``_to_text()``: block tags to newlines, strip tags, unescape
+  HTML entities.
 
-真实页面锚点（均经 tests/fixtures 真实页面验证）：
+Real-page anchors (all verified against tests/fixtures):
 
-1) 描述正文（详情页右侧栏）
+1) Description body (right column of the detail page)
    <div class="workshopItemDescriptionTitle">Description</div>
    <div class="workshopItemDescription" id="highlightContent">
-       ...含 bb_h1/bb_h3/<br>/<b>/<a> 等 BBCode 富文本...
+       ...BBCode rich text: bb_h1/bb_h3/<br>/<b>/<a>...
    </div>
-   描述区内含嵌套 <div>（bb_h1/bb_h3），需按 div 配对截取，不能贪心到首个 </div>。
+   The description nests <div> elements (bb_h1/bb_h3); it must be sliced by balanced div
+   pairing, not greedily at the first </div>.
 
 2) 评论（详情页 SSR 已渲染前 N 条，非纯 ajax）
    <div ... class="commentthread_comment responsive_body_text   "

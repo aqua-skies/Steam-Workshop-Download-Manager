@@ -1,4 +1,8 @@
-"""路径解析：应用数据目录、配置、日志、mod 仓库的统一入口。"""
+"""Path resolution: single entry point for app data dirs, config, logs and the mod repository (路径解析).
+
+Windows default is ``%APPDATA%/SWDM``; a ``portable.marker`` file next to the
+executable switches storage to ``<root>/data`` (portable mode / 便携模式).
+"""
 from __future__ import annotations
 
 import os
@@ -6,11 +10,11 @@ import sys
 
 APP_NAME = "SWDM"
 APP_DISPLAY = "Steam 工坊下载管理器"
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.4.0"  # bumped per release; mirrors installer/swdm.iss SWDMVersion
 
 
 def _user_data_root() -> str:
-    """用户数据根目录。Windows: %APPDATA%/SWDM；兼容便携模式。"""
+    """User data root dir. Windows: ``%APPDATA%/SWDM``; honors portable mode."""
     base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     marker = os.path.join(base, "portable.marker")
     if os.path.exists(marker):
@@ -36,6 +40,7 @@ CRASH_FILE = os.path.join(DATA_DIR, "crash.log")
 
 
 def ensure_dirs() -> None:
+    """Create the data / cache / log / steamcmd / library directories if missing."""
     for d in (DATA_DIR, LOG_DIR, CACHE_DIR, STEAMCMD_DIR, LIBRARY_DIR):
         os.makedirs(d, exist_ok=True)
 

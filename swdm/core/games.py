@@ -1,4 +1,8 @@
-"""支持创意工坊的游戏注册表：appid -> 名称。可从本地 Steam 或在线获取，内置常见列表。"""
+"""Registry of games that support the Steam Workshop (创意工坊): appid -> name.
+
+Built-in list plus user customizations; unknown appids fall back to ``'AppID N'``.
+Used by the game picker (游戏选择器) and for rendering library grouping (库按游戏分类).
+"""
 from __future__ import annotations
 
 import json
@@ -77,10 +81,12 @@ CUSTOM_GAMES_FILE = os.path.join(DATA_DIR, "custom_games.json")
 
 
 def list_builtin() -> list[dict]:
+    """Built-in known workshop-supporting games, sorted by name."""
     return [{"appid": k, "name": v} for k, v in sorted(BUILTIN_GAMES.items(), key=lambda x: x[1].lower())]
 
 
 def list_custom() -> list[dict]:
+    """User-added custom games from disk (empty list on any read error)."""
     try:
         if os.path.exists(CUSTOM_GAMES_FILE):
             with open(CUSTOM_GAMES_FILE, "r", encoding="utf-8") as f:
@@ -91,6 +97,7 @@ def list_custom() -> list[dict]:
 
 
 def add_custom(appid: str, name: str) -> None:
+    """Add or replace a custom game (keyed by appid) and persist to disk."""
     games = list_custom()
     games = [g for g in games if str(g.get("appid")) != str(appid)]
     games.append({"appid": str(appid), "name": name})
@@ -102,6 +109,7 @@ def add_custom(appid: str, name: str) -> None:
 
 
 def remove_custom(appid: str) -> None:
+    """Drop the custom game with this appid and persist the result."""
     games = [g for g in list_custom() if str(g.get("appid")) != str(appid)]
     try:
         with open(CUSTOM_GAMES_FILE, "w", encoding="utf-8") as f:
@@ -111,6 +119,7 @@ def remove_custom(appid: str) -> None:
 
 
 def all_games() -> list[dict]:
+    """Merged built-in + custom games, deduped by appid and sorted by name."""
     seen = {}
     for g in list_builtin() + list_custom():
         seen[str(g["appid"])] = g["name"]
@@ -118,6 +127,7 @@ def all_games() -> list[dict]:
 
 
 def game_name(appid: str | int) -> str:
+    """Display name for an appid; unknown ids render as ``'AppID N'``."""
     appid = str(appid)
     for g in all_games():
         if g["appid"] == appid:

@@ -1,5 +1,12 @@
 # SWDM 1.4.0 变更记录
 
+> **English summary**: 1.4.0 adds a self-integrating multi-provider download architecture
+> (channel chain with circuit breaker; `steamcmd` always the terminal fallback), ports the CDN
+> path to the provider abstraction, closes the cancel-vs-finish microsecond race (A-P1) for
+> good, and merges the pause/resume batch button. Delivered after a six-party unanimous
+> review (t27) with two clean retest rounds (55 GUI + 45 core checks, zero new failures).
+> Full details below in Chinese.
+
 > 打包任务：t24（installer-fixer，attempt f41422d2）· 2026-09-29
 > 前置：t21 provider 抽象层（core-tester）+ t22 1.3.10 遗留项（search-fixer）+ t23 讨论组评审（installer-fixer 主持）+ t28 评审决议执行（core-tester）
 > 评审文档：`docs/feature_review_1.4.0.md`（五方零反对，verdict=pass）
@@ -140,9 +147,58 @@
 
 ---
 
-## 九、t23 评审占位（t27 交付评审回填）
+## 九、t27 交付评审（search-fixer 主持 · 2026-09-29 · 六方一致通过）
 
-t27（讨论组交付评审，search-fixer 主持）将对本 changelog 逐条过审并回填本节：U 级 bug 逐条过审表 / t23 决议执行情况表 / 六方投票表 / 闸门结论。
+评审材料：`docs/feature_review_1.4.0.md`（t23）· 本 changelog（t24）· `docs/retest_round1_gui_1.4.0.md`（t25）· `docs/retest_round2_core_1.4.0.md`（t26）· `installer\Output\SWDM-Setup-1.4.0.exe`。主持人在评审前一手 spot-check 终态代码：EXTERNAL 占位 0 引用、registry probe 缓存/probe_results 0 残留、熔断器已接生产调用方（downloader.py:538/540）、queue 守卫在位（ggnetwork.py:138）、安装包 42.69MB 在位。
+
+### 9.1 t23 决议执行情况
+
+| t23 决议 | 执行 | 验证 |
+|---|---|---|
+| 熔断器接生产调用方（评审中发现 inert 缺陷） | t28 接 downloader.py:538/540，含 CANCELLED 与 terminal 豁免 | t26 熔断冷却 4 场景 + 豁免 2 边界显式验证；t25 B4c 生产路径验证 |
+| queue.position>0 守卫（≤5 行小修） | ggnetwork.py:138 落地 | t25 B6 + t26 独立夹具验证 |
+| >1% 尺寸差异升级为回退触发 | t28 落地，消息含回退原因 + 清坏包残留 | t25 B7 双项验证 |
+| 删 `_download_via_cdn` 死方法 | t28 | 0 调用方核实 |
+| 删 probe 60s 探测缓存 + `probe_results` 参数 | t28 | t26 验证删除后链构造/匿名降级/熔断均正确 |
+| 删 `ProviderKind.EXTERNAL` 占位 | t28（recorder 主张留，2:1 判删） | 主持人 grep 0 引用 |
+| 门面延后 1.4.1 + 顶部注释 | t28 落地注释 | 防新代码引用 |
+
+### 9.2 六方投票表
+
+| 方 | 票 | 依据要点 |
+|---|---|---|
+| search-fixer（主持 + t22 作者） | **同意** | 逐项核实交付凭据（含终态代码 spot-check）；A-P1 16 项确定性回归；t22 四项全部收干净 |
+| captain | **同意** | 推送 9fcc8bf 时验版本号双端 1.4.0；两轮复测结果直接收到；熔断器接线 grep 零残留；GitHub Release 14 版本上传完整 |
+| installer-fixer（t24 打包） | **同意** | 一手复核打包终态（双端版本号 / 安装包 / run_all 57 PASS 零新增 / 双 exit 0）；撰写本 changelog |
+| gui-tester（t25 复测） | **同意** | t25 55 项一手产出；通道下拉/回退 tooltip/terminal 豁免 GUI 侧验证；GGNetwork「实验性」标注落地 |
+| core-tester（t26 复测 + t21/t28 作者） | **同意** | t26 45 项一手产出；t28 清理在打包终态零残留独立验证；链路语义自洽（一条链=一次 attempt） |
+| recorder | **同意** | 工程日志 + commit 链逐项核对，四要素全部满足；服从 EXTERNAL 2:1 判删 |
+
+**票数 6/6 同意，零反对。**
+
+### 9.3 三原则复核结论
+
+- **精简** ✓：t28 删 3 处死代码 + 门面延后 1.4.1，provider 抽象六件套是链式回退的必要复杂度而非过度设计；SWD 兜底移出路线图，未引入冗余
+- **用户体感** ✓：默认通道 steamcmd 与 1.3.9 逐字节等价，新通道全链上增量，用户不主动切换零感知（t25 B2 通道切换写 config 验证）；搜索 0.7s 首现快 0.5s；批量按钮合并
+- **基本功能** ✓：A-P1 cancel 微秒窗口正式状态机修复（16 项确定性回归）；U1-U12 十二项用户 bug 全量回归通过；双轮复测 55+45 项 ALL PASS；功能间关联交互（通道切换↔在飞任务 / 库分类+导出 / 删除互通）验证正常
+
+### 9.4 已知限制（诚实披露，不阻塞交付）
+
+1. **GGNetwork 实网端到端未实测**：本机 fake-IP 代理环境下 live-network 脚本全失败，全部为离线 mock 路径验证（匿名可用性 / queue 守卫 / 坏包回退 / 链内位置 / 限速器）。缓解：默认通道=steamcmd 使默认链路不经过该通道，UI 与 config 已标「实验性」→ **1.4.1 由真实网络环境一方补测**
+2. **读图工具本机不可用**：GUI 视觉检查以几何量化兜底（mapTo 相对坐标 + 显式行高/间距断言）
+
+### 9.5 闸门结论
+
+| 用户规则交付条件 | 状态 |
+|---|---|
+| 讨论组一致认为可交付 | t23 五方零反对 verdict=pass ✓ + t27 六方一致 6/6 零反对 ✓ |
+| bug 测试员连续两轮复测无异常 | t25 GUI 视角 55 项 ✓ + t26 核心视角 45 项 ✓，两轮 run_all 均 61 脚本 59 PASS / 2 既有非回归 / 0 NORESULT |
+| 版本号体现 + 可追溯记录 | 双端 1.4.0（paths.py:9 + swdm.iss:14）+ 本 changelog 十节 ✓ |
+| 全量回归（含功能间关联） | ✓ |
+
+既有非回归 `test_legacy_format`（mock 字节数漂移）与 `test_page_parser`（旧标签夹具）与 1.3.8/1.3.9 基线逐项一致，非本版引入。
+
+**结论：SWDM 1.4.0 正式交付。** 安装包 `installer\Output\SWDM-Setup-1.4.0.exe`（42.69MB）。
 
 ---
 
@@ -155,3 +211,5 @@ t27（讨论组交付评审，search-fixer 主持）将对本 changelog 逐条�
 - ggnetwork 探测动态化（当前固定物品 id 2537024972）
 - 搜索冷却结束自动重发一次待选词（gui-tester 非阻塞建议）
 - GGNetwork 实网长时验证（本版仅离线 mock + 可能的打包前冒烟）
+- `test_legacy_format` / `test_page_parser` 夹具修复（1.3.8 起既有非回归，消除基线噪声）
+- 源码注释 + 中英文适配（t30）

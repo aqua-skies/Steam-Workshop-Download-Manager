@@ -1,4 +1,9 @@
-"""配置管理：持久化设置 + 校验。"""
+"""Configuration management: persistent settings with recursive merge and validation (配置管理).
+
+Layered JSON config under the data dir: defaults are merged with the user file
+via ``Config._merge`` so partial user configs keep new default keys. Since 1.4.0
+the ``download.providers.{name}`` block is merged three levels deep.
+"""
 from __future__ import annotations
 
 import copy
@@ -160,4 +165,5 @@ class Config:
 
 
 def get_config() -> Config:
+    """Return the process-wide singleton Config instance."""
     return Config.instance()

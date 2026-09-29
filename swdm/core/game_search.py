@@ -1,14 +1,16 @@
-"""游戏名搜索（免 AppID）：接入 steampowered storesearch 接口。
+"""Game-name search without an AppID, backed by the steampowered storesearch endpoint (游戏名搜索).
 
-实测结论（research/steam_game_search.md）：
-- store.steampowered.com/api/storesearch/?term=&l=schinese&cc=CN 匿名可用，
-  相关性最好（gmod→Garry's Mod 4000、csgo→CS2 730、l4d2→L4D2 550），
-  返回 {total, items:[{type,name,id,tiny_image,...}]}，id 即 AppID。
-- 结果混有 DLC/视频，需 type=="app" 过滤。
-- 12 连发触发连接熔断（WinSock 10053，非 429），静置 15s 恢复
-  → 联想必须防抖 + 在途取消 + 缓存。
-- 中文名不可靠（仅当商店名本身是中文时有效），以英文搜索为主。
-- 封面图优先用返回的 tiny_image 完整 URL（shared.akamai.steamstatic.com）。
+Empirical findings (research/steam_game_search.md):
+- ``store.steampowered.com/api/storesearch/?term=&l=schinese&cc=CN`` works anonymously and
+  has the best relevance (gmod→Garry's Mod 4000, csgo→CS2 730, l4d2→L4D2 550); it returns
+  ``{total, items:[{type,name,id,tiny_image,...}]}`` where ``id`` is the AppID.
+- Results mix in DLC/videos; filter to ``type == "app"``.
+- 12 rapid-fire requests trip a connection circuit breaker (WinSock 10053, not 429);
+  it recovers after 15s idle → suggestions must debounce, cancel in-flight requests, and cache.
+- Chinese names are unreliable (only when the store name itself is Chinese); search primarily in English.
+- Cover images use the full ``tiny_image`` URL from the response (shared.akamai.steamstatic.com).
+
+Since t22 the client enforces a 0.7s interval plus backoff (连续 3 次失败或 ConnectionError 冷却 15s).
 """
 from __future__ import annotations
 
@@ -28,6 +30,8 @@ _TIMEOUT = 8.0
 
 @dataclass
 class GameSearchResult:
+    """One game search hit: AppID, store name and optional cover image URL."""
+
     appid: str
     name: str
     image_url: str = ""

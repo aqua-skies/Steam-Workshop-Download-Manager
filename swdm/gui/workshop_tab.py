@@ -1,4 +1,9 @@
-"""工坊浏览页：选游戏 → 搜索/分类/排序 → 列表 → 下载。"""
+"""Workshop browse tab: pick a game → search / tag filter / sort → item cards → download (工坊浏览页).
+
+The largest GUI module: game picker with suggestions (联想下拉) and Enter handling,
+tag bar, pagination, mod cards with batch selection, dependency-aware download,
+detail dialog, hover prefetch (yielding to user clicks, t15), URL import, and conflict badges.
+"""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, QThread, QTimer, Signal

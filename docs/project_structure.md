@@ -1,5 +1,9 @@
 # SWDM 项目结构索引
 
+> **English summary**: A per-file responsibility index of all 40 Python modules under `swdm/`
+> (core / providers / gui layers), each entry carrying its iteration provenance (t1–t28).
+> Maintained by the recorder from actual source reads, not guesses. Sections below in Chinese.
+
 > 维护人：recorder · 制定于 t29 · 2026-09-29 · 基于 1.4.0 源码实测（读源码写，非猜测）
 > 迭代溯源提取自 `docs/engineering_log.md` 与 `docs/changelog_1.3.8~1.4.0.md`
 

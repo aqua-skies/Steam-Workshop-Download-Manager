@@ -1,9 +1,12 @@
-"""Provider 注册表：链构造 + 熔断冷却。
+"""Provider registry: chain construction + circuit-breaker cooldown (Provider 注册表).
 
-设计见 research/provider_adaptation.md §3.4。职责：
-- 按用户配置的通道顺序构造回退链（steamcmd 永远在链尾兜底）
-- 熔断冷却（某通道连续失败后冷却期内跳过，复用 O5 _Throttle 思路）
-- 需 key 的 provider 未配置时跳过，UI 只反映配置态（无网络探测路径）
+Design: see research/provider_adaptation.md §3.4. Responsibilities:
+- Build the fallback chain in the user's configured channel order (steamcmd is always
+  the terminal tail fallback, 链尾兜底)
+- Circuit-breaker cooldown: a channel that fails consecutively is skipped while cooling
+  down (3 failures → 60s, half-open re-melt on one failure), reusing the t14 _Throttle idea
+- Providers requiring a key are skipped when unconfigured; the UI list reflects only the
+  configuration state (no network-probing path — that cache was deleted in t28)
 """
 from __future__ import annotations
 
@@ -184,6 +187,7 @@ _registry: ProviderRegistry | None = None
 
 
 def get_registry() -> ProviderRegistry:
+    """Process-wide singleton registry with built-in channels registered."""
     global _registry
     if _registry is None:
         with threading.Lock():

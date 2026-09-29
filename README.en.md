@@ -88,9 +88,16 @@ See [docs/project_structure.md](docs/project_structure.md) for a per-file respon
 
 ## Development
 
-- Commit conventions and the bilingual documentation policy: [docs/git_workflow.md](docs/git_workflow.md)
+- Commit conventions and the bilingual documentation policy (incl. the comment-language rules for English/Chinese): [docs/git_workflow.md](docs/git_workflow.md)
 - Full change history: [docs/changelog_1.3.8.md](docs/changelog_1.3.8.md) → [1.3.9](docs/changelog_1.3.9.md) → [1.4.0](docs/changelog_1.4.0.md)
-- Tests: `tests/run_all.ps1` (offscreen Qt, ~59 scripts)
+- Tests: `tests/run_all.ps1` (offscreen Qt, ~59 scripts; set `PYTHONUTF8=1` on Windows)
+
+## Roadmap (1.4.1, in development)
+
+- Source comment / docstring bilingual adaptation (t30): module docstrings across `swdm/` rewritten English-first plus public API docstrings — done
+- GGNetwork end-to-end testing over the real network (by a member with a real network path)
+- Removal of the `cdn_downloader.py` compatibility facade (use `swdm.core.providers.cdn` instead)
+- Download-tab polish items such as batch pause/resume
 
 ## License
 

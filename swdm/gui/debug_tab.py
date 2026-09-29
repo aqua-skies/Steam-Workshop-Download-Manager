@@ -1,4 +1,8 @@
-"""调试页：实时日志流 + 历史回看 + 快速诊断命令（需求 3）。"""
+"""Debug tab: live log stream + history review + quick diagnostics (调试页).
+
+Hidden by default since t22 (B④); the tab widget is still instantiated so coupled tests
+keep working. Subscribes to the in-memory ring buffer in core.logger.
+"""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Slot, QTimer

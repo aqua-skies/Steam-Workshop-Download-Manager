@@ -1,12 +1,19 @@
-"""Steam Web API + 社区页面客户端。
+"""Steam Web API + community page client (Steam Web API 与社区页面客户端).
 
-设计要点（均经实测，见 research/workshop_api_research.md）：
-- GetPublishedFileDetails / GetCollectionDetails 无需 API key
-- QueryFiles 需 key（用户可选），作为增强路径
-- HTTPS 强制使用系统证书存储（truststore），否则本机 SSL 失败
-- 全局浏览器 UA，否则社区页面返回错误
-- 浏览页 React 重构后类名混淆，用稳健正则提取 id/标题/预览图
-- 429 限流：全局节流 + 指数退避重试（社区页按 IP 限流，实测易触发）
+Design points (all empirically verified, see research/workshop_api_research.md):
+- ``GetPublishedFileDetails`` / ``GetCollectionDetails`` need no API key
+- ``QueryFiles`` requires a key (optional, user-supplied) and serves as the enhanced path
+- HTTPS must use the system certificate store (truststore), otherwise SSL fails on this machine
+- A browser UA is mandatory, otherwise community pages return an error
+- The browse page was rebuilt with React and obfuscated class names; robust regexes extract
+  id / title / preview image
+- 429 rate limiting: global throttle plus exponential backoff retries (community pages are
+  per-IP limited and easy to trip)
+
+Key behaviors added across iterations: endpoint-differentiated throttling with priority
+yielding (``_endpoint_throttle``, /sharedfiles/ 3s, low-priority requests yield the slot to
+user clicks), and ``Accept-Language`` + ``X-Requested-With`` headers to avoid the
+fingerprint-based 429 on detail pages.
 """
 from __future__ import annotations
 
@@ -958,6 +965,7 @@ class SteamAPI:
 
 
 def html_unescape(s: str) -> str:
+    """Undo HTML entity escaping in scraped workshop text (named entities + amp/lt/gt/quot)."""
     return (
         s.replace("&amp;", "&")
         .replace("&lt;", "<")

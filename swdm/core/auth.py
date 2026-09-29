@@ -1,7 +1,8 @@
-"""认证管理：匿名自动登录（默认）与手动登录（用户名密码 + Steam Guard）。
+"""Authentication: anonymous login by default, or manual login with username/password + Steam Guard (认证管理).
 
-- 匿名模式：无需任何账号，直接 login anonymous（需求 4 核心）
-- 手动模式：用户名/密码经 keyring 加密存储于系统凭据库；Steam Guard 首次需交互
+- Anonymous mode (匿名模式): no account at all, plain ``login anonymous`` — core of requirement 4.
+- Manual mode (手动模式): credentials encrypted via ``keyring`` in the OS credential store;
+  Steam Guard requires an interactive code on first login.
 """
 from __future__ import annotations
 
@@ -20,6 +21,8 @@ _AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 
 @dataclass
 class Account:
+    """Steam account state: either anonymous (default) or a user session (账号)."""
+
     mode: str = "anonymous"     # anonymous | user
     username: str = ""
     has_password: bool = False

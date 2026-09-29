@@ -1,7 +1,7 @@
-"""SWDM 应用入口（正式）。
+"""SWDM application entry point (Steam Workshop Download Manager / Steam 工坊下载管理器).
 
-保持 ``main()`` 为入口、``if __name__=='__main__'`` 调用 ``main()``，
-以便 swdm.spec / 安装包无需改动。
+Keeps ``main()`` as the single entry and ``if __name__ == '__main__'`` calling it,
+so the PyInstaller spec (swdm.spec) and the Inno Setup installer need no changes.
 """
 from __future__ import annotations
 
@@ -9,10 +9,15 @@ import sys
 
 
 def main() -> int:
+    """Run the application: build the Qt app, wire the main window, and enter the event loop.
+
+    Returns:
+        The Qt exit code.
+    """
     from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
 
-    # 高 DPI 支持
+    # High DPI support / 高 DPI 支持
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )

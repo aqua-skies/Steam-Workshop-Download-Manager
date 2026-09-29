@@ -1,12 +1,16 @@
-"""API 响应缓存层：减少重复请求，缓解 Steam 社区 429 限流。
+"""API response cache: cuts repeated requests to ease Steam community 429 rate limiting (响应缓存层).
 
-设计要点：
-- TTL 缓存：browse 结果按 (appid, page, sort, search, tags) 组合键缓存，
-  翻页回来/重复搜索同条件时零请求命中；
-- 大小上限：超出时按最久未使用淘汰（LRU 语义）；
-- 过期清理：懒清理 + 主动收缩，避免无限增长；
-- 请求合并：同一时刻多个相同请求复用同一个 Future，避免并发重复抓取；
-- 降级：429 耗尽重试后，若有缓存（哪怕已过期）优先返回而非直接报错。
+Design points:
+- TTL cache: ``browse`` results keyed by (appid, page, sort, search, tags); returning to
+  a page or repeating the same search is a zero-request hit.
+- Bounded size: LRU eviction once the entry cap is exceeded.
+- Expiry: lazy cleanup plus active shrinking, so the cache never grows unbounded.
+- Request coalescing: concurrent identical requests share one Future, avoiding duplicate fetches.
+- Degradation: after 429 retries are exhausted, serve a cached entry (even a stale one)
+  instead of failing outright.
+
+Note: ``browse()`` returns mutable ``WorkshopItem`` dataclasses and ``enrich()`` mutates the
+list in place — cached values must be deep-copied before they leave the cache (缓存命中返回前必须深拷贝).
 """
 from __future__ import annotations
 

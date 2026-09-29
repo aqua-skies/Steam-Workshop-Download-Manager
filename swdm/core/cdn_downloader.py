@@ -1,11 +1,12 @@
-"""CDN 直链通道的兼容门面（1.4.0 平迁）。
+"""Compatibility facade for the CDN direct-link channel (CDN 直链通道兼容门面, 1.4.0 migration).
 
-**1.4.1 将移除本文件**——新代码请直接用 swdm.core.providers.cdn
-（CDNProvider）或通过 ProviderRegistry 使用通道链。
+**This file will be removed in 1.4.1** — new code should use ``swdm.core.providers.cdn``
+(``CDNProvider``) directly, or the channel chain via ``ProviderRegistry``.
 
-实现已迁移到 swdm/core/providers/cdn.py（DownloadProvider 抽象）。
-本文件保留旧 API（resolve_file_url / download_file / download_item_cdn）
-供既有调用方与测试（test_cdn.py / test_core_sweep.py）零改动使用。
+The implementation has moved to ``swdm/core/providers/cdn.py`` (as a ``DownloadProvider``).
+This module keeps the legacy API (``resolve_file_url`` / ``download_file`` /
+``download_item_cdn``) so existing callers and tests (test_cdn.py / test_core_sweep.py)
+keep working unchanged.
 """
 from __future__ import annotations
 

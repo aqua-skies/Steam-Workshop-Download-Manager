@@ -1,8 +1,9 @@
-"""CDN 直链通道（从 cdn_downloader.py 平迁为 provider）。
+"""CDN direct-link channel, migrated from cdn_downloader.py as a provider (CDN 直链通道).
 
-匿名场景 file_url 为空（Steam 限制）→ FAILED + should_fallback=True，
-由 registry 链回退到 steamcmd。登录态下返回带签名的 CDN 直链，
-HTTP 流式 + Range 续传。
+For anonymous users the resolved file_url is empty (a Steam restriction) → the channel
+returns FAILED with ``should_fallback() == True`` and the registry chain falls back to
+steamcmd. With a logged-in session it returns a signed CDN direct link and streams over
+HTTP with Range resume.
 """
 from __future__ import annotations
 
@@ -27,6 +28,8 @@ _FALLBACK_HINT = (
 
 
 class CDNProvider(DownloadProvider):
+    """HTTP direct-link channel: needs a logged-in session to resolve signed URLs."""
+
     meta = ProviderMeta(
         name="cdn",
         display_name="CDN 直链（HTTP 高速，需登录）",

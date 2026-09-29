@@ -1,23 +1,23 @@
-"""工坊物品依赖（前置 mod）解析。
+"""Workshop item dependency (required items / 前置 mod) parsing.
 
-Steam 工坊详情页（/sharedfiles/filedetails/?id=X）右侧栏展示
-"Required items"（前置依赖）区块。本模块从 HTML 抓取该依赖列表。
+The Steam Workshop detail page (``/sharedfiles/filedetails/?id=X``) shows a
+"Required items" block in the right column; this module scrapes that list from HTML.
 
-真实页面结构（经真实页面验证）：
+Real page structure (verified against real pages):
 
   <div class="requiredItemsContainer" id="RequiredItems">
       <a href="https://steamcommunity.com/workshop/filedetails/?id=<dep_id>"
          target="_blank" data-subscribed="0">
-          <div class="requiredItem"> 依赖名称 </div>
+           <div class="requiredItem"> dependency name </div>
       </a>
       ...
   </div>
 
-说明：
-- Steam Web API 的 referenced_files 字段对匿名访问恒为空（实测采样为证），
-  依赖关系只能从网页抓取。
-- 依赖链接使用 /workshop/filedetails/?id= 路径（与 sharedfiles/ 不同）。
-- 依赖标题是 requiredItem 容器内的纯文本（无图片）。
+Notes:
+- The Steam Web API ``referenced_files`` field is always empty for anonymous access
+  (verified by sampling), so dependencies can only be scraped from the web page.
+- Dependency links use the ``/workshop/filedetails/?id=`` path (not ``sharedfiles/``).
+- Dependency titles are plain text inside the requiredItem container (no images).
 """
 
 from __future__ import annotations

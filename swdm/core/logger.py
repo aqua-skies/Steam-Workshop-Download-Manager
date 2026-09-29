@@ -1,4 +1,7 @@
-"""调试/日志系统：文件轮转日志 + 内存环形缓冲（供 GUI Debug 面板实时展示）。"""
+"""Logging: rotating file logs plus an in-memory ring buffer subscribed by the GUI debug panel (调试/日志系统).
+
+The ring buffer lets the Debug tab (调试页) stream a live tail without re-reading files.
+"""
 from __future__ import annotations
 
 import logging
@@ -53,12 +56,14 @@ def subscribe(callback) -> None:
 
 
 def unsubscribe(callback) -> None:
+    """Stop a previously subscribed callback from receiving ring-buffer records."""
     with _sub_lock:
         if callback in _subscribers:
             _subscribers.remove(callback)
 
 
 def snapshot() -> list[dict]:
+    """Copy of the current in-memory ring buffer (most recent records)."""
     with _ring_lock:
         return list(_ring)
 
@@ -99,6 +104,7 @@ def setup_logger(level: str = "INFO") -> logging.Logger:
 
 
 def get_logger(name: str = "swdm") -> logging.Logger:
+    """Named logger attached to the configured root (auto-initializes on first call)."""
     if _logger is None:
         setup_logger()
     return logging.getLogger(name)

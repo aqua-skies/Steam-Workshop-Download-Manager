@@ -1,6 +1,8 @@
-"""Qt 工作线程层：把核心层的异步回调桥接为 Qt 信号。
+"""Qt worker layer: bridges the core layer's async callbacks into Qt signals (工作线程层).
 
-原则：所有网络/下载/磁盘操作都在 QThread/QThreadPool 中执行，UI 只接收信号。
+Principle: every network / download / disk operation runs in QThread or QThreadPool;
+the UI only receives signals. Includes a bounded thumbnail cache keyed by item id
+(with disk fallback) so repeated card renders do not re-download.
 """
 from __future__ import annotations
 

@@ -1,22 +1,25 @@
-"""工坊 mod 冲突声明提取。
+"""Workshop mod conflict declaration extraction (冲突声明提取).
 
-mod 作者常在简介里写明已验证的冲突 mod，例如：
+Mod authors often state verified conflicts in the description, e.g.:
 
   - 本 mod 与 XXX mod 冲突，请勿同时使用
   - Conflict with [Some Mod](steamcommunity.com/sharedfiles/filedetails/?id=123)
   - Incompatible with ABC addon
   - 不要和 123456789 一起装
 
-本模块从简介文本（可能含 HTML / BBCode / Markdown 标记）中提取这些声明，
-再与本地 mod 库对照，提示用户“已安装的冲突 mod”。
+This module extracts such declarations from description text (possibly containing
+HTML / BBCode / Markdown markup) and cross-references the local mod library to warn
+the user about already-installed conflicting mods.
 
-设计约束：纯逻辑，零网络请求、零文件 IO。
+Design constraint: pure logic — zero network requests, zero file IO.
 
-提取流程：
-1. 按句（换行 / 。！？ / <br> / 块级闭合标签 / BBCode 块边界）切分简介；
-2. 丢弃含否定语义的句子（“不冲突”“no conflict”“compatible”等）；
-3. 命中冲突关键词的句子，再到其中找工坊链接（HTML / BBCode / Markdown / 裸链接）：
-   有链接 → 提取 id 与链接文本作为名称；无链接 → 用关键词附近的文本猜测名称。
+Extraction pipeline:
+1. Split the description into sentences (newlines / 。！？ / <br> / block-level closing
+   tags / BBCode block boundaries).
+2. Drop sentences with negation semantics ("不冲突" / "no conflict" / "compatible" …).
+3. For sentences hitting a conflict keyword, look for workshop links (HTML / BBCode /
+   Markdown / bare): a link yields its id and link text as the name; no link → guess the
+   name from text near the keyword.
 """
 
 from __future__ import annotations

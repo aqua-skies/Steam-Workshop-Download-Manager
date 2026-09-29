@@ -1,4 +1,4 @@
-"""SWDM 核心层：Steam 工坊下载与管理。"""
+"""SWDM core layer: Steam Workshop browsing, download and management (核心层)."""
 from .auth import Account, AuthManager
 from .config import Config, get_config
 from .conflict_extractor import ConflictInfo, check_installed_conflicts, extract_conflicts

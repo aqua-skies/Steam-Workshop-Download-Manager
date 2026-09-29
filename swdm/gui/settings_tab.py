@@ -1,4 +1,10 @@
-"""设置页：网络/下载/认证/库目录等高级设置（需求 3）。"""
+"""Settings tab: network / download / auth / library dirs and other advanced settings (设置页).
+
+Includes the download-channel dropdown generated dynamically from
+``ProviderRegistry.list_channels()`` (1.4.0) with a tooltip explaining chain fallback,
+the SteamCMD engine deploy block, the per-game install directory table, the "open data dir"
+button (t16 决议 B②) and the debug-panel visibility toggle (t22 B④).
+"""
 from __future__ import annotations
 
 import os

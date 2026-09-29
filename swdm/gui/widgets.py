@@ -1,14 +1,15 @@
-"""SWDM 可复用 GUI 组件。
+"""Reusable GUI widgets (可复用 GUI 组件).
 
-全部使用 PySide6 原生绘制，不依赖任何外部图片资源（gif/png 一律代码生成）；
-ModCard 通过 setData(dict) 接收数据，不导入核心层类型，避免循环依赖。
+All drawn natively with PySide6 — no external image resources (gifs/pngs are code-generated);
+ModCard takes a plain dict via setData() and never imports core-layer types, avoiding
+circular imports.
 
-组件清单：
-  - LoadingSpinner   旋转加载圈（QPainter 画弧 + QPropertyAnimation 转 angle）
-  - LoadingOverlay   半透明遮罩（盖在父组件上，中央 spinner + 一行文字）
-  - SmoothScrollBar  平滑滚动条（value 跳变时 QPropertyAnimation 缓动过渡）
-  - ModCard          模组列表卡片（缩略图 / 标题 / 标签 chips / 热度 / 状态角标）
-  - ElidedLabel      单行自动省略标签（末尾 …，省略时把全文放进 ToolTip）
+Components:
+  - LoadingSpinner   spinning loading ring (QPainter arc + QPropertyAnimation on angle)
+  - LoadingOverlay   translucent overlay over the parent, centered spinner + one line of text
+  - SmoothScrollBar  smooth scrollbar (QPropertyAnimation easing when value jumps)
+  - ModCard          workshop list card (thumbnail / title / tag chips / popularity / status badge)
+  - ElidedLabel      single-line eliding label (trailing …, full text in the tooltip when elided)
 """
 from __future__ import annotations
 

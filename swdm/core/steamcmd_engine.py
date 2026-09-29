@@ -1,10 +1,13 @@
-"""SteamCMD 下载引擎。
+"""SteamCMD download engine (SteamCMD 下载引擎).
 
-功能：
-- 自动定位或内置部署 steamcmd
-- 匿名登录（默认，无需账号）／用户登录（支持 Steam Guard 交互）
-- workshop_download_item 下载，解析进度与成功/失败
-- 线程化运行，通过回调输出日志与状态（GUI 无关）
+Features:
+- Locate the steamcmd executable, or deploy the bundled copy
+- Anonymous login (default, no account) / user login (interactive Steam Guard supported)
+- ``workshop_download_item`` downloads with progress and success/failure parsing
+- Threaded execution, reporting logs and state through callbacks (GUI-independent)
+
+Wrapped as a provider since 1.4.0 by ``swdm.core.providers.steamcmd`` (terminal channel);
+this module's own behavior is unchanged.
 """
 from __future__ import annotations
 
@@ -76,6 +79,8 @@ def _path_size(path: str) -> int:
 
 
 class DownloadStatus(Enum):
+    """Outcome of a steamcmd run: queued → running → success/failed/cancelled."""
+
     QUEUED = "queued"
     RUNNING = "running"
     SUCCESS = "success"
@@ -85,6 +90,8 @@ class DownloadStatus(Enum):
 
 @dataclass
 class DownloadResult:
+    """Result of one steamcmd ``workshop_download_item`` invocation."""
+
     item_id: str
     appid: str
     status: DownloadStatus
@@ -103,7 +110,7 @@ class _Task:
 
 
 class SteamCMDError(Exception):
-    pass
+    """Raised when steamcmd fails to start, or a non-download steamcmd error occurs."""
 
 
 class SteamCMDEngine:

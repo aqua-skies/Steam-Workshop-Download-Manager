@@ -1,7 +1,14 @@
-"""下载管理器：队列 + 并发调度 + 状态回调。
+"""Download manager: queue + scheduling + provider chain fallback + state callbacks (下载管理器).
 
-与 GUI 解耦：通过可订阅的回调（on_started/on_progress/on_finished）通知状态，
-GUI 层（QThread/信号）负责桥接。核心可独立测试。
+Decoupled from the GUI: state changes are reported through subscribable callbacks
+(on_started / on_progress / on_finished); the GUI layer (QThread + Qt signals) bridges them.
+The core is independently testable.
+
+Since 1.4.0 a download runs a provider chain built by ``ProviderRegistry.build_chain``:
+preferred channel → other enabled channels by priority → steamcmd terminal tail.
+One chain counts as one attempt: failing over inside the chain does not consume the
+auto-retry budget. Since t22, cancel-vs-finish is resolved under one lock (``_cancelling``
+set + terminal-state block) so the microsecond race window (A-P1) is closed.
 """
 from __future__ import annotations
 
@@ -29,6 +36,8 @@ log = get_logger("swdm.downloader")
 
 
 class JobStatus(str, Enum):
+    """Lifecycle states of a download job (任务状态): queued → running → success/failed/cancelled."""
+
     QUEUED = "queued"
     RUNNING = "running"
     SUCCESS = "success"
@@ -38,6 +47,14 @@ class JobStatus(str, Enum):
 
 @dataclass
 class DownloadJob:
+    """One queued or in-flight download (下载任务).
+
+    ``percent`` is derived from bytes only (u9/u10 fix): once ``bytes_done`` reaches
+    ``total_bytes`` it reports 100 immediately, never lingering at 99% even if the
+    completion callback is merged or delayed by Qt. ``channel`` records the provider that
+    actually served the job after chain fallback (1.4.0).
+    """
+
     item: WorkshopItem
     appid: str
     status: JobStatus = JobStatus.QUEUED

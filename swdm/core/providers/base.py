@@ -1,8 +1,12 @@
-"""Provider 抽象基类 + 通用 HTTP 下载逻辑。
+"""Download provider abstract base class plus shared HTTP download logic (Provider 抽象基类).
 
-设计见 research/provider_adaptation.md §3.3。通用件（HTTP 流式下载、
-Range 续传、会话复用）从 cdn_downloader.py 下沉到此处，子类只实现
-差异部分（解析 URL、探测、回退判定）。
+Design: see research/provider_adaptation.md §3.3. The shared pieces (HTTP streaming
+download, Range resume, session reuse) were hoisted here from cdn_downloader.py;
+subclasses implement only the differing parts (URL resolution, probe, fallback policy).
+
+Key exports: ``DownloadProvider`` (ABC with probe/download/cancel/resolve/
+should_fallback/is_configured), ``ProviderMeta``, ``ProviderKind``, ``Availability``,
+and ``http_download`` (Range resume + per-chunk stop_event polling + 429 reporting).
 """
 from __future__ import annotations
 
@@ -23,12 +27,16 @@ log = get_logger("swdm.core.providers")
 
 
 class ProviderKind(str, Enum):
+    """How a provider talks to Steam: ENGINE (子进程) / HTTP (直链) / PROXY (第三方代理)."""
+
     ENGINE = "engine"      # 本地引擎型（steamcmd）：子进程、串行、无 URL
     HTTP = "http"          # 直链型：解析 URL 后流式下载
     PROXY = "proxy"        # 第三方代理型：先换源/换 id，再 HTTP 下载
 
 
 class Availability(str, Enum):
+    """Probe outcome for a channel (通道可用性)."""
+
     OK = "ok"                       # 可用
     NO_KEY = "no_key"               # 需要未配置的凭据（key/登录态）
     UNREACHABLE = "unreachable"     # 探测失败（超时/403/服务下线）
@@ -37,6 +45,8 @@ class Availability(str, Enum):
 
 @dataclass(frozen=True)
 class ProviderMeta:
+    """Static descriptor of a channel: identity, kind, key requirements and chain placement."""
+
     name: str                          # 稳定 id，写入 config（"steamcmd"/"cdn"/"ggnetwork"…）
     display_name: str                  # UI 下拉显示名
     kind: ProviderKind

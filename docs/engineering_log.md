@@ -612,3 +612,18 @@
 - **回归口径**：同意 recorder 建议——t24 以"零新增失败 + 既有非回归逐项核对"为准
 
 **待收**：gui-tester 表态；收齐后出 `docs/feature_review_1.4.0.md`。
+
+---
+
+### t27 交付评审通过 + 1.4.0 正式交付｜2026-09-29 14:56 · recorder 记录
+
+- t27（search-fixer 主持，attempt ff9b7f51）六方投票 **6/6 同意交付、零反对**：闸门四条件全部满足（t23+t27 讨论组一致 / t25 GUI 55 项 + t26 核心 45 项双轮复测无异常 / 版本号双端 1.4.0 + changelog 十节可追溯 / 两轮 run_all 61 脚本 59 PASS 零新增）。changelog 第九节回填完成。
+- recorder 投票依据（以工程日志 + git 记录逐项核实）：三原则复核全同意（精简：t28 删 3 处死代码+门面延后 1.4.1；体感：默认通道 steamcmd 与 1.3.9 等价；基本功能：A-P1 正式修复+零新增失败）。
+- 收尾提醒（已记入）：c172188（t25 产出）交付前需 captain 推送，使远程 main 与交付凭据一致。
+
+### t30 源码注释与 docstring 中英文适配（1.4.1 首项）｜2026-09-29 · recorder 执行
+
+- **范围**：`swdm/` 全部 40 个 `.py` 模块级 docstring 英化（英文为主 + 关键业务术语中文括注，如 `Steam Workshop (工坊)`、`前置依赖`、`链尾兜底`）；补齐 30 处缺失的公共 API docstring；`docs/git_workflow.md` 第五节扩写为完整注释语言规范（语言分工表 + docstring 内容要求 + t30 落地范围）；`docs/provider_architecture_1.4.0.md`、`docs/打包说明.md`、`docs/changelog_1.4.0.md`、`docs/project_structure.md` 补英文摘要段；README 双语补 1.4.1 路线小节。
+- **原则执行**：只改注释/docstring/文档，**未改任何可执行逻辑**；依赖 `git diff --stat` 与 compileall 双重确认。
+- **验证**：关键回归 test_providers / test_download_fixes / test_core_sweep / test_gui_sweep / test_throttle / test_all_buttons / test_cross_features 全部 ALL PASS；直跑 pwsh 时需带 `PYTHONUTF8=1`，否则 ⚠/✓ 字符在 GBK 控制台 print 假崩（显示层问题，非代码缺陷）。
+- **诚实记录**：deps_parser.py docstring 替换时出现过一次重复头残留（edit 工具尾部空白匹配失败），用临时 python 脚本按行切除并 ast.parse 校验修复，脚本用后即删。
