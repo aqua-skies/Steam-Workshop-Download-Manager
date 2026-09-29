@@ -1,0 +1,42 @@
+==== 批量多游戏测试（15 款，数据目录 C:\Users\Lenovo\AppData\Local\Temp\swdm_bulk_o_o1ejyd\SWDM） ====
+[PASS] 零账号匿名模式 
+[PASS] 无任何凭据 
+   [--] Garry's Mod: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Left 4 Dead 2: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Team Fortress 2: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Counter-Strike: Source: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Rust: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Unturned: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] DST Beta: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Cultist Simulator: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] DayZ: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Project Zomboid: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] The Forest: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Killing Floor: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Cities: Skylines: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Tabletop Simulator: 工坊浏览页为空（Steam 侧无 SSR 内容）
+   [--] Civilization V: 工坊浏览页为空（Steam 侧无 SSR 内容）
+
+==== 汇总 ====
+游戏                         浏览       下载         字节    入库  说明
+----------------------------------------------------------------------------------------------------
+Garry's Mod                 0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Left 4 Dead 2               0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Team Fortress 2             0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Counter-Strike: Source      0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Rust                        0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Unturned                    0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+DST Beta                    0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Cultist Simulator           0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+DayZ                        0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Project Zomboid             0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+The Forest                  0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Killing Floor               0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Cities: Skylines            0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Tabletop Simulator          0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+Civilization V              0  skipped          0     否  工坊浏览页为空（Steam 侧无 SSR 内容）
+
+下载成功：0/15 款游戏
+库统计：共 0 个 mod，0 款游戏，0.0 MB
+[FAIL] 至少 10 款游戏成功下载 实际 0
+[PASS] 入库数量与下载数一致 库 0 vs 下载成功 0
