@@ -15,6 +15,7 @@ portable.marker
 # ===== 测试运行产物 =====
 tests/shots/
 tests/_t*_review.py
+tests/_*.txt
 
 # ===== 工具内部状态 / 临时文件 =====
 .agent-teams/
