@@ -1,0 +1,12 @@
+[PASS] E③: SUCCESS+0字节 → 改判 FAILED failed
+[PASS] E③: 0字节失败消息提示限流可能 steamcmd 报告成功但下载内容为空（可能触发限流）
+[PASS] E③ 对照: SUCCESS+真实字节 → 仍 SUCCESS success
+[PASS] browse mock 返回 1 项 1
+[PASS] browse 第二次命中缓存 1
+[PASS] 深拷贝保护：外部修改不污染缓存 缓存项
+[PASS] TTL 过期自动失效
+[PASS] priority=True 绕过端点等待 dt=0.00s
+[PASS] 低优先级请求被高优先级打断立即礼让 dt=0.00s
+[PASS] 无积压时低优先级正常放行
+[PASS] _priority_pending 计数器归零（无泄漏） 0
+[PASS] 非端点路径不被端点节流拦截

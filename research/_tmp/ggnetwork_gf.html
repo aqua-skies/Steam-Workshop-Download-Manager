@@ -1,0 +1,865 @@
+﻿
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Steam Workshop Downloader (GGNetwork) - Source code</title>
+  <meta name="description" value="Source code for Steam Workshop Downloader (GGNetwork)">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <script src="/vite/assets/application-dSd3iabZ.js" crossorigin="" type="module"></script><link rel="stylesheet" crossorigin="" href="/vite/assets/application-BUQg-itE.css" />
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="PlAXkMYCTSJtUS517VsNmms0cwyu35KLbqeky7fbsjE7lWdx4N55nQ7Aa0X0I168aTmf2UHa3oV_wz2b-JLGcQ" />
+    <meta name="clckd" content="bf6242cc3039bff31a7815dff8ee247b" />
+    <meta name="lhverifycode" content="32dc01246faccb7f5b3cad5016dd5033" />
+  <link rel="canonical" href="https://greasyfork.org/en/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+  <link rel="icon" href="/vite/assets/blacklogo16-DftkYuVe.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans&amp;display=swap" media="print" onload="this.media='all'; this.onload=null;">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans&amp;display=swap"></noscript>
+
+    <link rel="alternate" hreflang="x-default" href="/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ar" href="/ar/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="be" href="/be/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="bg" href="/bg/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ckb" href="/ckb/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="cs" href="/cs/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="da" href="/da/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="de" href="/de/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="el" href="/el/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="en" href="/en/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="eo" href="/eo/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="es" href="/es/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="es-419" href="/es-419/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="fi" href="/fi/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="fil" href="/fil/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="fr" href="/fr/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="fr-CA" href="/fr-CA/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="he" href="/he/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="hr" href="/hr/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="hu" href="/hu/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="id" href="/id/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="it" href="/it/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ja" href="/ja/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ka" href="/ka/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ko" href="/ko/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="mr" href="/mr/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="nb" href="/nb/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="nl" href="/nl/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="pl" href="/pl/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="pt" href="/pt/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="pt-BR" href="/pt-BR/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ro" href="/ro/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ru" href="/ru/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="sk" href="/sk/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="sr" href="/sr/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="sv" href="/sv/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="th" href="/th/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="tr" href="/tr/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="uk" href="/uk/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="ug" href="/ug/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="vi" href="/vi/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="zh-CN" href="/zh-CN/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+      <link rel="alternate" hreflang="zh-TW" href="/zh-TW/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+
+
+  <link rel="search" href="/en/opensearch.xml" type="application/opensearchdescription+xml" title="Greasy Fork search" hreflang="en">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7NMRNRYW7C"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-7NMRNRYW7C', {
+        'ad_method': 'ga',
+        'ad_method_variant': '',
+        'action': 'scripts/show_code'
+      });
+    </script>
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2247465624637408"
+            crossorigin="anonymous"></script>
+
+    <meta name="twitter:card" content="summary">
+  <meta property="og:title" content="Steam Workshop Downloader (GGNetwork)">
+  <meta property="og:url" content="https://greasyfork.org/scripts/553672-steam-workshop-downloader-ggnetwork">
+  <meta property="og:description" content="Download Steam Workshop items using GGNetwork API">
+      <meta property="og:image" content="https://greasyfork.s3.us-east-2.amazonaws.com/55okhphhguqefodze5tamgn5h3yh">
+
+</head>
+<body>
+
+  <header id="main-header">
+    <div class="width-constraint">
+      <div id="site-name">
+        <a href="/en"><img alt="" width="96" height="96" src="/vite/assets/blacklogo96-CxYTSM_T.png" /></a>
+        <div id="site-name-text">
+          <h1><a href="/en">Greasy Fork</a></h1>
+        </div>
+      </div>
+      <div id="site-nav">
+        <div id="nav-user-info">
+            <span class="sign-in-link"><a rel="nofollow" href="/en/users/sign_in?return_to=%2Fen%2Fscripts%2F553672-steam-workshop-downloader-ggnetwork%2Fcode">Sign in</a></span>
+
+                      <form class="language-selector" action="/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+              <select class="language-selector-locale" name="locale" data-translate-url="https://github.com/greasyfork-org/greasyfork/wiki/Translating-Greasy-Fork">
+                    <option data-language-url="/ar/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ar">
+                      Arabic (ar)
+                    </option>
+                    <option data-language-url="/be/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="be">
+                      Belarusian (be)
+                    </option>
+                    <option data-language-url="/nb/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="nb">
+                      Bokmål (nb)
+                    </option>
+                    <option data-language-url="/bg/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="bg">
+                      Bulgarian (bg)
+                    </option>
+                    <option data-language-url="/ckb/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ckb">
+                      Central Kurdish (ckb)
+                    </option>
+                    <option data-language-url="/zh-CN/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="zh-CN">
+                      Chinese (China) (zh-CN)
+                    </option>
+                    <option data-language-url="/zh-TW/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="zh-TW">
+                      Chinese (Taiwan) (zh-TW)
+                    </option>
+                    <option data-language-url="/hr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="hr">
+                      Croatian (hr)
+                    </option>
+                    <option data-language-url="/cs/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="cs">
+                      Czech (cs)
+                    </option>
+                    <option data-language-url="/da/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="da">
+                      Danish (da)
+                    </option>
+                    <option data-language-url="/nl/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="nl">
+                      Dutch (nl)
+                    </option>
+                    <option data-language-url="/en/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="en" selected>
+                      English (en)
+                    </option>
+                    <option data-language-url="/eo/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="eo">
+                      Esperanto (eo)
+                    </option>
+                    <option data-language-url="/fil/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fil">
+                      Filipino (fil)
+                    </option>
+                    <option data-language-url="/fi/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fi">
+                      Finnish (fi)
+                    </option>
+                    <option data-language-url="/fr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fr">
+                      French (fr)
+                    </option>
+                    <option data-language-url="/fr-CA/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fr-CA">
+                      French (Canada) (fr-CA)
+                    </option>
+                    <option data-language-url="/ka/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ka">
+                      Georgian (ka)
+                    </option>
+                    <option data-language-url="/de/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="de">
+                      German (de)
+                    </option>
+                    <option data-language-url="/el/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="el">
+                      Greek (el)
+                    </option>
+                    <option data-language-url="/he/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="he">
+                      Hebrew (he)
+                    </option>
+                    <option data-language-url="/hu/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="hu">
+                      Hungarian (hu)
+                    </option>
+                    <option data-language-url="/id/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="id">
+                      Indonesian (id)
+                    </option>
+                    <option data-language-url="/it/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="it">
+                      Italian (it)
+                    </option>
+                    <option data-language-url="/ja/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ja">
+                      Japanese (ja)
+                    </option>
+                    <option data-language-url="/ko/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ko">
+                      Korean (ko)
+                    </option>
+                    <option data-language-url="/mr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="mr">
+                      Marathi (mr)
+                    </option>
+                    <option data-language-url="/pl/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="pl">
+                      Polish (pl)
+                    </option>
+                    <option data-language-url="/pt/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="pt">
+                      Portuguese (pt)
+                    </option>
+                    <option data-language-url="/pt-BR/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="pt-BR">
+                      Portuguese (Brazil) (pt-BR)
+                    </option>
+                    <option data-language-url="/ro/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ro">
+                      Romanian (ro)
+                    </option>
+                    <option data-language-url="/ru/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ru">
+                      Russian (ru)
+                    </option>
+                    <option data-language-url="/sr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="sr">
+                      Serbian (sr)
+                    </option>
+                    <option data-language-url="/sk/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="sk">
+                      Slovak (sk)
+                    </option>
+                    <option data-language-url="/es/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="es">
+                      Spanish (es)
+                    </option>
+                    <option data-language-url="/es-419/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="es-419">
+                      Spanish (es-419)
+                    </option>
+                    <option data-language-url="/sv/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="sv">
+                      Swedish (sv)
+                    </option>
+                    <option data-language-url="/th/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="th">
+                      Thai (th)
+                    </option>
+                    <option data-language-url="/tr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="tr">
+                      Turkish (tr)
+                    </option>
+                    <option data-language-url="/ug/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ug">
+                      Uighur (ug)
+                    </option>
+                    <option data-language-url="/uk/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="uk">
+                      Ukrainian (uk)
+                    </option>
+                    <option data-language-url="/vi/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="vi">
+                      Vietnamese (vi)
+                    </option>
+                <option value="help">Help us translate!</option>
+              </select><input class="language-selector-submit" type="submit" value="→">
+            </form>
+
+        </div>
+        <nav>
+          <li class="scripts-index-link"><a href="/en/scripts">Scripts</a></li>
+          <li class="forum-link"><a href="/en/discussions">Forum</a></li>
+          <li class="help-link"><a href="/en/help">Help</a></li>
+          <li class="with-submenu">
+            <a href="#" onclick="return false">More</a>
+            <nav>
+              <li><a href="/en/search">Advanced search</a></li>
+              <li><a href="/en/users">User list</a></li>
+              <li><a href="/en/scripts/libraries">Libraries</a></li>
+              <li><a href="/en/moderator_actions">Moderator log</a></li>
+              <li><a href="/en/help/privacy">Privacy policy</a></li>
+            </nav>
+          </li>
+        </nav>
+      </div>
+
+      <div id="mobile-nav">
+        <div class="mobile-nav-opener">☰</div>
+        <nav class="collapsed">
+          <li class="scripts-index-link"><a href="/en/scripts">Scripts</a></li>
+          <li class="forum-link"><a href="/en/discussions">Forum</a></li>
+          <li class="help-link"><a href="/en/help">Help</a></li>
+          <li><a href="/en/search">Advanced search</a></li>
+          <li><a href="/en/users">User list</a></li>
+          <li><a href="/en/scripts/libraries">Libraries</a></li>
+          <li><a href="/en/moderator_actions">Moderator log</a></li>
+          <li><a href="/en/help/privacy">Privacy policy</a></li>
+            <li class="multi-link-nav">
+              <span class="sign-in-link"><a rel="nofollow" href="/en/users/sign_in?return_to=%2Fen%2Fscripts%2F553672-steam-workshop-downloader-ggnetwork%2Fcode">Sign in</a></span>
+            </li>
+          <li>            <form class="language-selector" action="/scripts/553672-steam-workshop-downloader-ggnetwork/code">
+              <select class="language-selector-locale" name="locale" data-translate-url="https://github.com/greasyfork-org/greasyfork/wiki/Translating-Greasy-Fork">
+                    <option data-language-url="/ar/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ar">
+                      Arabic (ar)
+                    </option>
+                    <option data-language-url="/be/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="be">
+                      Belarusian (be)
+                    </option>
+                    <option data-language-url="/nb/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="nb">
+                      Bokmål (nb)
+                    </option>
+                    <option data-language-url="/bg/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="bg">
+                      Bulgarian (bg)
+                    </option>
+                    <option data-language-url="/ckb/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ckb">
+                      Central Kurdish (ckb)
+                    </option>
+                    <option data-language-url="/zh-CN/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="zh-CN">
+                      Chinese (China) (zh-CN)
+                    </option>
+                    <option data-language-url="/zh-TW/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="zh-TW">
+                      Chinese (Taiwan) (zh-TW)
+                    </option>
+                    <option data-language-url="/hr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="hr">
+                      Croatian (hr)
+                    </option>
+                    <option data-language-url="/cs/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="cs">
+                      Czech (cs)
+                    </option>
+                    <option data-language-url="/da/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="da">
+                      Danish (da)
+                    </option>
+                    <option data-language-url="/nl/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="nl">
+                      Dutch (nl)
+                    </option>
+                    <option data-language-url="/en/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="en" selected>
+                      English (en)
+                    </option>
+                    <option data-language-url="/eo/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="eo">
+                      Esperanto (eo)
+                    </option>
+                    <option data-language-url="/fil/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fil">
+                      Filipino (fil)
+                    </option>
+                    <option data-language-url="/fi/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fi">
+                      Finnish (fi)
+                    </option>
+                    <option data-language-url="/fr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fr">
+                      French (fr)
+                    </option>
+                    <option data-language-url="/fr-CA/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="fr-CA">
+                      French (Canada) (fr-CA)
+                    </option>
+                    <option data-language-url="/ka/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ka">
+                      Georgian (ka)
+                    </option>
+                    <option data-language-url="/de/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="de">
+                      German (de)
+                    </option>
+                    <option data-language-url="/el/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="el">
+                      Greek (el)
+                    </option>
+                    <option data-language-url="/he/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="he">
+                      Hebrew (he)
+                    </option>
+                    <option data-language-url="/hu/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="hu">
+                      Hungarian (hu)
+                    </option>
+                    <option data-language-url="/id/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="id">
+                      Indonesian (id)
+                    </option>
+                    <option data-language-url="/it/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="it">
+                      Italian (it)
+                    </option>
+                    <option data-language-url="/ja/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ja">
+                      Japanese (ja)
+                    </option>
+                    <option data-language-url="/ko/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ko">
+                      Korean (ko)
+                    </option>
+                    <option data-language-url="/mr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="mr">
+                      Marathi (mr)
+                    </option>
+                    <option data-language-url="/pl/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="pl">
+                      Polish (pl)
+                    </option>
+                    <option data-language-url="/pt/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="pt">
+                      Portuguese (pt)
+                    </option>
+                    <option data-language-url="/pt-BR/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="pt-BR">
+                      Portuguese (Brazil) (pt-BR)
+                    </option>
+                    <option data-language-url="/ro/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ro">
+                      Romanian (ro)
+                    </option>
+                    <option data-language-url="/ru/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ru">
+                      Russian (ru)
+                    </option>
+                    <option data-language-url="/sr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="sr">
+                      Serbian (sr)
+                    </option>
+                    <option data-language-url="/sk/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="sk">
+                      Slovak (sk)
+                    </option>
+                    <option data-language-url="/es/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="es">
+                      Spanish (es)
+                    </option>
+                    <option data-language-url="/es-419/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="es-419">
+                      Spanish (es-419)
+                    </option>
+                    <option data-language-url="/sv/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="sv">
+                      Swedish (sv)
+                    </option>
+                    <option data-language-url="/th/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="th">
+                      Thai (th)
+                    </option>
+                    <option data-language-url="/tr/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="tr">
+                      Turkish (tr)
+                    </option>
+                    <option data-language-url="/ug/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="ug">
+                      Uighur (ug)
+                    </option>
+                    <option data-language-url="/uk/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="uk">
+                      Ukrainian (uk)
+                    </option>
+                    <option data-language-url="/vi/scripts/553672-steam-workshop-downloader-ggnetwork/code" value="vi">
+                      Vietnamese (vi)
+                    </option>
+                <option value="help">Help us translate!</option>
+              </select><input class="language-selector-submit" type="submit" value="→">
+            </form>
+</li>
+        </nav>
+      </div>
+
+      <script>
+        /* submit is handled by js if enabled */
+        document.querySelectorAll(".language-selector-submit").forEach((lss) => { lss.style.display = "none" })
+      </script>
+    </div>
+  </header>
+
+  <div class="width-constraint">
+
+      <section id="script-info">
+    <ul id="script-links" class="tabs">
+      <li><a href="/en/scripts/553672-steam-workshop-downloader-ggnetwork"><span>Info</span></a></li>
+      <li class="current" aria-current="page"><span>Code</span></li>
+      <li><a href="/en/scripts/553672-steam-workshop-downloader-ggnetwork/versions"><span>History</span></a></li>
+        <li><a href="/en/scripts/553672-steam-workshop-downloader-ggnetwork/feedback"><span>Feedback (2)</span></a></li>
+        <li><a href="/en/scripts/553672-steam-workshop-downloader-ggnetwork/stats"><span>Stats</span></a></li>
+    </ul>
+    <header>
+      <h2>Steam Workshop Downloader (GGNetwork)</h2>
+      <p id="script-description" class="script-description">Download Steam Workshop items using GGNetwork API</p>
+    </header>
+    <div id="script-content">
+      
+
+      <div id="install-area">
+          
+<a class="install-link" data-install-format="js" data-ping-url="/scripts/553672/install-ping" data-post-install-url="https://greasyfork.org/en/scripts/553672-steam-workshop-downloader-ggnetwork/post-install" data-ip-address="103.151.172.95" data-script-id="553672" data-ping-key="be306c58bd075b7af3fa32bf1dc92f9501192707" data-is-previous-version="false" data-previous-version-warning="This is not the latest version of this script. If you install it, you will never be updated to a newer version. Install anyway?" rel="nofollow" data-script-name="Steam Workshop Downloader (GGNetwork)" data-script-namespace="http://tampermonkey.net/" data-script-version="5.0" data-update-label="Update to version 5.0" data-downgrade-label="Downgrade to version 5.0" data-reinstall-label="Reinstall version 5.0" href="https://update.greasyfork.org/scripts/553672/Steam%20Workshop%20Downloader%20%28GGNetwork%29.user.js">Install this script</a><a class="install-help-link" title="How to install" rel="nofollow" href="/en/help/installing-user-scripts">?</a>
+      </div>
+
+
+
+<dialog id="installation-instructions-modal-js" class="modal" closedby="any">
+  <header class="modal__header" aria-labelledby="installation-instructions-modal-title">
+    <h3 class="modal__title" id="installation-instructions-modal-title">
+      How to install
+    </h3>
+    <button class="modal__close modal__cancel" aria-label="Close modal"></button>
+  </header>
+  <main class="modal__content" id="installation-instructions-modal-content">
+    <p class="installation-instructions-modal-content-firefox">
+      You will need to install an extension such as <a target="tampermonkey" href="https://addons.mozilla.org/firefox/addon/tampermonkey/">Tampermonkey</a>, <a target="greasemonkey" href="https://addons.mozilla.org/firefox/addon/greasemonkey/">Greasemonkey</a> or <a target="violentmonkey" href="https://addons.mozilla.org/firefox/addon/violentmonkey/">Violentmonkey</a> to install this script.
+    </p>
+    <p class="installation-instructions-modal-content-chrome">
+      You will need to install an extension such as <a target="tampermonkey" href="https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo">Tampermonkey</a> or <a target="violentmonkey" href="https://chrome.google.com/webstore/detail/violent-monkey/jinjaccalgkegednnccohejagnlnfdag">Violentmonkey</a> to install this script.
+    </p>
+    <p class="installation-instructions-modal-content-opera">
+      You will need to install an extension such as <a target="tampermonkey" href="https://addons.opera.com/extensions/details/tampermonkey-beta/">Tampermonkey</a> or <a target="violentmonkey" href="https://violentmonkey.github.io/get-it/">Violentmonkey</a> to install this script.
+    </p>
+    <p class="installation-instructions-modal-content-safari">
+      You will need to install an extension such as <a target="tampermonkey" href="https://www.tampermonkey.net/?browser=safari">Tampermonkey</a> or <a target="Userscripts" href="https://apps.apple.com/app/userscripts/id1463298887">Userscripts</a> to install this script.
+    </p>
+    <p class="installation-instructions-modal-content-edge">
+      You will need to install an extension such as <a target="tampermonkey" href="https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd">Tampermonkey</a> to install this script.
+    </p>
+    <p class="installation-instructions-modal-content-other">
+      You will need to install a user script manager extension to install this script.
+    </p>
+    <p class="installation-instructions-modal-content-bypass">
+      <a href="#">(I already have a user script manager, let me install it!)</a>
+    </p>
+  </main>
+  <footer class="modal__footer">
+    <button class="modal__btn modal__cancel">
+      OK
+    </button>
+  </footer>
+</dialog>
+
+<dialog id="installation-instructions-modal-css" class="modal" closedby="any">
+  <header class="modal__header" aria-labelledby="installation-instructions-modal-title">
+    <h3 class="modal__title" id="installation-instructions-modal-title">
+      How to install
+    </h3>
+    <button class="modal__close modal__cancel" aria-label="Close modal"></button>
+  </header>
+  <main class="modal__content" id="installation-instructions-modal-content">
+    <p class="installation-instructions-modal-content-firefox">
+      You will need to install an extension such as <a target="stylus" href="https://addons.mozilla.org/firefox/addon/styl-us/">Stylus</a> to install this style.
+    </p>
+    <p class="installation-instructions-modal-content-chrome">
+      You will need to install an extension such as <a target="stylus" href="https://chrome.google.com/webstore/detail/stylus/clngdbkpkpeebahjckkjfobafhncgmne">Stylus</a> to install this style.
+    </p>
+    <p class="installation-instructions-modal-content-opera">
+      You will need to install an extension such as <a target="stylus" href="https://addons.opera.com/extensions/details/stylus/">Stylus</a> to install this style.
+    </p>
+    <p class="installation-instructions-modal-content-safari">
+      You will need to install a user style manager extension to install this style.
+    </p>
+    <p class="installation-instructions-modal-content-edge">
+      You will need to install a user style manager extension to install this style.
+    </p>
+    <p class="installation-instructions-modal-content-other">
+      You will need to install a user style manager extension to install this style.
+    </p>
+    <p class="installation-instructions-modal-content-bypass">
+      <a href="#">(I already have a user style manager, let me install it!)</a>
+    </p>
+  </main>
+  <footer class="modal__footer">
+    <button class="modal__btn modal__cancel">
+      OK
+    </button>
+  </footer>
+</dialog>
+
+
+
+<div id="script-feedback-suggestion">
+    <a rel="nofollow" href="/en/scripts/553672-steam-workshop-downloader-ggnetwork/feedback#post-discussion">Ask a question, post a review</a>, or <a rel="nofollow" href="/en/reports/new?item_class=script&amp;item_id=553672">report the script</a>.
+</div>
+
+
+
+  <div class="ad ad-ga" id="script-show-code-ad">
+    <div class="ad-content">
+        <ins class="adsbygoogle"
+             style="display:block; text-align:center;"
+             data-ad-layout="in-article"
+             data-ad-format="fluid"
+             data-ad-client="ca-pub-2247465624637408"
+             data-ad-slot="2579817802"></ins>
+        <script>
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+  </div>
+
+    <div class="ad ad-ea" id="script-show-code-ad-fallback" style="display:none;">
+  <div class="ad-content">
+    <div id="script-show-code-ea_image_fallback-fallback" class="flat ethical-ads adaptive" data-ea-publisher="greasyfork" data-ea-type="image" data-ea-manual="true"></div>
+  </div>
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js?lang=css"></script>
+
+<div>
+  <input type="checkbox" id="wrap-lines" checked value="1"><label for="wrap-lines" class="checkbox-label">Wrap lines</label>
+</div>
+<div class="code-container">
+  <pre class="prettyprint linenums wrap lang-js">// ==UserScript==
+// @name         Steam Workshop Downloader (GGNetwork)
+// @namespace    http://tampermonkey.net/
+// @version      5.0
+// @description  Download Steam Workshop items using GGNetwork API
+// @author       Cerulean
+// @match        https://steamcommunity.com/sharedfiles/filedetails/*
+// @match        https://steamcommunity.com/workshop/filedetails/*
+// @grant        GM_xmlhttpRequest
+// @connect      api.ggntw.com
+// @connect      cdn.ggntw.com
+// @connect      ggntw.com
+// @license      MIT
+// ==/UserScript==
+
+(function() {
+    &#39;use strict&#39;;
+
+    // Extract Workshop ID from URL
+    function getWorkshopId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(&#39;id&#39;);
+    }
+
+    // Get current page URL
+    function getCurrentUrl() {
+        return window.location.href;
+    }
+
+    // Create download button
+    function createDownloadButton() {
+        const workshopId = getWorkshopId();
+        if (!workshopId) return;
+
+        // Create button container
+        const btnContainer = document.createElement(&#39;div&#39;);
+        btnContainer.style.cssText = &#39;margin: 10px 0; padding: 10px; background: #1b2838; border-radius: 4px;&#39;;
+
+        // Create button row container
+        const buttonRow = document.createElement(&#39;div&#39;);
+        buttonRow.style.cssText = &#39;display: flex; gap: 10px; flex-wrap: wrap;&#39;;
+
+        // Create download button
+        const downloadBtn = document.createElement(&#39;button&#39;);
+        downloadBtn.textContent = &#39;📥 Download via GGNetwork&#39;;
+        downloadBtn.style.cssText = `
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        `;
+
+        downloadBtn.onmouseover = () =&gt; {
+            downloadBtn.style.transform = &#39;translateY(-2px)&#39;;
+            downloadBtn.style.boxShadow = &#39;0 6px 20px rgba(102, 126, 234, 0.6)&#39;;
+        };
+
+        downloadBtn.onmouseout = () =&gt; {
+            downloadBtn.style.transform = &#39;translateY(0)&#39;;
+            downloadBtn.style.boxShadow = &#39;0 4px 15px rgba(102, 126, 234, 0.4)&#39;;
+        };
+
+        // Create copy link button
+        const copyBtn = document.createElement(&#39;button&#39;);
+        copyBtn.textContent = &#39;📋 Copy Download Link&#39;;
+        copyBtn.style.cssText = `
+            background: #2a475e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+
+        copyBtn.onmouseover = () =&gt; {
+            copyBtn.style.background = &#39;#3a5768&#39;;
+        };
+
+        copyBtn.onmouseout = () =&gt; {
+            copyBtn.style.background = &#39;#2a475e&#39;;
+        };
+
+        // Status message element
+        const statusMsg = document.createElement(&#39;div&#39;);
+        statusMsg.style.cssText = &#39;margin-top: 10px; font-size: 13px; color: #c7d5e0;&#39;;
+
+        // Store download URL globally for copy button
+        let currentDownloadUrl = null;
+
+        // Download button click handler
+        downloadBtn.onclick = () =&gt; {
+            downloadWorkshopItem(workshopId, statusMsg, downloadBtn, copyBtn, (url) =&gt; {
+                currentDownloadUrl = url;
+            });
+        };
+
+        // Copy button click handler - gets link without downloading
+        copyBtn.onclick = () =&gt; {
+            getDownloadLink(workshopId, statusMsg, copyBtn, (url) =&gt; {
+                currentDownloadUrl = url;
+                navigator.clipboard.writeText(url).then(() =&gt; {
+                    statusMsg.textContent = &#39;✅ Download link copied! Paste in IDM quickly - it will expire soon!&#39;;
+                    statusMsg.style.color = &#39;#90ee90&#39;;
+                }).catch(() =&gt; {
+                    statusMsg.textContent = &#39;❌ Failed to copy. Link: &#39; + url;
+                    statusMsg.style.color = &#39;#ff6b6b&#39;;
+                });
+            });
+        };
+
+        buttonRow.appendChild(downloadBtn);
+        buttonRow.appendChild(copyBtn);
+        btnContainer.appendChild(buttonRow);
+        btnContainer.appendChild(statusMsg);
+
+        // Find a good place to insert the button
+        const detailsBlock = document.querySelector(&#39;.workshopItemDetailsHeader&#39;) ||
+                           document.querySelector(&#39;.workshopItemDetails&#39;) ||
+                           document.querySelector(&#39;.rightDetailsBlock&#39;);
+
+        if (detailsBlock) {
+            detailsBlock.parentNode.insertBefore(btnContainer, detailsBlock.nextSibling);
+        }
+    }
+
+    // Get download link without starting download
+    function getDownloadLink(workshopId, statusElement, button, onUrlReceived) {
+        statusElement.textContent = &#39;⏳ Getting download link...&#39;;
+        statusElement.style.color = &#39;#ffa500&#39;;
+        button.disabled = true;
+        button.style.opacity = &#39;0.6&#39;;
+        button.style.cursor = &#39;not-allowed&#39;;
+
+        const workshopUrl = getCurrentUrl();
+        const apiUrl = &#39;https://api.ggntw.com/steam.request&#39;;
+
+        GM_xmlhttpRequest({
+            method: &#39;POST&#39;,
+            url: apiUrl,
+            headers: {
+                &#39;Content-Type&#39;: &#39;application/json&#39;,
+                &#39;Accept&#39;: &#39;application/json, text/plain, */*&#39;,
+                &#39;Origin&#39;: &#39;https://ggntw.com&#39;,
+                &#39;Referer&#39;: &#39;https://ggntw.com/&#39;
+            },
+            data: JSON.stringify({
+                url: workshopUrl
+            }),
+            timeout: 60000,
+            onload: function(response) {
+                button.disabled = false;
+                button.style.opacity = &#39;1&#39;;
+                button.style.cursor = &#39;pointer&#39;;
+
+                if (response.status === 200) {
+                    try {
+                        const data = JSON.parse(response.responseText);
+                        let downloadUrl = data.download_url || data.url || data.link || data.file || data.download;
+
+                        if (!downloadUrl &amp;&amp; data.data) {
+                            downloadUrl = data.data.download_url || data.data.url || data.data.link || data.data.file;
+                        }
+
+                        if (downloadUrl) {
+                            onUrlReceived(downloadUrl);
+                        } else {
+                            statusElement.textContent = &#39;❌ No download URL found&#39;;
+                            statusElement.style.color = &#39;#ff6b6b&#39;;
+                        }
+                    } catch (e) {
+                        statusElement.textContent = &#39;❌ Failed to get link&#39;;
+                        statusElement.style.color = &#39;#ff6b6b&#39;;
+                    }
+                } else {
+                    statusElement.textContent = `❌ API error: ${response.status}`;
+                    statusElement.style.color = &#39;#ff6b6b&#39;;
+                }
+            },
+            onerror: function() {
+                button.disabled = false;
+                button.style.opacity = &#39;1&#39;;
+                button.style.cursor = &#39;pointer&#39;;
+                statusElement.textContent = &#39;❌ Network error&#39;;
+                statusElement.style.color = &#39;#ff6b6b&#39;;
+            }
+        });
+    }
+
+    // Download workshop item using GGNetwork API
+    function downloadWorkshopItem(workshopId, statusElement, button, copyButton, onUrlReceived) {
+        statusElement.textContent = &#39;⏳ Requesting download from GGNetwork...&#39;;
+        statusElement.style.color = &#39;#ffa500&#39;;
+        button.disabled = true;
+        button.style.opacity = &#39;0.6&#39;;
+        button.style.cursor = &#39;not-allowed&#39;;
+
+        const workshopUrl = getCurrentUrl();
+        const apiUrl = &#39;https://api.ggntw.com/steam.request&#39;;
+
+        GM_xmlhttpRequest({
+            method: &#39;POST&#39;,
+            url: apiUrl,
+            headers: {
+                &#39;Content-Type&#39;: &#39;application/json&#39;,
+                &#39;Accept&#39;: &#39;application/json, text/plain, */*&#39;,
+                &#39;Origin&#39;: &#39;https://ggntw.com&#39;,
+                &#39;Referer&#39;: &#39;https://ggntw.com/&#39;
+            },
+            data: JSON.stringify({
+                url: workshopUrl
+            }),
+            timeout: 60000,
+            onload: function(response) {
+                button.disabled = false;
+                button.style.opacity = &#39;1&#39;;
+                button.style.cursor = &#39;pointer&#39;;
+
+                console.log(&#39;API Response:&#39;, response.responseText);
+
+                if (response.status === 200) {
+                    try {
+                        const data = JSON.parse(response.responseText);
+                        console.log(&#39;Parsed data:&#39;, data);
+
+                        // Extract download URL from various possible response formats
+                        let downloadUrl = data.download_url || data.url || data.link || data.file || data.download;
+
+                        // Check if it&#39;s nested in a data object
+                        if (!downloadUrl &amp;&amp; data.data) {
+                            downloadUrl = data.data.download_url || data.data.url || data.data.link || data.data.file;
+                        }
+
+                        if (downloadUrl) {
+                            // Store URL for copy button
+                            onUrlReceived(downloadUrl);
+
+                            statusElement.textContent = &#39;✅ Starting download...&#39;;
+                            statusElement.style.color = &#39;#90ee90&#39;;
+
+                            // Create a hidden anchor element and trigger download
+                            const a = document.createElement(&#39;a&#39;);
+                            a.href = downloadUrl;
+                            a.download = &#39;&#39;;
+                            a.style.display = &#39;none&#39;;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+
+                            setTimeout(() =&gt; {
+                                statusElement.textContent = &#39;✅ Download started! Use &quot;Copy Link&quot; button for IDM.&#39;;
+                            }, 1000);
+                        } else {
+                            statusElement.textContent = &#39;❌ No download URL in response. Check console for details.&#39;;
+                            statusElement.style.color = &#39;#ff6b6b&#39;;
+                        }
+                    } catch (e) {
+                        statusElement.textContent = &#39;❌ Failed to parse API response. Check console.&#39;;
+                        statusElement.style.color = &#39;#ff6b6b&#39;;
+                        console.error(&#39;Parse error:&#39;, e);
+                    }
+                } else {
+                    statusElement.textContent = `❌ API error: ${response.status}. Check console.`;
+                    statusElement.style.color = &#39;#ff6b6b&#39;;
+                }
+            },
+            onerror: function(error) {
+                button.disabled = false;
+                button.style.opacity = &#39;1&#39;;
+                button.style.cursor = &#39;pointer&#39;;
+                statusElement.textContent = &#39;❌ Network error. Check console for details.&#39;;
+                statusElement.style.color = &#39;#ff6b6b&#39;;
+                console.error(&#39;Network error:&#39;, error);
+            },
+            ontimeout: function() {
+                button.disabled = false;
+                button.style.opacity = &#39;1&#39;;
+                button.style.cursor = &#39;pointer&#39;;
+                statusElement.textContent = &#39;❌ Request timed out. Please try again.&#39;;
+                statusElement.style.color = &#39;#ff6b6b&#39;;
+            }
+        });
+    }
+
+    // Wait for page to load and add button
+    if (document.readyState === &#39;loading&#39;) {
+        document.addEventListener(&#39;DOMContentLoaded&#39;, createDownloadButton);
+    } else {
+        createDownloadButton();
+    }
+})();</pre>
+</div>
+
+    </div>
+  </section>
+
+  </div>
+
+    <script>
+      (function (d) {
+      window.rum = {key: '29razx6j'};
+      var script = d.createElement('script');
+      script.src = 'https://cdn.perfops.net/rom3/rom3.min.js';
+      script.type = 'text/javascript';
+      script.defer = true;
+      script.async = true;
+      d.getElementsByTagName('head')[0].appendChild(script);
+      })(document);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a423827b6d7e515e',t:'MTc5MDYwNjQ5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"3b2c78865ea34bf4ad258da879f720f8","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
+
+

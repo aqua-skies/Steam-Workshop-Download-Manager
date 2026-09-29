@@ -1,0 +1,29 @@
+# ===== 构建产物 =====
+build/
+dist/
+installer/Output/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.spec.bak
+
+# ===== 运行时数据（steamcmd 工作目录 + 下载的 mod）=====
+steamapps/
+data/
+portable.marker
+
+# ===== 测试运行产物 =====
+tests/shots/
+tests/_t*_review.py
+
+# ===== 工具内部状态 / 临时文件 =====
+.agent-teams/
+.dsh-vision-toolkit/
+.dsh-memory/
+dummy/
+x/
+t2122.txt
+dump2122.py
+*.log
+*.tmp
+*.bak

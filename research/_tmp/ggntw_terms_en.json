@@ -1,0 +1,602 @@
+﻿[
+    {
+        "id": 1756649467649,
+        "type": "warning",
+        "data": {
+            "type": "error",
+            "text": "The document has been translated using machine translation. The original is available in Russian."
+        }
+    },
+    {
+        "id": 1756481671547,
+        "type": "header",
+        "data": {
+            "text": "1. General Provisions",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756481730450,
+        "type": "header",
+        "data": {
+            "text": "1.1. Subject of Agreement",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756481735321,
+        "type": "text",
+        "data": {
+            "text": "This Agreement (hereinafter — \"Rules\", \"Terms\") governs the relationship between the site owner (hereinafter — \"Administration\") and site users (hereinafter — \"User\", \"You\"), arising from the use of the \"GGNETWORK\" gaming portal (hereinafter — \"Site\")."
+        }
+    },
+    {
+        "id": 1756481746274,
+        "type": "header",
+        "data": {
+            "text": "1.2. Acceptance and Binding Nature of Agreement",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756481754761,
+        "type": "text",
+        "data": {
+            "text": "1.2.1. Registration of an account on the Site means complete and unconditional acceptance of these Rules by the User."
+        }
+    },
+    {
+        "id": 1756481767157,
+        "type": "text",
+        "data": {
+            "text": "1.2.2. The Agreement is a public offer. Use of any Site services, including without account registration, implies agreement with these Rules in the corresponding part."
+        }
+    },
+    {
+        "id": 1756481862256,
+        "type": "header",
+        "data": {
+            "text": "1.3. Changes to Agreement",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756481877864,
+        "type": "text",
+        "data": {
+            "text": "1.3.1. Administration reserves the right to make changes to these Rules at any time."
+        }
+    },
+    {
+        "id": 1756481884530,
+        "type": "text",
+        "data": {
+            "text": "1.3.2. The amended version of the Agreement comes into force from the moment of its posting on the Site, unless otherwise specified."
+        }
+    },
+    {
+        "id": 1756481889557,
+        "type": "text",
+        "data": {
+            "text": "1.3.3. Further use of the Site after making changes means the User's agreement with the new version of the Rules."
+        }
+    },
+    {
+        "id": 1756481909392,
+        "type": "header",
+        "data": {
+            "text": "1.4. Support Page",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756481918275,
+        "type": "text",
+        "data": {
+            "text": "1.4.1. All questions, comments and suggestions regarding the operation of the Site and\/or these Rules should be directed through the corresponding support page, the link to which is indicated on the Site."
+        }
+    },
+    {
+        "id": 1756481929121,
+        "type": "text",
+        "data": {
+            "text": "1.4.2. For all problems and disputes related to the use of the Site, first contact the support service, which will help find a mutually beneficial solution."
+        }
+    },
+    {
+        "id": 1756481965121,
+        "type": "header",
+        "data": {
+            "text": "2. Registration and Account",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756481977256,
+        "type": "header",
+        "data": {
+            "text": "2.1. Creating an Account",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756481983961,
+        "type": "text",
+        "data": {
+            "text": "2.1.1. Registration of a user account is required to access the main features of the Site."
+        }
+    },
+    {
+        "id": 1756481990805,
+        "type": "text",
+        "data": {
+            "text": "2.1.2. When registering, the User must provide accurate data: unique login, valid email address, etc."
+        }
+    },
+    {
+        "id": 1756482007574,
+        "type": "header",
+        "data": {
+            "text": "2.2. Data Protection and Personal Responsibility",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756482019952,
+        "type": "text",
+        "data": {
+            "text": "2.2.1. The User is solely responsible for the security of their account data (login, password, token, etc.)."
+        }
+    },
+    {
+        "id": 1756482027768,
+        "type": "text",
+        "data": {
+            "text": "2.2.2. In case of detection of unauthorized use of their account, the User must immediately notify the Administration through the support page."
+        }
+    },
+    {
+        "id": 1756482035089,
+        "type": "text",
+        "data": {
+            "text": "2.2.3. Administration ensures the security of processing and storage of User data in accordance with applicable law and the Site's privacy policy."
+        }
+    },
+    {
+        "id": 1756482053416,
+        "type": "header",
+        "data": {
+            "text": "2.3. Restrictions for Unregistered Users",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756482693911,
+        "type": "text",
+        "data": {
+            "text": "2.3.1. Without logging into an account, Administration has the right to limit or completely block User access to Site functionality, as well as show an incomplete list of functions and materials."
+        }
+    },
+    {
+        "id": 1756482711918,
+        "type": "header",
+        "data": {
+            "text": "3. Premium Subscription",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756482723103,
+        "type": "header",
+        "data": {
+            "text": "3.1. Terms of Purchase and Operation",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756482731336,
+        "type": "text",
+        "data": {
+            "text": "3.1.1. Premium subscription (hereinafter — \"Subscription\") provides Users with extended capabilities when using the service, including unlimited file uploads to the Workshop (except for violations described in this Agreement)."
+        }
+    },
+    {
+        "id": 1756482738727,
+        "type": "text",
+        "data": {
+            "text": "3.1.2. Payment terms, Subscription validity periods, and all related features are described on the corresponding Site page."
+        }
+    },
+    {
+        "id": 1756482784969,
+        "type": "header",
+        "data": {
+            "text": "3.2. Subscription Usage Restrictions",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756482794402,
+        "type": "text",
+        "data": {
+            "text": "3.2.1. It is prohibited to use the Subscription for direct profit, including:"
+        }
+    },
+    {
+        "id": 1756482803253,
+        "type": "list",
+        "data": {
+            "type": "unordered",
+            "items": [
+                "Earning money by providing third parties access to files or functionality obtained through the Subscription.",
+                "Automation (bots, scripts, etc.), unless otherwise agreed with Administration.",
+                "Transfer of usage rights or the Subscription itself to another person or other accounts."
+            ]
+        }
+    },
+    {
+        "id": 1756482830609,
+        "type": "text",
+        "data": {
+            "text": "3.2.2. Violation of these restrictions may result in account limitation or blocking without compensation for the remaining Subscription period cost."
+        }
+    },
+    {
+        "id": 1756490285874,
+        "type": "header",
+        "data": {
+            "text": "4. Workshop (Game Modification Service)",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756490293765,
+        "type": "header",
+        "data": {
+            "text": "4.1. General Usage Procedure",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490302517,
+        "type": "text",
+        "data": {
+            "text": "4.1.1. Workshop is a service for uploading, storing and distributing modifications (hereinafter — \"Mods\") for specific games."
+        }
+    },
+    {
+        "id": 1756490311317,
+        "type": "text",
+        "data": {
+            "text": "4.1.2. The list of supported games (including free games for which special conditions apply) is available on the corresponding Site page."
+        }
+    },
+    {
+        "id": 1756490323520,
+        "type": "header",
+        "data": {
+            "text": "4.2. File Upload Conditions",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490335698,
+        "type": "text",
+        "data": {
+            "text": "4.2.1. Users without a Subscription can only download files that were previously uploaded by any other User. Exception applies to free games from the supported list — Administration may allow other upload possibilities for them."
+        }
+    },
+    {
+        "id": 1756490337061,
+        "type": "text",
+        "data": {
+            "text": "4.2.2. To make a file publicly available (accessible to all Users), it must be uploaded by a User with an active Premium subscription. After such upload, the file becomes available to others."
+        }
+    },
+    {
+        "id": 1756490348160,
+        "type": "header",
+        "data": {
+            "text": "4.3. Content Responsibility",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490434213,
+        "type": "text",
+        "data": {
+            "text": "4.3.1. The User publishing Mods guarantees that they possess all necessary rights to the uploaded files, and that they do not violate copyright and related rights of third parties or laws of the country where the User is located."
+        }
+    },
+    {
+        "id": 1756490442133,
+        "type": "text",
+        "data": {
+            "text": "4.3.2. Administration is not responsible for the content of Mods, however, upon detection of violations, reserves the right to remove or restrict access to problematic files."
+        }
+    },
+    {
+        "id": 1756490455861,
+        "type": "header",
+        "data": {
+            "text": "5. Site Behavior Rules",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756490464840,
+        "type": "header",
+        "data": {
+            "text": "5.1. General Requirements",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490468047,
+        "type": "text",
+        "data": {
+            "text": "5.1.1. It is prohibited to use offensive, vulgar, discriminatory, provocative and any other nicknames, names and expressions on the Site that violate moral and ethical standards or legislation."
+        }
+    },
+    {
+        "id": 1756490477573,
+        "type": "text",
+        "data": {
+            "text": "5.1.2. It is prohibited to provoke conflicts, distribute spam, malicious links or otherwise interfere with the normal functioning of the Site and its services."
+        }
+    },
+    {
+        "id": 1756490488523,
+        "type": "header",
+        "data": {
+            "text": "5.2. Service Abuse",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490494437,
+        "type": "text",
+        "data": {
+            "text": "5.2.1. The User has no right to use the Site's capabilities and\/or Subscription to bypass technical restrictions established by Administration."
+        }
+    },
+    {
+        "id": 1756490517085,
+        "type": "text",
+        "data": {
+            "text": "5.2.2. Abuse of special functions or Site resources, including creating excessive server load, bypassing paid restrictions, re-registering under different accounts to gain advantages, is prohibited."
+        }
+    },
+    {
+        "id": 1756490520591,
+        "type": "header",
+        "data": {
+            "text": "5.3. Enforcement Measures",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490525494,
+        "type": "text",
+        "data": {
+            "text": "5.3.1. Upon detection of violations of these Rules, Administration has the right to take measures, up to temporary or permanent account blocking and\/or deletion of content available to the User without notification."
+        }
+    },
+    {
+        "id": 1756490532933,
+        "type": "text",
+        "data": {
+            "text": "5.3.2. Disputed issues regarding imposed restrictions can be resolved by the User contacting the support page."
+        }
+    },
+    {
+        "id": 1756490548704,
+        "type": "header",
+        "data": {
+            "text": "6. Intellectual Property",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756490556255,
+        "type": "header",
+        "data": {
+            "text": "6.1. Site Content Rights",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490563386,
+        "type": "text",
+        "data": {
+            "text": "6.1.1. The Site and all its elements (company name, design, program code, images, texts, etc.) are the property of Administration or third parties placing content on legal grounds."
+        }
+    },
+    {
+        "id": 1756490580966,
+        "type": "header",
+        "data": {
+            "text": "6.2. Third Party Rights",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490592085,
+        "type": "text",
+        "data": {
+            "text": "6.2.1. The User guarantees that all files uploaded by them (Mods, descriptions, etc.) do not violate third party rights."
+        }
+    },
+    {
+        "id": 1756490603670,
+        "type": "text",
+        "data": {
+            "text": "6.2.2. In case of any claims against Administration from third parties related to content uploaded by the User, Administration restricts access to the content and notifies the User, repeated claims may impose restrictions on user interaction with certain Site functions."
+        }
+    },
+    {
+        "id": 1756490614617,
+        "type": "header",
+        "data": {
+            "text": "7. Limitation of Liability",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756490622523,
+        "type": "header",
+        "data": {
+            "text": "7.1. Warranties and Availability",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490693149,
+        "type": "text",
+        "data": {
+            "text": "7.1.1. Administration makes every reasonable effort to maintain uninterrupted operation of the Site, but does not guarantee complete error-free operation, continuity or compliance of individual functions with User expectations."
+        }
+    },
+    {
+        "id": 1756490702043,
+        "type": "header",
+        "data": {
+            "text": "7.2. Damage Limitation",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490714261,
+        "type": "text",
+        "data": {
+            "text": "7.2.1. Administration is not liable for any direct or indirect damages incurred by the User as a result of using or being unable to use the Site, Subscription and content posted by third parties."
+        }
+    },
+    {
+        "id": 1756490722385,
+        "type": "header",
+        "data": {
+            "text": "7.3. Force Majeure",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490728093,
+        "type": "text",
+        "data": {
+            "text": "7.3.1. Administration is released from liability for complete or partial non-fulfillment of obligations if it resulted from force majeure circumstances, such as natural disasters, military actions, internet failures, adoption of regulatory acts, etc."
+        }
+    },
+    {
+        "id": 1756490755952,
+        "type": "header",
+        "data": {
+            "text": "8. Dispute Resolution",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756490775219,
+        "type": "header",
+        "data": {
+            "text": "8.1. General Procedure",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490782326,
+        "type": "text",
+        "data": {
+            "text": "8.1.1. All disputed situations, disagreements and claims related to the use of the Site are primarily resolved through negotiations by contacting the support service."
+        }
+    },
+    {
+        "id": 1756490788013,
+        "type": "text",
+        "data": {
+            "text": "8.1.2. If it is impossible to settle the dispute through negotiations, it shall be considered in accordance with the legislation at the place of Administration registration, unless otherwise provided by agreements of the parties."
+        }
+    },
+    {
+        "id": 1756490795301,
+        "type": "header",
+        "data": {
+            "text": "9. Final Provisions",
+            "level": 2
+        }
+    },
+    {
+        "id": 1756490810154,
+        "type": "header",
+        "data": {
+            "text": "9.1. Separate Provisions",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490816861,
+        "type": "text",
+        "data": {
+            "text": "9.1.1. If any provision of this Agreement is deemed invalid or unenforceable, this does not entail invalidity or unenforceability of the remaining provisions."
+        }
+    },
+    {
+        "id": 1756490823673,
+        "type": "header",
+        "data": {
+            "text": "9.2. Transfer of Rights",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490831061,
+        "type": "text",
+        "data": {
+            "text": "9.2.1. Administration has the right to transfer its rights and obligations under this Agreement to third parties to improve and develop the Site, subject to compliance with User rights."
+        }
+    },
+    {
+        "id": 1756490836324,
+        "type": "header",
+        "data": {
+            "text": "9.3. Privacy Policy Agreement",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490855575,
+        "type": "text",
+        "data": {
+            "text": "9.3.1. By using the Site, the User automatically confirms that they are familiar with and agree to the privacy policy posted on the Site, and understand how their personal data is processed."
+        }
+    },
+    {
+        "id": 1756490861785,
+        "type": "header",
+        "data": {
+            "text": "9.4. Contacts and Conclusion",
+            "level": 3
+        }
+    },
+    {
+        "id": 1756490868157,
+        "type": "text",
+        "data": {
+            "text": "9.4.1. For all questions regarding this Agreement, the User can contact the support service specified on the Site."
+        }
+    },
+    {
+        "id": 1756490873069,
+        "type": "text",
+        "data": {
+            "text": "9.4.2. This Agreement comes into force for each party from the moment of acceptance by the User and is valid indefinitely."
+        }
+    },
+    {
+        "id": 1756490873089,
+        "type": "text",
+        "data": {
+            "text": "*Version dated 01\/10\/2025*"
+        }
+    }
+]

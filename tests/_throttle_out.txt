@@ -1,0 +1,106 @@
+== 1. 随机抖动 ==
+[PASS] 抖动在 [base*(1-spread), base*(1+spread)] 内 min=1.20 max=2.79
+[PASS] 抖动确实随机（出现多种值） 200 种
+[PASS] 抖动有方差 均值=1.976
+[PASS] base<=0 时抖动为 0 
+[PASS] spread 钳制到 [0,1] 
+== 2. 全局指数退避 ==
+[PASS] 初始等级 0 
+[PASS] 初始基准延迟 = base 2.0
+[PASS] 失败 1: base*factor=4s delay=4.0 level=1
+[PASS] 失败 2: 8s 8.0
+[PASS] 失败 3: 16s（指数增长） 16.0
+[PASS] 退避有上限 cap=120 120.0
+[PASS] 成功后等级 -1（缓慢恢复） level=12
+[PASS] 连续成功最终回到基线 
+[PASS] 含抖动的退避值 > 0 
+[PASS] 软信号 nudge 抬升等级 level=1
+[PASS] nudge 不超过 max_level level=3
+[PASS] reset 回到基线 
+== 3. 并发自适应 ==
+[PASS] 初始并发 = 上限 
+[PASS] 失败 -> 立刻降到 1 
+[PASS] 一次/两次成功不回升 1,1
+[PASS] 三次持续成功 -> 回升到 2 2
+[PASS] 再三次成功 -> 回升到 3 2,2,3
+[PASS] 达上限后不再上升 3,4
+[PASS] 再次失败立刻降回 1 
+[PASS] reset 恢复上限 
+[PASS] 上限 1 时恒为 1 
+== 4. steamcmd 限流/超时特征识别 ==
+[PASS] RateLimit -> rate_limit 
+[PASS] rate limit -> rate_limit 
+[PASS] 429 too many -> rate_limit 
+[PASS] Timeout -> timeout 
+[PASS] TimeoutException -> timeout 
+[PASS] timed out -> timeout 
+[PASS] Retrying... -> retry 
+[PASS] rate_limit 优先于 timeout 
+[PASS] Success 行无特征 
+[PASS] Downloading 行无特征 
+[PASS] 空行/None 无特征 
+[PASS] steamcmd_success.txt: 正常输出零误报 []
+[PASS] steamcmd_resume.txt: 仅 Retrying 软信号 [('retry', 'Connecting anonymously to Steam Public...Retrying...')]
+[PASS] rate_limit fixture 命中 1 次硬信号 1
+[PASS] timeout fixture 命中 timeout [(None,), (None,), (None,), (None,), (None,), (None,), (None,), (None,), ('timeout',), (None,)]
+== 5. 进度平滑（10Hz 限流 / 不倒退 / 速度 ETA）==
+[PASS] 连续喂入被限流（返回 None） 
+[PASS] 超过 min_interval 后下发 
+[PASS] 百分比正确 20
+[PASS] 字节不倒退 2000000
+[PASS] force 绕过限流 
+[PASS] 速度估算 > 0 4.77 MB/s
+[PASS] ETA 估算 > 0 1.0s
+[PASS] label 含百分比与速度 50% · 4.8 MB/s · 剩余 1 秒
+[PASS] 完成时 percent=100 
+[PASS] 总大小未知 -> percent=-1（不确定进度） -1
+[PASS] 不确定进度 label 为中文 下载中…
+== 6. steamcmd_engine 输出解析与续传钩子（mock）==
+[PASS] 成功 fixture 解析为 SUCCESS success
+[PASS] 成功字节数来自 Success 行 1816113
+[PASS] on_progress 首事件 = 下载开始 (1, 0, '正在下载物品 3802244270…')
+[PASS] on_progress 末事件 = 100% (100, 1816113, '完成')
+[PASS] 成功输出未触发节流信号 []
+[PASS] Success 之后的 [0%] 行不产生进度事件 [(1, 0, '正在下载物品 3802244270…'), (100, 1816113, '完成')]
+[PASS] RateLimit fixture -> FAILED failed
+[PASS] RateLimit 特征被识别 ['rate_limit']
+[PASS] 失败消息携带错误行 ERROR! Download item 3802244270 failed (RateLimitExceeded)
+[PASS] Timeout fixture -> FAILED failed
+[PASS] Timeout 特征被识别 ['timeout']
+[PASS] Resume fixture（含 Retrying...）成功 success
+[PASS] Retrying 软信号被识别 ['retry']
+[PASS] ensure_partial 报告已有字节数 2098386
+[PASS] ensure_partial 不存在的物品 = 0 
+[PASS] ensure_partial 可省略 appid 
+[PASS] ensure_partial 空目录子文件计数 
+[PASS] 停滞超时 -> FAILED（非 CANCELLED） failed: 下载停滞超时（1s 无进展）
+[PASS] 停滞消息含'停滞超时' 下载停滞超时（1s 无进展）
+== 7. DownloadManager 集成：抖动/退避/并发自适应/续传 ==
+[PASS] 管理器自动桥接引擎节流信号 
+[PASS] 失败后自动重试成功 success
+[PASS] 重试次数 = 1 1
+[PASS] rate_limit 信号到达管理器 ['rate_limit']
+[PASS] 并发已降到 1 1
+[PASS] 退避等级已升级（>=1） 1
+[PASS] 续传任务最终成功 success
+[PASS] 续传提示写入 job.message ['续传中（已有 3.0 MB）', '100%']
+[PASS] resumed_bytes 记录已有字节 3145728
+[PASS] 部分内容在下载后仍保留 
+[PASS] 3 个任务全部终态 ['failed', 'success', 'success']
+[PASS] 指定失败者 FAILED、其余成功 ['failed', 'success', 'success']
+[PASS] 失败使并发上限降到 1 1
+[PASS] 回升场景：失败在前、三次成功在后 ['failed', 'success', 'success', 'success']
+[PASS] 失败降到 1 后，三次持续成功回升到 2 2
+[PASS] 任务开始前发生了 sleep（抖动） 1 次
+[PASS] 抖动量在 [base*0.6, base*1.4] 内 [2.2531216188181133]
+[PASS] 抖动后任务仍成功 success
+[PASS] 硬信号：并发->1 1
+[PASS] 硬信号：退避等级 +1 1
+[PASS] 软信号：并发不变 1
+[PASS] 软信号：退避等级 <= 3 2
+[PASS] 失败任务终态为 FAILED failed
+[PASS] 失败后部分内容仍保留在原处 
+[PASS] 失败任务也报告续传提示 ['续传中（已有 1.0 MB）']
+[PASS] cancel 不覆盖已置的 SUCCESS 终态 success
+[PASS] cancel 后 job 只登记一次（_done 无重复） ['success']
+[PASS] cancel 不覆盖已置的 FAILED 终态 failed
