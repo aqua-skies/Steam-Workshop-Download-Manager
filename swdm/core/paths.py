@@ -6,7 +6,7 @@ import sys
 
 APP_NAME = "SWDM"
 APP_DISPLAY = "Steam 工坊下载管理器"
-APP_VERSION = "1.3.9"
+APP_VERSION = "1.4.0"
 
 
 def _user_data_root() -> str:
