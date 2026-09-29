@@ -1,0 +1,27 @@
+[PASS] 滚动窗口淘汰窗口外样本 speed=0.0
+[PASS] 窗口速度=真实增量/真实经过时间 speed=10.0
+[PASS] 长停顿后速度归 0 speed=0.0
+[PASS] 样本数封顶不超 _MAX_SAMPLES(64) n=64
+[PASS] bytes_done>=total → percent 100 pct=100
+[PASS] bytes 99% 时 percent<100（不假完成） pct=99
+[PASS] total=0 时 percent 不报 100（除零保护） pct=-1
+[PASS] appid 落库可按 appid 查询 4000
+[PASS] appid 落库可按 appid 查询(730) 730
+[PASS] 跨游戏查询互不污染
+[PASS] 空 appid 记录不进任何分组查询 appid=' ' 只回空记录
+[PASS] upsert 同 item 换 appid 是更新
+[PASS] 总记录数仍为 4（无重复） 4
+[PASS] sort=appid 升序有序（空串最前） ['', '4000', '730', '730']
+[PASS] 详情描述提取非空 '这是一个描述。\n\n第二段。'
+[PASS] 作者名提取 '开发者'
+[PASS] 依赖提取含 id 与标题 [('99001', '依赖甲'), ('99002', '依赖乙')]
+[PASS] 依赖有序（按页面顺序） ['99001', '99002']
+[PASS] 空依赖页返回空列表
+[PASS] 容器外 requiredItem 不被误抓
+[PASS] 兜底解析（robust）
+[PASS] on_throttle_signal 是列表（P3）
+[PASS] 订阅者列表可 append 且被调用 [('rate_limit', 'RateLimitExceeded')]
+[PASS] 第二个订阅者共存（不覆盖）
+[PASS] 订阅者数=2（含 manager 未接线场景）
+[PASS] DownloadManager 构造后引擎订阅者含 manager n=3
+[PASS] manager 的信号处理可被触发

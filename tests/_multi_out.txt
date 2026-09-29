@@ -1,0 +1,23 @@
+[PASS] 零账号: 默认匿名 
+[PASS] 零账号: 无保存凭据 
+[FAIL] Garry's Mod: 浏览列表 得到 0 个物品
+   汇总 Garry's Mod: {"browse": 0, "enrich": 0, "download": null, "library": false}
+[FAIL] Rust: 浏览列表 得到 0 个物品
+   汇总 Rust: {"browse": 0, "enrich": 0, "download": null, "library": false}
+[FAIL] Unturned: 浏览列表 得到 0 个物品
+   汇总 Unturned: {"browse": 0, "enrich": 0, "download": null, "library": false}
+[FAIL] DST-beta: 浏览列表 得到 0 个物品
+   汇总 DST-beta: {"browse": 0, "enrich": 0, "download": null, "library": false}
+[FAIL] Arma 3: 浏览列表 得到 0 个物品
+   汇总 Arma 3: {"browse": 0, "enrich": 0, "download": null, "library": false}
+[PASS] 清单导出有效 0 条
+[PASS] 清单导入无损 导入 0 条，库总数 0
+最终库统计: {"total": 0, "enabled": 0, "size": 0, "games": 0}
+下载成功: 0/5（另有 0 个按预期被拒绝）
+
+=== 各游戏明细 ===
+     4000: browse=  0 enrich=0 dl=None library=False
+   252490: browse=  0 enrich=0 dl=None library=False
+   304930: browse=  0 enrich=0 dl=None library=False
+   322330: browse=  0 enrich=0 dl=None library=False
+   107410: browse=  0 enrich=0 dl=None library=False
