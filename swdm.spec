@@ -56,6 +56,15 @@ datas += collect_data_files("truststore")
 # 首次使用时自动解压到数据目录）
 datas += [("swdm/resources/steamcmd.zip", "swdm/resources")]
 
+# A1（t42）：用户手册单文件交付物随包打入 manual/；
+# 菜单「帮助 > 用户手册」打开 HTML，PDF 作为离线/打印回退
+MANUAL_HTML = "docs/manual/dist/SWDM-用户手册.html"
+MANUAL_PDF = "docs/manual/dist/SWDM-用户手册.pdf"
+datas += [
+    (MANUAL_HTML, "manual"),
+    (MANUAL_PDF, "manual"),
+]
+
 # 包的元数据（keyring / truststore 的 entry point 依赖）
 datas += copy_metadata("keyring")
 datas += copy_metadata("truststore")

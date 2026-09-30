@@ -7,7 +7,7 @@ the downloads tab stays in sync (t13 双向互通).
 """
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -49,6 +49,13 @@ class LibraryTab(QWidget):
 
     # 移除记录后发出（item_id 列表），主窗口据此同步下载页（u10 互通）
     records_removed = Signal(list)
+    # P5：空状态按钮请求跳到工坊浏览页
+    navigate_requested = Signal()
+    # C1：工作线程完成回 GUI 线程（A6：Signal(list) 替代 Q_ARG(list)，
+    # bare list 在 PySide6 无 QMetaType，invokeMethod 会抛 RuntimeError）
+    updates_checked = Signal(list)
+    # C1：工作线程进度回 GUI 线程（同样用 Signal，避免 bare 类型 Q_ARG）
+    check_progress = Signal(int, int)
 
     def __init__(self, services, parent=None) -> None:
         super().__init__(parent)
@@ -120,6 +127,11 @@ class LibraryTab(QWidget):
         self.list_widget.itemDoubleClicked.connect(self._open_folder)
         root.addWidget(self.list_widget, 1)
 
+        # P5/B6：空状态可操作引导（空库 → 前往工坊；筛选无结果 → 清除筛选）
+        self._empty_state = self._build_empty_state()
+        root.addWidget(self._empty_state, 1)
+        self._empty_state.setVisible(False)
+
         # 底部操作
         bottom = QHBoxLayout()
         self.enable_btn = QPushButton("启用选中")
@@ -153,6 +165,20 @@ class LibraryTab(QWidget):
         self.refresh_btn.setProperty("secondary", True)
         self.refresh_btn.clicked.connect(self.refresh)
         bottom.addWidget(self.refresh_btn)
+
+        # C1（1.4.1）：mod 库更新检查（手动按钮版，首版不自动重下）
+        self.check_updates_btn = QPushButton("🔍 检查更新")
+        self.check_updates_btn.setProperty("secondary", True)
+        self.check_updates_btn.setToolTip(
+            "比对 Steam 最新 time_updated 与本地快照，标出有更新的 mod"
+        )
+        self.check_updates_btn.clicked.connect(self._check_updates)
+        bottom.addWidget(self.check_updates_btn)
+        self._updated_ids: set[str] = set()      # 标红集合
+        self._check_thread = None                # daemon 线程（防 UI 卡死）
+        self._check_cancel = False               # 用户取消标志
+        self.updates_checked.connect(self._on_check_updates_done)
+        self.check_progress.connect(self._set_check_progress)
         root.addLayout(bottom)
 
     # ------------------------------------------------------------- 数据
@@ -239,14 +265,83 @@ class LibraryTab(QWidget):
             # u12：行内显示游戏名（未知游戏回退 "AppID 123"），让不同游戏的 mod 可区分
             game = game_name(rec.appid) if rec.appid else "未归类"
             text = f"{status} {title}{fav}{cat} — {mb:.1f} MB · {game} · {rec.item_id}"
+            # C1（1.4.1）：有 Steam 侧更新的条目标红 + 前缀角标
+            is_updated = rec.item_id in self._updated_ids
+            if is_updated:
+                text = f"🔄 {text}"
+                item.setForeground(Qt.GlobalColor.red)
             item.setText(text)
             item.setData(Qt.ItemDataRole.UserRole, rec.item_id)
             item.setToolTip(rec.description[:300] if rec.description else text)
-            if not rec.enabled:
+            if not rec.enabled and not is_updated:
+                # 灰色不覆盖标红：更新提示比启用状态更需用户注意
                 item.setForeground(Qt.GlobalColor.gray)
             self.list_widget.addItem(item)
             if rec.preview_url:
                 self.image_loader.load(rec.preview_url, 48, 48)
+        self._refresh_empty_state(len(recs))
+
+    # ------------------------------------------------------------- 空状态（P5/B6）
+    def _build_empty_state(self) -> QWidget:
+        """空态面板：空库时给「前往工坊浏览」入口；筛选无结果时给「清除筛选」。"""
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.setContentsMargins(24, 32, 24, 32)
+        lay.setSpacing(10)
+
+        self._empty_title = QLabel("还没有 mod")
+        self._empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._empty_title.setStyleSheet("font-size: 15px; font-weight: 600;")
+        self._empty_hint = QLabel(
+            "在「工坊浏览」页选择 mod 后点击下载，\n"
+            "下载完成会自动登记到这里；也可以直接导入已有目录。"
+        )
+        self._empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._empty_go = QPushButton("前往工坊浏览")
+        self._empty_go.setProperty("secondary", True)
+        self._empty_go.clicked.connect(self.navigate_requested.emit)
+        self._empty_clear = QPushButton("清除筛选条件")
+        self._empty_clear.setProperty("secondary", True)
+        self._empty_clear.clicked.connect(self._clear_filters)
+        lay.addWidget(self._empty_title)
+        lay.addWidget(self._empty_hint)
+        lay.addWidget(self._empty_go, 0, Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(self._empty_clear, 0, Qt.AlignmentFlag.AlignCenter)
+        return w
+
+    def _refresh_empty_state(self, shown: int) -> None:
+        """shown=当前筛选后的条数。空库→引导去工坊；有库但筛选空→引导清筛选。"""
+        total = self.library.stats().get("total", 0)
+        is_empty = shown == 0
+        self._empty_state.setVisible(is_empty)
+        self.list_widget.setVisible(not is_empty)
+        if not is_empty:
+            return
+        if total == 0:
+            self._empty_title.setText("还没有 mod")
+            self._empty_hint.setText(
+                "在「工坊浏览」页选择 mod 后点击下载，\n"
+                "下载完成会自动登记到这里；也可以直接导入已有目录。"
+            )
+            self._empty_go.setVisible(True)
+            self._empty_clear.setVisible(False)
+        else:
+            self._empty_title.setText("没有匹配的 mod")
+            self._empty_hint.setText("当前筛选条件下没有结果，试试放宽条件。")
+            self._empty_go.setVisible(False)
+            self._empty_clear.setVisible(True)
+
+    def _clear_filters(self) -> None:
+        """清空关键词/游戏/分类/启用/收藏筛选后刷新。"""
+        self.search_edit.clear()
+        self.appid_combo.setCurrentIndex(0)
+        self.category_combo.setCurrentIndex(0)
+        for cb in (self.only_enabled, self.only_disabled, self.only_fav):
+            cb.blockSignals(True)
+            cb.setChecked(False)
+            cb.blockSignals(False)
+        self.refresh()
 
     def _on_image_loaded(self, url: str, pixmap) -> None:
         if pixmap is None or pixmap.isNull():
@@ -266,6 +361,113 @@ class LibraryTab(QWidget):
             for idx in self.list_widget.selectedIndexes()
             if idx.row() >= 0
         ]
+
+    # ------------------------------------------------- C1（1.4.1）库更新检查
+    def _check_updates(self) -> None:
+        """手动触发：比对 Steam 最新 time_updated，结果标红 + 一键入队。
+
+        硬约束落实：
+        1. bypass api_cache —— 走 api.check_updates（内部 _api_post 直连，
+           绝不读旧快照）；
+        2. 大库进度反馈 —— daemon 线程跑，状态栏实时显示「已检查 x/y 批」，
+           按钮在运行期间禁用防重入；
+        3. 首版只标红/角标 + 询问后一键入队（不自动重下）；
+        4. 网络或限流失败弹提示，不崩。
+        """
+        if self._check_thread is not None and self._check_thread.is_alive():
+            return                                            # 防重入
+        recs = self.library.all()
+        # 无本地快照（time_updated=0）的条目无法比对，提示但不阻塞
+        snapshotted = [r for r in recs if r.time_updated > 0]
+        if not snapshotted:
+            QMessageBox.information(
+                self, "检查更新",
+                "库内没有带时间戳快照的 mod（全部为 0），无法比对。\n"
+                "新下载的 mod 完成时会自动记录 time_updated。",
+            )
+            return
+        self._check_cancel = False
+        self._updated_ids = set()
+        self.check_updates_btn.setEnabled(False)
+        self.check_updates_btn.setText("🔍 检查中…")
+
+        def _worker() -> None:
+            try:
+                updated = self.svc.api.check_updates(
+                    [(r.item_id, r.time_updated) for r in snapshotted],
+                    progress=_report,
+                    cancel=lambda: self._check_cancel,
+                )
+            except Exception as e:  # noqa: BLE001
+                log.warning("库更新检查失败: %s", e)
+                updated = None
+            # A6：Signal(list) 跨线程投递到 GUI 线程（queued 由 Qt 保证），
+            # 失败也必须 emit，否则按钮永久卡在「检查中」
+            self.updates_checked.emit(updated or [])
+
+        def _report(done: int, total: int) -> None:
+            # 进度经信号回 GUI 线程（线程安全；A6：Signal 替代 Q_ARG(int)）
+            self.check_progress.emit(done, total)
+
+        import threading as _threading
+
+        self._check_thread = _threading.Thread(
+            target=_worker, name="swdm-lib-update-check", daemon=True,
+        )
+        self._check_thread.start()
+
+    @Slot(int, int)
+    def _set_check_progress(self, done: int, total: int) -> None:
+        """检查进度（GUI 线程）：按钮文本实时显示已比对条数。"""
+        if total > 0:
+            self.check_updates_btn.setText(f"🔍 检查中 {done}/{total}")
+
+    @Slot(list)
+    def _on_check_updates_done(self, updated: list) -> None:
+        """检查结束（GUI 线程）：恢复按钮、标红、询问一键入队。"""
+        self.check_updates_btn.setEnabled(True)
+        self.check_updates_btn.setText("🔍 检查更新")
+        if not updated:
+            QMessageBox.information(
+                self, "检查更新", "没有发现需要更新的 mod。",
+            )
+            return
+        self._updated_ids = set(updated)
+        self.refresh()                                        # 触发 _populate 标红
+        to_update = ", ".join(updated[:8]) + ("…" if len(updated) > 8 else "")
+        ans = QMessageBox.question(
+            self, "发现更新",
+            f"{len(updated)} 个 mod 有新版本：\n{to_update}\n\n"
+            f"现在加入下载队列重新下载？（不会自动开始下载之外的操作）",
+        )
+        if ans != QMessageBox.StandardButton.Yes:
+            return
+        # 一键入队：从库记录重建 WorkshopItem，走标准队列（零状态机改动）
+        from swdm.core.steam_api import WorkshopItem
+
+        ok_ids: list[str] = []
+        for item_id in updated:
+            rec = self.library.get(item_id)
+            if rec is None:
+                continue
+            self.svc.downloader.enqueue(
+                WorkshopItem(
+                    publishedfileid=rec.item_id,
+                    appid=rec.appid,
+                    title=rec.title,
+                    preview_url=rec.preview_url,
+                    file_size=rec.file_size,
+                ),
+                rec.appid,
+            )
+            ok_ids.append(item_id)
+        # 入队后清除标红（已在队列里，不需要持续红色提示）
+        self._updated_ids = set()
+        self.refresh()
+        QMessageBox.information(
+            self, "已加入队列",
+            f"{len(ok_ids)} 个 mod 已加入下载队列。",
+        )
 
     def _set_selected_enabled(self, enabled: bool) -> None:
         for item_id in self._selected_ids():

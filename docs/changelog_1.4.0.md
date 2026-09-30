@@ -61,6 +61,8 @@
 
 **诚实披露**：GGNetwork **从未做过实网端到端验证**（本机代理 DNS/超时不稳，仅验证离线 mock 路径）。默认通道=steamcmd 使其不影响默认路径，用户不主动选择不到该通道。t23 讨论组裁决：t24 打包前优先尝试实网冒烟；做不到则标"实验性"后缀（t25 复测时 gui-tester 会做真下载冒烟）。
 
+> **2026-09-29 由 t32 补测闭环**（详见 docs/ggnetwork_retest_1.4.1.md）：本机直连实测推翻了「本机做不了」的前提（api/cdn.ggntw.com 不受 steamcommunity fake-IP 阻断影响）。补测发现两个严重 bug，使该通道在 1.4.0 中**从未实际生效**（用户无感知，因默认链不经过）：① `resolve()` 的 `queue.position>0 → 返回空` 守卫与实测语义相反（成功响应同时带 position=1 与有效 url）；② api 的 url 是 HTML 落地页而非文件。修复后端到端实测通过（Wiremod 160250458：20,685,180 字节 .gma，GMAD 魔数，尺寸 delta=0）。风险定级维持 🟡（第三方代理 ToS 风险，非服务端账号池），受限 App 样本未取得（环境阻断）→ 不上调 🔴。
+
 ---
 
 ## 四、1.3.10 遗留项（t22，search-fixer）7/7
@@ -184,7 +186,7 @@
 
 ### 9.4 已知限制（诚实披露，不阻塞交付）
 
-1. **GGNetwork 实网端到端未实测**：本机 fake-IP 代理环境下 live-network 脚本全失败，全部为离线 mock 路径验证（匿名可用性 / queue 守卫 / 坏包回退 / 链内位置 / 限速器）。缓解：默认通道=steamcmd 使默认链路不经过该通道，UI 与 config 已标「实验性」→ **1.4.1 由真实网络环境一方补测**
+1. **GGNetwork 实网端到端**（2026-09-29 由 t32 补测闭环，见 docs/ggnetwork_retest_1.4.1.md）：**实测在本机直连可用**（api/cdn.ggntw.com 不受 steamcommunity fake-IP 阻断影响——1.4.0「本机做不了」的判断只适用于 steamcommunity 抓取）。补测发现并修复两个使该通道**从未实际生效**的严重 bug：① `resolve()` 的 `queue.position>0 → 返回空` 守卫与实测语义相反（每个成功响应都同时带 position=1 与有效 url，守卫把所有真实物品的 url 丢弃）；② api 返回的 url 是 HTML 落地页（`ggntw.com/download/<token>`），真实文件在 `cdn.ggntw.com/<token>`。修复后端到端实测通过（Wiremod 160250458 → 6.4MB zip → 20,685,180 字节 .gma，GMAD 魔数，与 Steam 声明尺寸 delta=0）。**残留风险声明**：第三方代理通道，ToS §5.2.2 限负载，后端行为可变（结论仅对 2026-09-29 版本有效），维持「实验性」标注 + 不进默认链。受限 App（DayZ/Barotrauma）样本因本机 steamcommunity 浏览页被 SNI 阻断而未取得，无证据该通道能解析受限 App 内容 → 风险定级维持 🟡 不上调
 2. **读图工具本机不可用**：GUI 视觉检查以几何量化兜底（mapTo 相对坐标 + 显式行高/间距断言）
 
 ### 9.5 闸门结论
@@ -208,8 +210,8 @@
 - `list_channels` 下拉显示"未配置"状态（当前只反映启用态，用户不知道自己少了一个可选项）
 - preferred=cdn 匿名用户 resolve 前查登录态直接跳过（省掉每次先尝试失败再回退的等待）
 - ⚠ / 回退消息落库（mod 库元数据标记"曾触发体积告警"，事后可见）
-- ggnetwork 探测动态化（当前固定物品 id 2537024972）
+- ~~ggnetwork 探测动态化（当前固定物品 id 2537024972）~~ → **t32 已收**：探测物品轮换（3 个实测可用 id）+ 响应须带可用 url 且无 error；原固定 id 2537024972 已被 Steam 删除（result=9）
 - 搜索冷却结束自动重发一次待选词（gui-tester 非阻塞建议）
-- GGNetwork 实网长时验证（本版仅离线 mock + 可能的打包前冒烟）
+- ~~GGNetwork 实网长时验证（本版仅离线 mock + 可能的打包前冒烟）~~ → **t32 已收**：本机直连实测 + 端到端通过 + 两个严重 bug 修复（position 守卫 / 落地页改写），见 docs/ggnetwork_retest_1.4.1.md
 - `test_legacy_format` / `test_page_parser` 夹具修复（1.3.8 起既有非回归，消除基线噪声）
 - 源码注释 + 中英文适配（t30）

@@ -627,3 +627,178 @@
 - **原则执行**：只改注释/docstring/文档，**未改任何可执行逻辑**；依赖 `git diff --stat` 与 compileall 双重确认。
 - **验证**：关键回归 test_providers / test_download_fixes / test_core_sweep / test_gui_sweep / test_throttle / test_all_buttons / test_cross_features 全部 ALL PASS；直跑 pwsh 时需带 `PYTHONUTF8=1`，否则 ⚠/✓ 字符在 GBK 控制台 print 假崩（显示层问题，非代码缺陷）。
 - **诚实记录**：deps_parser.py docstring 替换时出现过一次重复头残留（edit 工具尾部空白匹配失败），用临时 python 脚本按行切除并 ast.parse 校验修复，脚本用后即删。
+
+---
+
+## 1.4.1 迭代记录（t29–t42）｜2026-09-29 → 2026-09-30
+
+> 组织方式同前：每条含任务编号/成员/改动要点/文件/结论。t30 已在上节记录，此处不重复。
+> 1.4.1 十功能项 t32–t41 全部完成并逐项收口；t42 手册为代码冻结后收尾项；打包闸门 t43–t46 在 2026-09-30 代码冻结期执行。
+
+### t29｜git 仓库维护 + 项目文档基建｜2026-09-29 · recorder
+
+- **改动**：`docs/git_workflow.md`（提交规范：类型/范围/摘要/必填 tXX 编号；main 单线；推送分工；.gitignore 维护；中英文适配政策）；`docs/project_structure.md`（全 40 个 `.py` 逐文件职责索引，读源码 grep class/def 签名后写，含迭代溯源 t1–t28）；`README.en.md` + `README.md` 双语互链，中文版对齐 1.4.0（补 providers/ 架构树与多通道链章节）。
+- **结论**：三交付物本地提交 commit 6e88510（待 captain 推送）。无逻辑改动。
+
+### t31｜并行讨论组：1.4.1 功能删减/改进/添加可行性评审｜2026-09-29 · installer-fixer 主持（attempt 7a68a501）
+
+- **任务**：12 项候选清单评审，五方逐条裁决，零原则性反对。
+- **结论**：**纳入 10 项**（A1 用户手册 / A2 QSS / A3 README 改进后 / B1 详情磁盘缓存 P0 / B2 预取下一页 P0 / B3 剪贴板入队 P0 含 B5 并入 / C1 库更新检查 / C2 失败原因枚举 / C3 私人账户 provider / C5 GGNetwork 补测**最先**）；**延后 1.4.2 三项**（A4 图标 / C4 集合下载 / S5 缩略图缓存）；**砍 0 项**。时序：C5 最先（结论驱动去留 + 反影响 C2/C4）→ B1/B2/B3+A2+C1+C3 并行 → A1（代码冻结后）+ C2 收尾 → A3 随时。
+- **产出**：`docs/feature_review_1.4.1.md`（8 节）。两处计划外提问裁决：B5 并入 B3；S5 延后并要求 plan 补写理由；1.4.0 changelog 遗留 5 项折叠为技术债（见 t36/t40 收口）。
+
+### t32｜C5 GGNetwork 真下载补测 + 后端登录态探测｜2026-09-29 · search-fixer（attempt 2 e8701a76）
+
+- **改动**：`swdm/core/providers/ggnetwork.py` resolve() url 优先语义（position>0 且无 url 才回退；原守卫与实测语义相反——成功响应都同时带 position=1 与有效 url）+ api 返回的 url 是 HTML 落地页，须改写为 cdn.ggntw.com；探测物品轮换（原固定 id 2537024972 已被 Steam 删除，换可轮换探测）。
+- **结论**：**推翻 1.4.0「本机做不了」前提**——api/cdn.ggntw.com 本机直连可用（不受 steamcommunity fake-IP/SNI 阻断），该判断只适用于 steamcommunity。live E2E 通过（160250458 → 20685180 字节 .gma，GMAD 校验，delta=0）。后端对公开内容匿名开放，风险维持 🟡 不上调（受限 App 样本 0）。两个严重 bug 使该通道自 1.4.0 起从未实际生效（默认链不经过，用户无感知）。
+- **产出**：`docs/ggnetwork_retest_1.4.1.md`。
+
+### t33｜B1 详情页磁盘缓存（TTL + time_updated 双失效）｜2026-09-29 · core-tester（attempt 2 b3936bbd，前次产出已并入树 + 本轮验证收口）
+
+- **改动**：`swdm/core/detail_cache.py`（新建：get/put/invalidate，命中 `copy.deepcopy(html)` 延伸深拷贝保护到磁盘层，`os.replace` 原子写，JSON 非法/缺字段/文件缺失全当 miss 并清理）；`swdm/gui/settings_tab.py` 开关 + QSpinBox TTL（0–720 小时，0=关闭该层）+ 「🧹 立即清除全部详情缓存」；config `network.detail_cache_enabled`(True) / `detail_cache_ttl_hours`(24)；time_updated 不一致立即判 miss 并物理删除；详情弹窗「🔄 刷新」→ `_refresh_detail` 清内存条目 + force_refresh=True 重建 worker（手动刷新 bypass）。
+- **测试**：`tests/test_t33_detail_cache.py` 33 项 ALL PASS（四硬约束逐条：深拷贝/双失效可配/损坏容忍/手动 bypass）。
+- **结论**：全量 64 脚本 62 PASS / 2 FAIL（bulk_games 实网 + legacy_format 既有 flake），零代码回归；测试侧修正 test_core_sweep `_bare_api()` 补 CircuitBreaker 与 test_rettest_140 C3b 改公开 API（t34 委托后的迁移）。
+
+### t34｜B2 预取下一页入 _page_cache｜2026-09-29 · core-tester（attempt 2）
+
+- **改动**：`swdm/core/circuit.py`（新建 CircuitBreaker：连续 3 次失败或 `requests.ConnectionError` → 冷却 15s，record_success 只重置 streak 忠实 t22 语义，线程安全）；`swdm/core/game_search.py` 与 `swdm/core/steam_api.py` 熔断逻辑委托 CircuitBreaker（browse 挂独立 _browse_breaker，语义不变）；`swdm/gui/workshop_tab.py` `_schedule_prefetch_next_page`（800ms 单次 QTimer + daemon `threading.Thread` 直调 `api.browse(page+1)` 只暖缓存从不渲染；守卫链：去重 → _priority_pending>0 礼让 → 熔断冷却跳过 → appid 空 → 代际再校验 → ApiCache 已有 key 跳过；缓存键与 browse() 内部完全一致）。
+- **关键修复**：首发 BrowseWorker(QThread) 版本导致 test_gui_sweep 在 run_all 内进程挂死（非守护 QThread + fake-IP 代理黑洞网络请求阻塞解释器退出）→ 改 daemon 线程根治且更精简。
+- **测试**：`tests/test_t34_nextpage_prefetch.py` 25 项 ALL PASS；全量（合并 t34+t35+t41 终态树）**64 脚本 64 PASS / 0 FAIL / 0 NORESULT 历史首次**。
+
+### t35｜B3 剪贴板监听入队 + B5 批量粘贴导入｜2026-09-29 · gui-tester（attempt 3）
+
+- **改动**：`swdm/gui/main_window.py` `_start_clipboard_watch`（config `general.clipboard_watch` 默认开；复制工坊物品链接或纯物品 ID 自动解析入队，只在内容匹配时解析、不记录/缓存剪贴板内容）；`swdm/gui/workshop_tab.py` **⋯ 更多** 菜单「🔗 批量粘贴导入…」（B5 批量链接/ID 一次入队）；搜索冷却自动重发（t16 登记的技术债并入：连续快速搜索时自动合并稍后重发）。
+- **测试**：`tests/test_b3_clipboard.py` ALL PASS。与 t34/t41 合并树回归 64/64。
+
+### t36｜A2 QSS 界面美化 P1–P5 + B6 空状态引导 + 技术债 ①②｜2026-09-29 · gui-tester（attempt 2 b99117e8）
+
+- **改动**：`swdm/gui/styles.py` 与各 Tab——P1 滚动条（handle 描边 + pressed 态，dark/light 双主题纵横双向）；P2 表头（min-height 24px + hover/pressed + 右分隔线，只动 QHeaderView::section）；P3 进度条（`[status="done"]` 绿 / `[status="failed"]` 红，downloads_tab 终态 setProperty + unpolish/polish 重绘）；P4 跟随系统（`qss("auto")` 走 `QGuiApplication.styleHints().colorScheme`，MainWindow._watch_system_theme 标志位增减连接避免 disconnect RuntimeWarning，设置页下拉加「跟随系统」，**主题切换不再要求重启**）；P5/B6 空态（库空→「前往工坊浏览」、有库筛选空→「清除筛选条件」、下载空队列→「前往工坊浏览」，navigate_requested→MainWindow._goto_workshop_tab）。
+- **技术债**：① registry.list_channels 经 _credential_state 返回 NO_KEY 时设置页标签「（未配置，链内自动跳过）」；② `test_page_parser` 夹具改 requiredtags[] 表单控件形态 + `test_legacy_format` 网络感知重写（live 对 API file_size 硬断言 / 离线 SKIP）。
+- **测试**：`tests/test_qss_p1_p5.py`（新，36 项）+ gui_sweep/gui_offline/all_buttons/cross_features/rettest_140(55)/t22_1310(27)/providers(84)/page_parser/legacy_format 全 ALL PASS；**run_all.ps1 63/63 PASS 零失败（历史首次）**；compileall exit 0。
+
+### t37｜C1 mod 库更新检查（time_updated 比对，手动按钮版）｜2026-09-29/30 · core-tester（attempt 3 收口）
+
+- **改动**：`swdm/core/steam_api.py:446` `check_updates(records, progress, cancel)`（批量比对 time_updated，**50 条/批**，每批前 `_endpoint_throttle("/ISteamRemoteStorage/", priority=False)`；经 `get_file_details→_api_post` **直连不经 api_cache**（比对的永远是 Steam 当前值）；单批异常当该批判未知跳过不传播不误标；无快照 tu=0 跳过）；`steam_api.py:307-316` `_ENDPOINT_INTERVALS` 新增 `"/ISteamRemoteStorage/": 3.0`；`swdm/gui/library_tab.py` 「🔍 检查更新」按钮 → daemon 线程（防 UI 卡死 + 防重入）→ progress 经 QMetaObject.invokeMethod 回 GUI 线程实时改按钮文本「🔍 检查中 x/y」→ `_populate` 标红（🔄 前缀 + 红色，灰色不覆盖标红）→ QMessageBox 询问「现在加入下载队列？」→ 同意后从库记录重建 WorkshopItem 走 `svc.downloader.enqueue` 标准队列（**downloader.py 零改动**）→ 入队后清标红。
+- **四硬约束**：bypass api_cache / 大库进度反馈（500 条分 10 批 U6/U6b/U6c + cancel 中止 U7）/ 首版只标红+一键入队（V3/V4/V5/V9）/ 批 50 + 批复用端点基准（U3/U6）。
+- **测试**：`tests/test_t37_lib_updates.py` 34 项 ALL PASS（U 核心 15 + V GUI 19）。全量 66 脚本 62 PASS / 4 FAIL 全实网环境（零代码回归）。
+- **后续**（captain 2026-09-30 16:33 裁决）：UX 审计发现 A6——`library_tab.py:398-401` `Q_ARG(list)` 完成回调失效致 C1 端到端卡死（Q_ARG 对裸 list 类型不工作，int 正常）——并入 t43 打包前修复；U3 检查更新取消死代码（按钮禁用 + `_check_cancel` 恒 False）入 1.4.2 修复池。t44 复测须覆盖真实线程路径（daemon worker → `_on_check_updates_done` 完整回调，t37 测试盲区：原先直调收尾绕过）。
+
+### t38｜C3 私人账户 provider（steamcmd +login）｜2026-09-29 · search-fixer（attempt 3 ac30a39d）
+
+- **架构**：`swdm/core/providers/account_steamcmd.py`（新建：display_name「SteamCMD（私人账号·自己有权内容）」，**默认链不含**——build_chain 断言保证；匿名态/会话级失活时与「未配置凭据」同等待遇被跳过）。共享/兜底引擎**恒匿名** + 账号专属引擎（services.refresh_engine 不再下发凭据；账号路径经 `_run_steamcmd(engine=专属引擎)` 共用串行锁，两 steamcmd 进程永不并发）；settings `_login_engine_factory` 测试登录现场造带凭据引擎测完即弃。
+- **四风控**：①凭据本地存储等级明示（keyring 优先 + 本地混淆回退；不进日志/不进导出包/不上传任何服务器，匿名模式零收集）；②登录失败且疑似 Steam Guard 时弹验证码入口并提示「仅需一次」（本机验证成功后 steamcmd 缓存 sentry）；③账号问题不阻塞兜底下载（共享引擎恒匿名，结构上不可能阻塞）；④会话级失活（账号 provider 失败后与未配置同等待遇）。
+- **产出**：`docs/c3_account_provider_1.4.1.md`。设置页「Steam 账号（登录方式）」切手动登录即出现该通道。
+
+### t39｜A3 README 截图 + badge 墙 + 能力清单 + 已知限制｜2026-09-29 · installer-fixer（attempt 91d476a3）
+
+- **改动**：badge 墙 7 枚 shields.io 静态 SVG（双语 README 同步）；`tools/make_readme_shots.py` 固定夹具数据 offscreen 渲染 4 张 1280x800 PNG（workshop/downloads/library/settings），脚本 RESULT: ALL PASS；「功能速览」能力清单四分组共 18 条（双语同步）；已知限制 4→5 条（补受限 App 需自有账号的诚实披露 + 1.4.2 排期）。未改任何业务代码。
+- **诚实披露**：成图需人工目检（本机读图工具不可用——sharp ERR_DLOPEN_FAILED / modlens key invalid），已在 README 注明，延后 1.4.1 交付前由用户目检。
+
+### t40｜技术债：cdn_downloader.py 门面移除｜2026-09-29 · installer-fixer（attempt 2 e46df9a6）
+
+- **改动**：`swdm/core/cdn_downloader.py` 门面文件删除（生产代码零引用）；3 个测试迁 CDNProvider 直连 API——`tests/test_cdn.py`（download_file→http_download、download_item_cdn→download、resolve_file_url→resolve）、`tests/test_core_sweep.py` 第 5 节（206 续传/200 重写/403/匿名空直链 5 项）、`tests/test_providers.py` 第 11 节（test_compat_facade→test_cdn_provider_direct）。三者 RESULT 全 PASS。
+
+### t41｜C2 item 级失败原因枚举 + 受限物品提示登录｜2026-09-29 · search-fixer（attempt 2）
+
+- **改动**：`swdm/core/failure_reason.py`（新建，纯函数）：8 桶分类——DISK_FULL / EMPTY_SUCCESS（E③ 报 SUCCESS 但 0 字节）/ RATE_LIMITED / NETWORK / LOGIN_FAILED（凭据，与所有权区分）/ ITEM_GONE / ACCOUNT_NEEDED（仅两条正向信号支持）/ GENERIC（**兜底红线**：不区分权限/网络/限流）。判定顺序保证 steamcmd 通用 I/O 串（`ERROR! I/O Operation Failed` / `Failed to download item` / `Not Logged In` 除外）不误判为 ACCOUNT_NEEDED（误报教训：#13474 论证 steamcmd I/O 失败确实不区分原因）；`render_failure` 渲染用户可读文案（登录引导但不承诺因果）。downloader 终态路径调用 classify_failure/render_failure 填 job.message（下载页「信息」列）。
+- **产出**：`docs/c2_failure_reason_1.4.1.md`。
+
+### t42｜A1 用户手册（代码冻结后写）｜2026-09-30 · scribe（attempt 8 d7f1ead4-0b9b-4974-9e09-3dcb9b3bbf91）
+
+- **任务**：界面状态随实现漂移，文档骗人比没有更伤——故代码冻结后写。
+- **交付物（五）**：
+  1. `docs/manual/SWDM用户手册.md`（27KB）——九章中文（0 扉页版本+日期+许可证 / 1 快速上手 5 步 / 2 核心概念（AppID vs publishedfileid、provider 链与回退、匿名与私人账号、mod 包、依赖、冲突）/ 3 工坊浏览 / 4 下载队列 / 5 模组库 / 6 设置 / 7 调试 / 8 故障排查 FAQ（429/403、steamcmd 失败、缺依赖、解包失败、中文路径）/ 9 帮我们改进），任务导向编号步骤，**界面状态以冻结后实测为准**（调试 Tab 开关重启生效、暂停/继续合并单按钮、通道下拉动态生成+可用性标注、C3 设置页登录方式切换、C2 八桶文案逐条对 `failure_reason.render_failure` 原文核对）；扉页 **版本 1.4.1** 绑定声明 + 与 `../changelog_1.4.1.md` 互链。
+  2. `docs/manual/images/manual-*.png` ×5——固定夹具 offscreen 截图（`tools/make_manual_shots.py`：工坊搜索+标签 / 详情弹窗含依赖+冲突+评论 / 下载队列进行中+排队+C2 失败行 / 库页 C1 标红 / 设置页全展开），RESULT: ALL PASS。
+  3. `tools/build_manual.py`——markdown 3.11 → 单文件 HTML（CSS 内联 + 5 图 base64 内嵌）+ 无头 Edge 打印 PDF；锚点解析/图片内嵌/扉页版本声明三重校验 RESULT: ALL PASS。坑：python-markdown 默认 slugify 经 NFKD+ascii encode **丢弃全部中文**，不能用于 CJK 锚点——改自定义 unicode 保留 slug 与手写目录链接同规则。
+  4. dist 产物：`docs/manual/dist/SWDM-用户手册.html`（137373B）+ `.pdf`（1338193B）。
+  5. `tests/test_manual.py`（入 run_all）：11 项断言 + 1 项 SKIP 全 PASS（源文件/扉页版本==APP_VERSION/5 图存在/目录锚点/HTML 文档头+内嵌 5 图/PDF 非空）；**帮助入口检查在 `main_window.py` 出现「用户手册」字样（packager 接线后）自动转硬断言**。
+- **诚实披露**：读图工具本机不可用，5 截图仅验证生成不崩溃+尺寸非零，**交付前需人工目检**（同 t39 口径）。
+- **验证**：make_manual_shots 5/5 PASS；build_manual ALL PASS（两轮）；test_manual ALL PASS（两轮）；compileall swdm+tests+tools exit 0。run_all 全量在 test_bulk_games 实网挂起（既有代理失效环境问题）后终止，全套件验证属 t43 闸门。
+
+---
+
+## 成员换血事件（路由失效）｜2026-09-30 15:51 · scribe 记录
+
+- **事件**：会话模型从 atria-asi 切到 duanyan/Atria-Dawn-Preview 后，AgentTeams 5 名成员仍挂在失效的 atria-asi 路由，t42/t43 连续失败报 `no adapter registered for provider atria-asi`（重试无效，确认路由级故障）。
+- **处置**：移除全部 5 名旧成员（installer-fixer / recorder / search-fixer / gui-tester / core-tester，**名称不可复用**），以新名称重新添加 5 名（**packager**（安装包与进程清理专家）/ **scribe**（工程记录员与信息中枢）/ **fixer**（搜索与下载链修复）/ **gui-checker**（GUI 功能测试）/ **core-checker**（核心逻辑测试）），秉承 captain 当前 duanyan 路由（duanyan 不支持 reasoning_effort=max，添加时须省略）。
+- **角色错配修正**：新成员自动从池中认领任务导致角色错配（认领与角色不符），用 fixer 做中转三步交换回正确归属。
+- **工程启示**（已落项目记忆）：①换模型路由后 AgentTeams 成员路由不会自动更新，需**移除+重新添加**（名称需更换）；②`add_member` 自动认领池中任务可能与角色错配，需手动交换；③闸门链重派：t42 手册→scribe（第 8 次尝试）、t43 打包 1.4.1→packager（第 7 次）、t44 GUI 复测→gui-checker、t45 核心复测→core-checker、t46 六方评审→fixer；t44/t45 等 t43，t46 等 t44+t45。间歇性后台 subagent 失败消息是旧成员会话死亡回响，无影响。
+
+---
+
+## 打包闸门期事件（只读审计 + 裁决）｜2026-09-30 16:12–16:33 · scribe 记录
+
+- captain 并行调度铺开（1.4.1 代码冻结期，全部只读/文档/调研，不污染交付）：scribe 认领 t47（本条）+ 3 个只读审计 subagent 并行：核心静态审计、UX+手册一致性核对、竞品新一轮调研（用户级规则要求的定期调研，服务 1.4.2 规划）。
+- **UX 一致性审计结论**：手册 E11 发布阻塞（三处链接 `docs/changelog_1.4.1.md` 不存在，**packager 创建 changelog 即解**）；UX 候选 13 条（P0×4：工坊页中央空态 / 清除已完成实清失败行 / 检查更新不可取消 / 勾选入队不清空）；U3=t37 契约「可取消」在 UI 层是死代码（`library_tab.py:174/382` `_check_cancel` 恒 False、按钮禁用），已并入 t44 必检与 t46 评审议程。
+- **核心审计**：`docs/core_audit_1.4.2.md` —— P0×4（`throttle.py:86` 退避等级无 clamp，`2.0**1024` 溢出击穿工作线程→队列死锁，夜间挂机+死网可达；`downloader.py:305` cancel() 杀错引擎，账号通道子进程不被中断；steamcmd_engine 测试登录绕过 `_engine_lock` 与下载竞态；AdaptiveConcurrency._max 构造时固化致并发配置永不生效）+ P1×3 + P2×9 + P3×13，修复集约 1–1.5 人日建议 1.4.2；**确认无误报保护项**（A-P1 竞态闭环 / 深拷贝三路径 / 零除 guards / 路径穿越防御 / 凭据四风控，不得误改）。
+- **运营教训**：AgentTeams 运行态 edit_plan 会因历史任务 assignee 指向已移除成员而整体校验失败（`task t1 assignee not an active member`），此时改用持久消息向成员追加任务范围；已建 t48（scribe，deps t47）修手册勘误+重构建。
+- **captain 裁决 16:33**：① A6（`library_tab.py:398-401` `Q_ARG(list)` 完成回调失效，致 C1 端到端卡死）**修在 1.4.1 打包前**，并入 packager 的 t43 范围（参照 1.3.8 t9 议题并入打包先例）；理由：C1 是 1.4.1 十主功能之一，端到端失效违反「保证基本功能正常运行」。② U3 与「最大并发下载配置静默失败」→ 1.4.2 修复池（core_audit P0-4 / ux_audit U3 已收）；理由：两者核心契约层工作正常，属 UI 可达性/配置传播增强。③ t44 复测要求：三项结论正式写入 `docs/retest_round1_gui_1.4.1.md`；A6 修复后必须覆盖真实线程路径；`tests/test_t44_retest_gui.py` A6 组与 `test_qarg_list_repro.py` 需在修复落地后同步改为断言修复后行为（当前断言 buggy 行为，修复会 FAIL）。
+
+---
+
+## 1.4.1 交付文档索引｜2026-09-30 · scribe 整理
+
+| 文档 | 产出任务/成员 | 位置与说明 |
+|---|---|---|
+| 1.4.1 变更记录 | t43 packager | `docs/changelog_1.4.1.md`（打包闸门产出；覆盖 t32 C5 / t33 B1 / t34 B2 / t35 B3+B5 / t36 A2+B6 / t37 C1 / t38 C3 / t39 A3 / t40 技术债 / t41 C2 / t42 手册，每条带任务编号与文件） |
+| 用户手册 | t42 scribe | `docs/manual/SWDM用户手册.md`（单一事实源）+ `docs/manual/images/`（5 截图）+ `docs/manual/dist/`（构建产物 SWDM-用户手册.html/.pdf） |
+| 功能评审记录 | t31 installer-fixer | `docs/feature_review_1.4.1.md`（8 节，12 项裁决） |
+| C5 补测报告 | t32 search-fixer | `docs/ggnetwork_retest_1.4.1.md` |
+| C2 失败枚举设计 | t41 search-fixer | `docs/c2_failure_reason_1.4.1.md` |
+| C3 私人账户设计 | t38 search-fixer | `docs/c3_account_provider_1.4.1.md` |
+| 复测报告（GUI 第一轮） | t44 gui-checker | `docs/retest_round1_gui_1.4.1.md`（**产出后由 t44 成员补入本索引**） |
+| 复测报告（核心第二轮） | t45 core-checker | `docs/retest_round2_core_1.4.1.md`（**产出后由 t45 成员补入本索引**） |
+| 核心审计（1.4.2 输入） | captain 只读审计 | `docs/core_audit_1.4.2.md` |
+| 竞品调研（1.4.2 输入） | captain 只读审计 | 见 captain 调度记录（服务 1.4.2 规划） |
+
+> 历史版本文档索引延续：1.3.8/1.3.9/1.4.0 各 changelog + 复测报告 + feature_review 同目录，本日志既有段落可追溯。
+
+---
+
+## 1.4.1 交付闸门链（t43–t46）全记录｜2026-09-30 · scribe 收口（captain 指令）
+
+> **1.4.1 正式交付**（t46 六方评审 6/6 同意、零反对，闸门通过）：`installer\Output\SWDM-Setup-1.4.1.exe` 45.5MB（47756369B），版本号双端 1.4.1，tag v1.4.1 由 captain 同步提交。
+
+### t43｜打包 1.4.1 + A6 修复 + 帮助菜单接线 + 手册随包｜2026-09-30 · captain 接管
+
+- **背景**：packager 连续尝试未收口，captain 直接接管打包任务（参照 1.3.8 t5/t17 先例：打包终态由最具上下文者执行）。
+- **A6 修复（并入打包前，1.4.1 范围内）**：`swdm/gui/library_tab.py` 新增 `updates_checked = Signal(list)`——**用 Qt Signal(list) 替代 `Q_ARG(list)` 的 invokeMethod 投递**（bare list 在 PySide6 无 QMetaType，`QMetaObject.invokeMethod` 抛 RuntimeError，致 t37 C1「检查更新」完成回调永不触发、端到端卡死；同文件 `records_removed = Signal(list)` 同类模式已在 t13 验证可行）。修复后 C1 链路 daemon worker → `updates_checked` → `_on_check_updates_done` 全通（t44 复测覆盖真实线程路径，堵住 t37 测试盲区——原测试直调收尾绕过回调）。
+- **帮助菜单接线（A1/t42 收尾）**：`swdm/gui/main_window.py` 新增菜单栏「帮助(&H)」→「用户手册(&M)」（`self.manual_action`，打开随包单文件 HTML，缺 HTML 时回退 PDF，均无才报错）。**t42 设计的自启断言生效**：`tests/test_manual.py` 探测 `main_window.py` 含「用户手册」字样后，帮助入口检查由 SKIP 转为硬断言（动作存在 + 目标文件存在）。
+- **版本 bump + 手册随包**：版本号双端 1.4.1（`paths.py` APP_VERSION + `swdm.iss` SWDMVersion，AppVersion/VersionInfoVersion/OutputBaseFilename 联动）；PyInstaller 打入 `docs/manual/dist/` 两文件至 `build\dist\SWDM\_internal\manual\`（HTML + PDF），MD5 与 dist 一致（`ABB3462D736BB7FA046D93FCA589A32A`，t48 勘误已并入终态，scribe 独立复验）。
+- **打包**：PyInstaller → ISCC → `installer\Output\SWDM-Setup-1.4.1.exe` 45.5MB；全量回归 88 脚本 87 PASS / 1 FAIL（实网环境性）。
+- **changelog**：`docs/changelog_1.4.1.md` 十六节落盘（t32-t42 全部功能 + 技术债 + A6 + §十四汇总验证与全量回归 + §十五已知限制与下一步 + §十六评审记录），手册三处互链自通。
+
+### t44｜bug 复测第一轮：用户视角验证 1.4.1｜gui-checker
+
+- 56 + 30 项检查 ALL PASS（`tests/test_t44_retest_gui.py`，含 A6 修复后真实线程路径复测）；exe 冒烟运行 10 秒存活、标题栏 v1.4.1。
+- 特征化确认两项 1.4.2 候选属实（非阻塞，captain 16:33 裁决归 1.4.2 修复池）：**U3**「检查更新取消」UI 层死代码（`library_tab.py` 按钮禁用 + `_check_cancel` 恒 False）；**P0-4** 最大并发下载配置静默失败（`AdaptiveConcurrency._max` 构造时固化）。
+- 结论落 `docs/retest_round1_gui_1.4.1.md`。
+
+### t45｜bug 复测第二轮：核心逻辑独立复测｜core-checker（attempt 8d9b412a）
+
+- **111 项独立检查 ALL PASS**（`tests/test_t45_retest.py`）+ **skip 基线全量回归 69/69**（零新增失败）+ 已知 flake（`test_bulk_games`/`test_multi_game`/`test_page_content` 实网、`test_legacy_format` mock 漂移）单跑确认环境性。
+- **三项测试基础设施修复**（使 69/69 稳定可复现）：
+  1. **run_all.ps1 编码脚阱**：UTF-8 无 BOM 脚本在旧版 PowerShell 下中文字符被 GBK 误解，污染紧邻的 `$skip` 赋值行——**注释行被吞进 `$skip` 数组、skip 列表静默失效**（实网脚本被全数纳入回归）。修复：脚本头部明确编码声明并隔离注释与赋值（现 `$skip` 含 `test_bulk_games`/`test_multi_game`/`test_page_content` 等 21 项）；
+  2. **sys.path 补行**：脚本式测试在仓库根外运行时找不到包，统一补 `sys.path.insert`；
+  3. **`os._exit(0)` 规避 teardown 崩溃**：Windows 下 Qt 线程拆卸偶发 `-1073740791` 硬崩溃会丢失 stdout RESULT 行（t3 起已知的判定标准问题）——关键判定路径在 Qt 拆卸前以 `os._exit(0)` 显式退出保住 RESULT 行（t42 条目记录的 flush=True 是同一问题的另一层防御）。
+- 结论落 `docs/retest_round2_core_1.4.1.md`。
+
+### t46｜六方交付评审：一致通过 1.4.1｜fixer 主持（attempt 40372c6c）
+
+- **六方投票 6/6 同意、零反对**：fixer（主持）+ captain + packager + scribe + gui-checker + core-checker。scribe 投票依据（独立核验、非引用主持方数据）：随包手册 MD5 = dist MD5、版本号双端 1.4.1、changelog 互链可达；四要素逐项满足。
+- **三项补充议程裁决**：
+  1. **U3 + P0-4 归 1.4.2 修复池**：t44 特征化确认属实但核心契约层工作正常，属 UI 可达性/配置传播增强；changelog §15 已记录、t49 草案已收 P0 → 1.4.1 按现状交付；
+  2. **三份 1.4.2 输入报告分发确认完成**（core_audit / ux_audit / 竞品+用户需求，见下索引）；
+  3. **手册勘误 MD5 验证并入**：t48 的 16 条勘误经随包 HTML MD5 比对确认在打包终态（scribe 独立复验一致）。
+- **诚实披露（非阻塞）**：GGNetwork 受限 App 样本未取得（风险维持 🟡）；offscreen 不验托盘态/真实剪贴板（t42 人工清单 5 条）；5 张截图需交付用户前人工目检（读图工具不可用）；U3/P0-4 入 1.4.2。
+- 评审记录写入 `docs/changelog_1.4.1.md` 第十六节（§十四回填三组回归统计：t43 88/87/1、t44 89/87/2、t45 69/0/0 零新增）。
+
+### 1.4.2 规划输入索引（本轮用户新指令的四份调研）｜2026-09-30 · scribe 登记
+
+| 文档 | 位置 | 性质与用途 |
+|---|---|---|
+| 1.4.2「建议纳入池」实现预研 | `docs/research/plan_1.4.2_impl.md` | 方案预研（技术方案与工作量细化，不写代码）；对接 t49 草案（含 U3/P0-4 + 功能评审延后项 A4/C4/S5） |
+| 竞品精读：sefrawe/Steam-Workshop-Mod-Assistant-Management-Tool | `docs/research/sefrawe_backup_verify.md` | 竞品实现逻辑与备份校验机制精读（Python 3.12+PySide6、steamcmd 单源架构） |
+| 竞品精读：Streamline Workshop Downloader 三大 UX 机制 | `docs/research/streamline_ux.md` | UX 机制对标（用户级规则：主动定期竞品调研） |
+| SWDM 用户真实需求调研 | `docs/research/user_needs.md` | 竞品 GitHub Issues 只读抓取 + 中文社区检索（B站/贴吧/CSDN/搜狐/迅游/游戏媒体）+ Steam/Valve 官方动态；数据截至 2026-09-30 |
+
+> 与既有 1.4.2 输入合流：`docs/core_audit_1.4.2.md`（核心静态审计 P0×4 等）、`docs/ux_audit_1.4.2.md`（UX 审计 U1–U13 + 手册勘误 E1–E16）、`docs/feature_review_1.4.1.md`（延后三项裁决）。1.4.2 规划按三原则（精简 / 用户体感 / 基本功能）评审去留。

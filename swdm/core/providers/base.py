@@ -57,6 +57,10 @@ class ProviderMeta:
     supported_appids: tuple = ()       # 只支持部分游戏；空 = 全部
     config_fields: tuple = ()          # 该 provider 在 config 里的独立字段声明
     terminal: bool = False             # 链终结者（steamcmd）：到它不再追加后续通道
+    supports_account: bool = False     # 私人账号通道（C3）：用用户自己的 Steam 账号下载
+                                       # 自己有权内容；公有账户池接口保留不启用（合规分层）
+    breaker_exempt: bool = False       # 失败不计熔断（私人账号通道：凭据问题不应
+                                       # 熔断链上其他通道，更不能熔断 steamcmd 兜底）
 
 
 class DownloadProvider(ABC):

@@ -57,18 +57,25 @@ class GameSearchClient:
         # storesearch 匿名接口无速率保障、本机出口 IP 已被限过）
         self._min_interval = 0.7
         # D：熔断退避——连续失败/连接熔断（10053）后冷却期内跳过请求
-        self._fail_streak = 0
-        self._cooldown_until = 0.0
+        # （B2：改为复用共享 CircuitBreaker，语义与 t22 一致）
+        from .circuit import CircuitBreaker
+
+        self._breaker = CircuitBreaker()
 
     def _in_cooldown(self) -> bool:
-        return time.time() < self._cooldown_until
+        return self._breaker.in_cooldown()
+
+    def is_in_cooldown(self) -> bool:
+        """熔断冷却期判定（公开接口，供 UI 侧决定是否排队待发）。"""
+        return self._breaker.in_cooldown()
+
+    def cooldown_remaining(self) -> float:
+        """距冷却结束的剩余秒数（0 表示已半开）。"""
+        return self._breaker.cooldown_remaining()
 
     def _record_failure(self, e: BaseException) -> None:
         """连接级失败（如 WinSock 10053 熔断）或连续 3 次失败 → 冷却 15s。"""
-        self._fail_streak += 1
-        if isinstance(e, requests.ConnectionError) or self._fail_streak >= 3:
-            self._cooldown_until = time.time() + 15.0
-            log.warning("游戏搜索熔断，冷却 15s：%s", e)
+        self._breaker.record_failure(e)
 
     def search(self, term: str, limit: int = 12) -> list[GameSearchResult]:
         """搜索游戏名，返回 AppID 候选列表。走缓存，失败返回空列表。"""
@@ -118,7 +125,7 @@ class GameSearchClient:
             if len(out) >= limit:
                 break
         with self._lock:
-            self._fail_streak = 0
+            self._breaker.record_success()
             self._cache[key] = (time.time(), list(out))
         return out
 

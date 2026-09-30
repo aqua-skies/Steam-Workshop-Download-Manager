@@ -153,7 +153,8 @@ class AuthManager:
         else:
             self._account.has_password = False
         self._save()
-        log.info("已设置用户登录: %s（记住密码=%s）", username, remember)
+        # C3 风控①：账号名不进日志文件
+        log.info("已设置用户登录（记住密码=%s）", remember)
         return True
 
     def logout(self) -> None:

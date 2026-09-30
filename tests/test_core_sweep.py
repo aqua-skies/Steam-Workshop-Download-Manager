@@ -2,7 +2,7 @@
 steamcmd 输出解析 / CDN 续传 / 配置默认值。零网络。
 
 覆盖 swdm/core/ 的 steam_api、downloader、mod_library、steamcmd_engine、
-cdn_downloader、config、paths、throttle。脚本式：check() + sys.exit。
+providers.cdn、config、paths、throttle。脚本式：check() + sys.exit。
 """
 from __future__ import annotations
 
@@ -49,12 +49,16 @@ CARD_HTML = (
 
 
 def _bare_api():
+    from swdm.core.circuit import CircuitBreaker
+
     a = SteamAPI.__new__(SteamAPI)      # 绕过 __init__（不建 session、不联网）
     a.timeout = 30
     a._session = None
     a.api_key = ""
     a._dep_titles = {}
     a._dep_cache = {}
+    # browse() 访问共享熔断器（B2/t34），绕过 __init__ 时须手动补
+    a._browse_breaker = CircuitBreaker()
     return a
 
 
@@ -531,8 +535,11 @@ eng_p = SteamCMDEngine(install_dir=os.path.join(_TMP, "eng_p"))
 check("ensure_partial 无内容返回 0",
       eng_p.ensure_partial("x1", "4000") == 0)
 
-# ================================================================ 5. cdn_downloader
-from swdm.core import cdn_downloader  # noqa: E402
+# ================================================================ 5. providers/cdn（门面已于 1.4.1 移除，直接测 provider）
+from swdm.core.providers.cdn import CDNProvider  # noqa: E402
+
+_cdn = CDNProvider(config={})
+_cdn.api = None
 
 
 class FakeResp:
@@ -565,9 +572,9 @@ with open(dest, "wb") as f:
 
 # ---- 206 续传
 sess = FakeSession(FakeResp(206, [b"B" * 20], {"Content-Length": "20"}))
-r = cdn_downloader.download_file("http://x/f.gma", dest, sess)
+r = _cdn.http_download("http://x/f.gma", dest, sess)
 check("206 续传成功且字节数=已有+新下",
-      r["ok"] and r["bytes"] == 30, str(r))
+      r.status == DownloadStatus.SUCCESS and r.bytes_done == 30, str(r))
 check("续传请求携带 Range 头",
       sess.calls[0].get("Range") == "bytes=10-", str(sess.calls[0]))
 check("续传内容正确追加",
@@ -575,25 +582,25 @@ check("续传内容正确追加",
 
 # ---- 200 忽略 Range：丢弃已有部分重下
 sess2 = FakeSession(FakeResp(200, [b"C" * 5], {"Content-Length": "5"}))
-r2 = cdn_downloader.download_file("http://x/f.gma", dest, sess2)
+r2 = _cdn.http_download("http://x/f.gma", dest, sess2)
 check("200 忽略 Range 时整体重写",
-      r2["ok"] and r2["bytes"] == 5, str(r2))
+      r2.status == DownloadStatus.SUCCESS and r2.bytes_done == 5, str(r2))
 check("200 重写后文件为新内容",
       open(dest, "rb").read() == b"C" * 5)
 
 # ---- 错误状态码
 sess3 = FakeSession(FakeResp(403, []))
-r3 = cdn_downloader.download_file("http://x/f.gma", dest, sess3)
+r3 = _cdn.http_download("http://x/f.gma", dest, sess3)
 check("403 返回失败且消息含状态码",
-      r3["ok"] is False and "403" in r3["message"], str(r3))
+      r3.status == DownloadStatus.FAILED and "403" in (r3.message or ""), str(r3))
 
-# ---- resolve_file_url：匿名空直链回退
+# ---- resolve：匿名空直链回退
 empty_item = WorkshopItem(publishedfileid="123", appid="4000")
-check("resolve_file_url 空直链返回空串",
-      cdn_downloader.resolve_file_url(empty_item, None) == "")
+check("resolve 空直链返回空串",
+      _cdn.resolve(empty_item) == "")
 
-# ---- download_item_cdn 无直链时返回可回退的失败
-res_cdn = cdn_downloader.download_item_cdn(empty_item, os.path.join(_TMP, "cdn"))
+# ---- download 无直链时返回可回退的失败
+res_cdn = _cdn.download(empty_item, os.path.join(_TMP, "cdn"))
 check("CDN 通道无直链返回 FAILED + 回退提示",
       res_cdn.status == DownloadStatus.FAILED and "回退" in res_cdn.message,
       res_cdn.message)

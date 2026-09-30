@@ -40,10 +40,13 @@
 [PASS] 空 HTML 评论返回空 
 [PASS] 无评论容器返回空 
 [PASS] 无作者链接的块被跳过（如已删除评论） 
-[FAIL] 浏览页标签解析 []
+[PASS] 浏览页标签解析 ['Map', 'Weapon', 'NPC']
 [PASS] 标签不含排序项 
-[FAIL] URL 编码标签解码 []
-[FAIL] 无容器时全页面兜底 []
+[PASS] HTML 实体编码标签解码 ['Buildings & Props']
+[PASS] 无容器时全页面兜底 ['Addon']
+[PASS] 下拉框标签解析（跳过 -1 占位项） ['Scenario', 'Campaign']
+[PASS] 纯数字 value 不当标签 
+[PASS] 链接形态不当标签（bug14 回归保护） []
 [PASS] 空 HTML 标签返回空 
 [PASS] 无标签链接返回空 
 [PASS] fetch_comments 解析 JSON 列表 [{'author': 'Tester', 'content': 'Great mod & fun', 'timestamp': '2 Jan @ 3:00pm'}]

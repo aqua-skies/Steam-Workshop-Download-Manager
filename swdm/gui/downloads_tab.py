@@ -36,6 +36,8 @@ class DownloadsTab(QWidget):
 
     # 移除已入库任务时发出，主窗口据此刷新库页（u10 互通）
     library_changed = Signal()
+    # P5：空状态按钮请求跳到工坊浏览页
+    navigate_requested = Signal()
 
     def __init__(self, services, parent=None) -> None:
         super().__init__(parent)
@@ -97,6 +99,11 @@ class DownloadsTab(QWidget):
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         root.addWidget(self.table, 1)
+
+        # P5/B6：队列空时的可操作引导（覆盖在表格区的同级面板）
+        self._empty_state = self._build_empty_state()
+        root.addWidget(self._empty_state, 1)
+        self._empty_state.setVisible(False)
 
         bottom = QHBoxLayout()
         self.hint = QLabel("下载完成后会自动登记到「我的模组库」；元数据 JSON 与文件同目录。")
@@ -183,6 +190,15 @@ class DownloadsTab(QWidget):
                 bar.setTextVisible(True)
                 bar.setFormat("%p%")
                 bar.setValue(pct if job.status != JobStatus.SUCCESS else 100)
+            # P3：终态状态色（成功绿 / 失败红），进行中保持强调色渐变
+            if job.status == JobStatus.SUCCESS:
+                bar.setProperty("status", "done")
+            elif job.status == JobStatus.FAILED:
+                bar.setProperty("status", "failed")
+            else:
+                bar.setProperty("status", "")
+            bar.style().unpolish(bar)
+            bar.style().polish(bar)
         size_item = self.table.item(row, 4)
         if size_item:
             mb = (job.bytes_done or job.item.file_size) / 1024 / 1024
@@ -335,6 +351,8 @@ class DownloadsTab(QWidget):
             + ("   ⏸ 已暂停" if getattr(self.mgr, "paused", False) else "")
         )
         self._sync_batch_buttons()
+        # P5：以表格实际行数为空态判据（用户所见即真值，避免与快照漂移）
+        self._refresh_empty_state(self.table.rowCount())
 
     def _cancel_all(self) -> None:
         # B4（UX 审计+QA）：危险操作须二次确认，避免误触清空整个队列
@@ -375,3 +393,31 @@ class DownloadsTab(QWidget):
     def on_engine_log(self, line: str) -> None:
         # steamcmd 逐行日志可在此展示（debug 页统一处理，这里只记日志）
         log.debug("[下载页] %s", line)
+
+    # ------------------------------------------------------------- 空状态（P5/B6）
+    def _build_empty_state(self) -> QWidget:
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.setContentsMargins(24, 32, 24, 32)
+        lay.setSpacing(10)
+        title = QLabel("下载队列为空")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("font-size: 15px; font-weight: 600;")
+        hint = QLabel(
+            "在「工坊浏览」页选择 mod 后点击「下载」按钮，\n"
+            "任务会出现在这里，支持暂停、继续与失败重试。"
+        )
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        go = QPushButton("前往工坊浏览")
+        go.setProperty("secondary", True)
+        go.clicked.connect(self.navigate_requested.emit)
+        lay.addWidget(title)
+        lay.addWidget(hint)
+        lay.addWidget(go, 0, Qt.AlignmentFlag.AlignCenter)
+        return w
+
+    def _refresh_empty_state(self, total: int) -> None:
+        is_empty = total == 0
+        self._empty_state.setVisible(is_empty)
+        self.table.setVisible(not is_empty)

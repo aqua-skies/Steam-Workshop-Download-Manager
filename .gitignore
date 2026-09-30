@@ -1,5 +1,6 @@
 # ===== 构建产物 =====
 build/
+build_dbg/
 dist/
 installer/Output/
 __pycache__/

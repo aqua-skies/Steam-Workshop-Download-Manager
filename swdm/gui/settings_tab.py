@@ -121,6 +121,15 @@ class SettingsTab(QWidget):
         self.login_status = QLabel("🟢 匿名模式：无需任何账号即可下载")
         self.login_status.setStyleSheet("color:#5f8fd0; padding:4px;")
         acc_lay.addWidget(self.login_status)
+        # C3 风控④：凭据本地存储等级明示（与 api_key 同级：keyring 优先 +
+        # 本地混淆回退；不进日志、不进导出包、不上传任何服务器）
+        self.privacy_label = QLabel(
+            "🔒 账号仅本地存储、仅本人使用：密码经系统凭据库（keyring）加密，"
+            "不上传、不进日志；匿名模式下不收集任何账号信息。"
+        )
+        self.privacy_label.setWordWrap(True)
+        self.privacy_label.setStyleSheet("color:#7a8290; font-size:11px; padding:2px 4px;")
+        acc_lay.addWidget(self.privacy_label)
         sec_acc = CollapsibleSection("Steam 账号（登录方式）", expanded=True)
         sec_acc.addWidget(acc)
         root.addWidget(sec_acc)
@@ -142,6 +151,19 @@ class SettingsTab(QWidget):
         self.concurrency_spin.setRange(1, 8)
         self.concurrency_spin.setSuffix(" 并发")
         net_lay.addRow("最大并发下载:", self.concurrency_spin)
+        # B1 详情页磁盘缓存：开关 + TTL（小时）+ 立即清除
+        self.detail_cache_check = QCheckBox("启用详情页磁盘缓存（回退不重新加载）")
+        net_lay.addRow("", self.detail_cache_check)
+        self.detail_ttl_spin = QSpinBox()
+        self.detail_ttl_spin.setRange(0, 720)
+        self.detail_ttl_spin.setSuffix(" 小时")
+        self.detail_ttl_spin.setToolTip(
+            "详情页 HTML 缓存有效期；到期或 mod 更新后自动失效。\n"
+            "0 = 始终走网络（关闭该层缓存）")
+        net_lay.addRow("详情缓存有效期:", self.detail_ttl_spin)
+        self.clear_detail_cache_btn = QPushButton("🧹 立即清除全部详情缓存")
+        self.clear_detail_cache_btn.clicked.connect(self._clear_detail_cache)
+        net_lay.addRow("", self.clear_detail_cache_btn)
         sec_net = CollapsibleSection("网络与下载（高级）", expanded=False)
         sec_net.addWidget(net)
         root.addWidget(sec_net)
@@ -265,6 +287,12 @@ class SettingsTab(QWidget):
         self.theme_combo = QComboBox()
         self.theme_combo.addItem("深色", "dark")
         self.theme_combo.addItem("浅色", "light")
+        # P4：跟随系统配色（Qt6 colorScheme 信号即时切换）
+        self.theme_combo.addItem("跟随系统", "auto")
+        self.theme_combo.setToolTip(
+            "深色 / 浅色 / 跟随系统配色（选「跟随系统」后，\n"
+            "切换 Windows 主题时程序立即换肤，无需重启）。"
+        )
         misc_lay.addRow("主题:", self.theme_combo)
         self.loglevel_combo = QComboBox()
         for lv in ("DEBUG", "INFO", "WARNING", "ERROR"):
@@ -273,6 +301,14 @@ class SettingsTab(QWidget):
         # B④：调试面板开关（默认隐藏，需重启生效）
         self.debug_panel_check = QCheckBox("显示调试面板（重启后生效）")
         misc_lay.addRow("", self.debug_panel_check)
+        # B3：剪贴板监听（复制工坊链接自动入队，默认开）
+        self.clipboard_watch_check = QCheckBox("监听剪贴板：复制工坊链接自动加入下载队列")
+        self.clipboard_watch_check.setToolTip(
+            "开启后，在任何地方复制 Steam 工坊物品链接（或纯物品 ID）\n"
+            "会自动加入下载队列，无需手动粘贴。\n"
+            "只在链接匹配时解析，不记录/不缓存剪贴板内容；可在下载页查看。"
+        )
+        misc_lay.addRow("", self.clipboard_watch_check)
         # F7：标题过滤词（逗号分隔）
         self.hide_kw_edit = QLineEdit()
         self.hide_kw_edit.setPlaceholderText("如：Dead, 废弃, Outdated")
@@ -299,6 +335,13 @@ class SettingsTab(QWidget):
         self.proxy_edit.setText(cfg.get("network", "proxy") or "")
         self.timeout_spin.setValue(int(cfg.get("network", "timeout") or 30))
         self.concurrency_spin.setValue(int(cfg.get("network", "max_concurrent_downloads") or 2))
+        # B1 详情缓存配置态
+        self.detail_cache_check.setChecked(
+            bool(cfg.get("network", "detail_cache_enabled", default=True))
+        )
+        self.detail_ttl_spin.setValue(
+            int(cfg.get("network", "detail_cache_ttl_hours", default=24) or 0)
+        )
         self.steamcmd_edit.setText(cfg.get("steamcmd", "exe_path") or "")
         ch = cfg.get("download", "channel", default="steamcmd") or "steamcmd"
         self._refresh_channel_combo()
@@ -323,6 +366,10 @@ class SettingsTab(QWidget):
         # B④：调试面板开关状态
         self.debug_panel_check.setChecked(
             bool(cfg.get("logging", "show_debug_panel", default=False))
+        )
+        # B3：剪贴板监听状态（默认开）
+        self.clipboard_watch_check.setChecked(
+            bool(cfg.get("general", "clipboard_watch", default=True))
         )
         theme = cfg.get("general", "theme") or "dark"
         self.theme_combo.setCurrentIndex(self.theme_combo.findData(theme))
@@ -375,12 +422,31 @@ class SettingsTab(QWidget):
         self.settings_changed.emit()
         QMessageBox.information(self, "已保存", "账号设置已保存并生效。")
 
+    def _login_engine_factory(self):
+        """构造登录测试用引擎（C3）：匿名态用共享引擎，登录态用专属账号引擎。
+
+        共享引擎恒匿名（services.refresh_engine 不再下发凭据），所以
+        账号登录测试必须现场造一个带凭据的引擎实例，测完即弃。
+        """
+        if self.auth.is_anonymous():
+            return self.svc.engine
+        from swdm.core.steamcmd_engine import SteamCMDEngine
+
+        user, pw, guard = self.auth.get_credentials()
+        base = self.svc.engine
+        return SteamCMDEngine(
+            exe_path=getattr(base, "exe_path", "") or "",
+            install_dir=getattr(base, "install_dir", "") or "",
+            anonymous=False,
+            username=user,
+            password=pw or "",
+            guard_code=guard or "",
+        )
+
     def _test_login(self) -> None:
         self.test_login_btn.setEnabled(False)
         self.login_status.setText("⏳ 正在测试登录…")
-        worker = LoginWorker(
-            lambda: self.svc.engine  # 用当前引擎配置（refresh 已同步）
-        )
+        worker = LoginWorker(self._login_engine_factory)
         worker.result.connect(self._on_login_result)
         worker.start()
         self._login_worker = worker   # 保持引用
@@ -390,6 +456,22 @@ class SettingsTab(QWidget):
         color = "#3fae6f" if ok else "#e06060"
         self.login_status.setText(f"<span style='color:{color}'>{msg}</span>")
         self.login_status.setTextFormat(Qt.TextFormat.RichText)
+        # C3 风控②：登录失败且疑似 Steam Guard 时，给出验证码输入入口。
+        # 提示"仅需一次"：本机验证成功后 steamcmd 会缓存 sentry，之后免验证码。
+        if not ok and ("Steam Guard" in msg or "验证码" in msg):
+            from PySide6.QtWidgets import QInputDialog
+
+            code, ok2 = QInputDialog.getText(
+                self, "Steam Guard 验证码（仅需一次）",
+                "首次在本机登录需要 Steam Guard 验证码。\n"
+                "验证成功后本机会缓存凭证，之后登录无需再输入验证码。\n\n"
+                "请输入邮箱/手机收到的验证码：",
+            )
+            if ok2 and code.strip():
+                self.guard_edit.setText(code.strip())
+                # 保存验证码并立即重测一次（沿用已存密码）
+                self._apply_account()
+                self._test_login()
 
     # ------------------------------------------------------------- 文件选择
     def _refresh_channel_combo(self) -> None:
@@ -405,12 +487,12 @@ class SettingsTab(QWidget):
         self.channel_combo.clear()
         self._channel_rows = []
         try:
-            rows = get_registry().list_channels()
+            rows = get_registry().list_channels(api=getattr(self.svc, "api", None))
         except Exception:  # noqa: BLE001
             rows = [("steamcmd", "SteamCMD（匿名下载，推荐）", None)]
         avail_label = {
             "ok": "",
-            "no_key": "（需配置 Key/登录）",
+            "no_key": "（未配置，链内自动跳过）",
             "unreachable": "（⚠ 当前不可用）",
             "disabled": "（已禁用）",
         }
@@ -456,12 +538,29 @@ class SettingsTab(QWidget):
         finally:
             QApplication.restoreOverrideCursor()
 
+    # ------------------------------------------------- 详情页磁盘缓存（B1）
+    def _clear_detail_cache(self) -> None:
+        """手动清除全部详情页磁盘缓存（用户硬约束"及时清除"的兜底入口）。"""
+        try:
+            from swdm.core.detail_cache import get_detail_cache
+
+            n = get_detail_cache().invalidate()
+            QMessageBox.information(
+                self, "已清除", f"已删除 {n} 条详情页缓存。"
+            )
+        except Exception as e:  # noqa: BLE001
+            log.exception("清除详情缓存失败")
+            QMessageBox.warning(self, "清除失败", str(e))
+
     def _apply_all(self) -> None:
         cfg = self.svc.config
         cfg.set("network", "api_key", self.api_key_edit.text().strip())
         cfg.set("network", "proxy", self.proxy_edit.text().strip())
         cfg.set("network", "timeout", self.timeout_spin.value())
         cfg.set("network", "max_concurrent_downloads", self.concurrency_spin.value())
+        # B1 详情缓存：开关 + TTL（0 表示关闭）
+        cfg.set("network", "detail_cache_enabled", self.detail_cache_check.isChecked())
+        cfg.set("network", "detail_cache_ttl_hours", self.detail_ttl_spin.value())
         cfg.set("steamcmd", "exe_path", self.steamcmd_edit.text().strip())
         cfg.set("download", "channel", self.channel_combo.currentData())
         cfg.set("steamcmd", "force_install_dir", "")
@@ -477,6 +576,8 @@ class SettingsTab(QWidget):
         cfg.set("logging", "level", self.loglevel_combo.currentData())
         # B④：调试面板开关（重启后生效）
         cfg.set("logging", "show_debug_panel", self.debug_panel_check.isChecked())
+        # B3：剪贴板监听开关（即时生效，经 settings_changed 重连）
+        cfg.set("general", "clipboard_watch", self.clipboard_watch_check.isChecked())
         # F7：标题过滤词（去空、去重）
         kws = [k.strip() for k in self.hide_kw_edit.text().split(",") if k.strip()]
         cfg.set("hide_keywords", sorted(set(kws)))
@@ -491,7 +592,8 @@ class SettingsTab(QWidget):
 
         msg = "设置已保存并生效。"
         if old_theme != self.theme_combo.currentData():
-            msg += "\n（主题切换需重启程序以完整应用）"
+            # P4：settings_changed 已触发主窗口即时换肤，不再要求重启
+            msg += "\n（新主题已立即应用）"
         QMessageBox.information(self, "已保存", msg)
 
     # ------------------------------------------------- 游戏专属下载目录

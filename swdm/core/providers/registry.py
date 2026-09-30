@@ -172,15 +172,35 @@ class ProviderRegistry:
     def list_channels(self, api=None) -> list[tuple[str, str, Availability]]:
         """[(name, display_name, availability)] 按 priority 排序。
 
-        只反映"是否被用户禁用"（配置态，无网络请求）。
+        反映配置态（无网络请求）：用户禁用→DISABLED；需凭据但未配置→
+        NO_KEY（UI 显示「未配置」，选中仍可用，运行时链自动回退）；其余→OK。
         """
         out = []
         for name, cls in sorted(self._classes.items(),
                                 key=lambda kv: kv[1].meta.priority):
-            avail = Availability.DISABLED if not self._is_enabled(name) \
-                else Availability.OK
+            if not self._is_enabled(name):
+                avail = Availability.DISABLED
+            else:
+                avail = self._credential_state(cls, self.get_provider(name, api))
             out.append((name, cls.meta.display_name, avail))
         return out
+
+    @staticmethod
+    def _credential_state(cls, inst) -> Availability:
+        """展示层凭据判定（无网络）：缺凭据→NO_KEY，否则 OK。"""
+        if inst is None:
+            return Availability.OK
+        if cls.meta.requires_key and not inst.is_configured():
+            return Availability.NO_KEY
+        # C3 私人账号通道：按 AuthManager 登录态判定（不看 api_key）
+        if cls.meta.supports_account:
+            return Availability.OK if inst.is_configured() else Availability.NO_KEY
+        # anonymous_ok=False 的通道（如 CDN）在匿名态下同样标 NO_KEY：
+        # 选中仍保留在链里，resolve 阶段会自动跳过并回退
+        if not cls.meta.anonymous_ok and inst.api is not None:
+            if not (getattr(inst.api, "api_key", "") or "").strip():
+                return Availability.NO_KEY
+        return Availability.OK
 
 
 _registry: ProviderRegistry | None = None
@@ -202,6 +222,12 @@ def _register_builtin(reg: ProviderRegistry) -> None:
     from .steamcmd import SteamCMDProvider
 
     reg.register(SteamCMDProvider)
+    try:
+        from .account_steamcmd import AccountSteamCMDProvider
+
+        reg.register(AccountSteamCMDProvider)
+    except Exception:  # noqa: BLE001
+        log.warning("私人账号通道注册失败", exc_info=True)
     try:
         from .cdn import CDNProvider
 

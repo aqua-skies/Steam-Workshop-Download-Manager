@@ -141,7 +141,7 @@ check("工坊: 搜索框文本可设置", wt.search_edit.text() == "test")
 wt.search_edit.setText("")
 
 # --- 导入 URL：空输入安全（对话框返回空）
-QInputDialog.getText = staticmethod(lambda *a, **k: ("", True))
+QInputDialog.getMultiLineText = staticmethod(lambda *a, **k: ("", True))
 try:
     wt._import_url()
     app.processEvents()
@@ -149,7 +149,7 @@ try:
 except Exception as e:  # noqa: BLE001
     check("工坊: 导入 URL 空输入不崩", False, f"{type(e).__name__}: {e}")
 # 合法 ID 导入（网络部分会失败，但不应崩 UI）
-QInputDialog.getText = staticmethod(lambda *a, **k: ("123456789", True))
+QInputDialog.getMultiLineText = staticmethod(lambda *a, **k: ("123456789", True))
 try:
     wt._import_url()
     app.processEvents()

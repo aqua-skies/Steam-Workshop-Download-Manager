@@ -23,6 +23,9 @@ DEFAULT_CONFIG = {
         "library_dir": "",            # 空表示用默认 LIBRARY_DIR
         "check_update_on_start": True,
         "close_to_tray": False,
+        # B3：剪贴板监听——复制工坊链接自动入队（默认开，设置页可关）。
+        # 只在链接匹配时解析，不记录/不缓存剪贴板任何内容（防御性设计）
+        "clipboard_watch": True,
     },
     "network": {
         "api_key": "",                # 可选的 Steam Web API key
@@ -30,6 +33,10 @@ DEFAULT_CONFIG = {
         "timeout": 30,
         "max_concurrent_downloads": 3,
         "use_system_cert_store": True,
+        # B1 详情页磁盘缓存：TTL 到期或 time_updated 变化即失效（用户硬约束
+        # "缓存及时清除"）；ttl_hours=0 关闭该层缓存
+        "detail_cache_enabled": True,
+        "detail_cache_ttl_hours": 24,
     },
     "steamcmd": {
         "exe_path": "",               # 空表示自动检测/使用内置
@@ -47,6 +54,12 @@ DEFAULT_CONFIG = {
         # 每 provider 独立配置节（enabled 关掉某通道；其余字段由 provider 自取）
         "providers": {
             "steamcmd": {
+                "enabled": True,
+            },
+            "account_steamcmd": {
+                # C3 私人账号通道：默认启用，但匿名态由 provider 的
+                # is_configured() 判定自动跳过（默认链不含）；
+                # 用户可在设置里把 enabled=False 显式关掉该通道
                 "enabled": True,
             },
             "cdn": {

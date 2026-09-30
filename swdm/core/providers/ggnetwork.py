@@ -8,11 +8,25 @@ Empirical research: see research/provider_research.md:
   the limiter only covers the resolve POST, not CDN transfer, so download speed is unaffected)
 - If the response body is a zip archive it is extracted before landing; a .gma magic-number
   weak check plus a >1% size discrepancy mark the content bad (t28: FAILED with in-chain
-  fallback, not just a warning); a queue.position > 0 response yields an empty URL and a
-  clean fallback to steamcmd
+  fallback, not just a warning)
 
-Honest disclosure: this channel has only been validated against offline mocks; the real
-network path was never exercised end-to-end from this machine (proxy environment).
+Measured live 2026-09-29 (t32, this machine — api.ggntw.com / cdn.ggntw.com are directly
+reachable and NOT behind the steamcommunity fake-IP block, contrary to the 1.4.0 assumption):
+- POST /steam.request for a public GMod item returns result=1 with a url; every observed
+  success carries queue.position=1 *together with* the url, so position>0 alone is not a
+  "not ready" signal — the url is used whenever present. The 1.4.0 guard returned "" on
+  position>0 and thus discarded every real item (proven by running the shipped class).
+- The api url is an HTML landing page https://ggntw.com/download/<token> (server picker +
+  5s countdown); the real file is https://cdn.ggntw.com/<token>, a zip containing the .gma.
+  End-to-end verified: Wiremod 160250458 -> 6,397,843-byte zip -> .gma 20,685,180 bytes,
+  GMAD magic, exact match with the Steam-declared size.
+- A removed item (the old fixed probe id 2537024972, result=9 on Steam) makes the backend
+  answer {"result":10,"status":3,"error":"need login to account"} — a misleading error
+  string, hence probe() now rotates over several live items and requires a usable url.
+- 8 back-to-back resolve POSTs were all HTTP 200 (no 429): the self-imposed limiter is safe.
+- Restricted-app items could not be sampled locally (steamcommunity browse blocked by SNI
+  reset), so there is no evidence this channel resolves restricted-app content. All
+  conclusions hold only for this environment and this backend version.
 """
 from __future__ import annotations
 
@@ -31,8 +45,11 @@ from .base import Availability, DownloadProvider, ProviderKind, ProviderMeta
 log = get_logger("swdm.core.providers.ggnetwork")
 
 _GG_URL = "https://api.ggntw.com/steam.request"
+_CDN_HOST = "https://cdn.ggntw.com"   # 真实文件 CDN（落地页 https://ggntw.com/download/<token> 的选服结果）
 _DEFAULT_RATE_LIMIT = 20          # req/min，匿名接口自律上限
-_PROBE_ITEM = "2537024972"        # 探测用一个稳定存在的物品 id（Garry's Mod）
+# 探测物品：实测可解析的公开 GMod 物品，轮换避免单物品下架/被删把探测带偏
+# （实测 2537024972 已被 Steam 删除 → result=9，GGNetwork 回 "need login to account" 误导文案）
+_PROBE_ITEMS = ("160250458", "3803871160", "2497853525")
 _GMA_MAGIC = b"GMAD"              # Garry's Mod addon 格式魔数（弱校验）
 
 
@@ -104,23 +121,31 @@ class GGNetworkProvider(DownloadProvider):
 
     # ---------------- 探测
     def probe(self, timeout: float = 8.0) -> Availability:
-        # 匿名接口：发一次轻量请求看是否 200
-        try:
-            url = self._item_url(_PROBE_ITEM)
-            if not self._limiter.acquire():
-                return Availability.UNREACHABLE
-            sess = self._session()
-            r = sess.post(_GG_URL, json={"url": url}, timeout=timeout)
-            if r.status_code == 200:
-                return Availability.OK
-            if r.status_code == 429:
-                self._report_throttle("rate_limit", "GGNetwork HTTP 429")
-                return Availability.UNREACHABLE
-            log.debug("GGNetwork 探测失败：HTTP %s", r.status_code)
-            return Availability.UNREACHABLE
-        except Exception as e:  # noqa: BLE001
-            log.debug("GGNetwork 探测异常: %s", e)
-            return Availability.UNREACHABLE
+        # 匿名接口：轮换探测物品，需返回「带可用直链」的响应才算健康——
+        # 固定单 id 一旦下架，后端只回错误体（如 error:"need login to account"），
+        # 旧实现仅判 HTTP 200 会误报 OK。
+        for item_id in _PROBE_ITEMS:
+            try:
+                if not self._limiter.acquire():
+                    return Availability.UNREACHABLE
+                sess = self._session()
+                r = sess.post(_GG_URL, json={"url": self._item_url(item_id)}, timeout=timeout)
+                if r.status_code == 429:
+                    self._report_throttle("rate_limit", "GGNetwork HTTP 429")
+                    return Availability.UNREACHABLE
+                if r.status_code != 200:
+                    continue
+                try:
+                    data = r.json()
+                except json.JSONDecodeError:
+                    continue
+                if data.get("error"):
+                    continue
+                if (data.get("url") or (data.get("data") or {}).get("url")):
+                    return Availability.OK
+            except Exception:  # noqa: BLE001
+                continue
+        return Availability.UNREACHABLE
 
     def _item_url(self, item_id: str) -> str:
         return f"https://steamcommunity.com/sharedfiles/filedetails/?id={item_id}"
@@ -142,16 +167,29 @@ class GGNetworkProvider(DownloadProvider):
                 data = r.json()
             except json.JSONDecodeError:
                 return ""
-            # 服务端排队中（未缓存物品，服务端用自有账号代下）：干净回退，不轮询
-            q = data.get("queue") or (data.get("data") or {}).get("queue") or {}
-            try:
-                if int(q.get("position", 0) or 0) > 0:
-                    return ""
-            except (TypeError, ValueError):
-                pass
+            if data.get("error"):
+                log.debug("GGNetwork resolve 后端报错：%s", data["error"])
+                return ""
             # 兼容多种响应形状：直接 url / data.url / 嵌套
             url = (data.get("url") or (data.get("data") or {}).get("url") or "").strip()
-            return url
+            if url:
+                # api 返回的是 ggntw.com/download/<token> 落地页（HTML：选服 + 5 秒
+                # 倒计时），真实文件在 cdn.ggntw.com/<token>（zip 内含 .gma，实测）
+                if "/download/" in url and "ggntw.com" in url:
+                    token = url.rstrip("/").rsplit("/", 1)[-1]
+                    if token:
+                        url = f"{_CDN_HOST}/{token}"
+                return url
+            # 无 url：服务端排队中（未缓存物品）→ 干净回退，不轮询
+            q = data.get("queue") or (data.get("data") or {}).get("queue") or {}
+            try:
+                pos = int(q.get("position", 0) or 0)
+            except (TypeError, ValueError):
+                pos = 0
+            if pos > 0:
+                log.debug("GGNetwork 物品 %s 排队中 position=%s，回退",
+                          item.publishedfileid, pos)
+            return ""
         except Exception:  # noqa: BLE001
             log.debug("GGNetwork resolve 失败", exc_info=True)
             return ""

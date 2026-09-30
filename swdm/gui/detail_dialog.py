@@ -350,10 +350,18 @@ class DetailPageWorker(QThread):
     total_ready = Signal(int)
     failed = Signal(str)
 
-    def __init__(self, api, item_id: str, parent=None) -> None:
+    def __init__(self, api, item_id: str, time_updated: int = 0,
+                 force_refresh: bool = False, parent=None) -> None:
+        """启动详情页解析。
+
+        time_updated 用于磁盘缓存双失效（B1）：与 Steam 侧最新值不一致时
+        立即丢弃缓存条目。force_refresh=True 时强制走网络（手动刷新）。
+        """
         super().__init__(parent)
         self._api = api
         self._item_id = str(item_id)
+        self._time_updated = int(time_updated or 0)
+        self._force_refresh = force_refresh
 
     # 进程级详情页缓存：同一物品 5 分钟内不重复请求（缓解 429 限流）
     # O4（algo #4）：加上限，避免长会话浏览大量 mod 时字典无限增长
@@ -370,18 +378,36 @@ class DetailPageWorker(QThread):
             if cached and _time.time() - cached[0] < DetailPageWorker._PAGE_CACHE_TTL:
                 html = cached[1]
             else:
-                html = self._api._community_get(
-                    "/sharedfiles/filedetails/", {"id": self._item_id},
-                    priority=True,  # 用户点击永远优先于悬停预取
-                )
-                if html:
-                    DetailPageWorker._page_cache[self._item_id] = (
-                        _time.time(), html
+                # B1 磁盘缓存：内存未命中时先查磁盘（TTL + time_updated 双失效），
+                # 命中则零网络；手动刷新强制绕过
+                html = None
+                if not self._force_refresh:
+                    from swdm.core.detail_cache import get_detail_cache
+
+                    ok, disk_html = get_detail_cache().get(
+                        self._item_id, self._time_updated
                     )
-                    # O4：超上限淘汰最旧条目
-                    while len(DetailPageWorker._page_cache) > \
-                            DetailPageWorker._PAGE_CACHE_MAX:
-                        DetailPageWorker._page_cache.popitem(last=False)
+                    if ok:
+                        html = disk_html
+                if html is None:
+                    html = self._api._community_get(
+                        "/sharedfiles/filedetails/", {"id": self._item_id},
+                        priority=True,  # 用户点击永远优先于悬停预取
+                    )
+                    if html:
+                        DetailPageWorker._page_cache[self._item_id] = (
+                            _time.time(), html
+                        )
+                        # O4：超上限淘汰最旧条目
+                        while len(DetailPageWorker._page_cache) > \
+                                DetailPageWorker._PAGE_CACHE_MAX:
+                            DetailPageWorker._page_cache.popitem(last=False)
+                        # B1：回写磁盘缓存（跨重启零网络）
+                        from swdm.core.detail_cache import get_detail_cache
+
+                        get_detail_cache().set(
+                            self._item_id, html, self._time_updated
+                        )
             if not html:
                 self.failed.emit("详情页内容为空")
                 return
@@ -619,6 +645,7 @@ class ModDetailDialog(QDialog):
         self._deps_loaded = dependencies is not None
 
         self._image_worker: PreviewImageWorker | None = None
+        self._detail_worker: DetailPageWorker | None = None
 
         self.setWindowTitle(f"Mod 详情 - {item.title or item.publishedfileid}")
         self.setWindowModality(Qt.WindowModality.NonModal)
@@ -803,6 +830,13 @@ class ModDetailDialog(QDialog):
         buttons = QHBoxLayout()
         buttons.addStretch()
 
+        # B1 约束 4：手动刷新强制 bypass 双层缓存（内存 + 磁盘）
+        self.refresh_btn = QPushButton("🔄 刷新")
+        self.refresh_btn.setProperty("secondary", True)
+        self.refresh_btn.setToolTip("忽略缓存，重新从 Steam 拉取详情")
+        self.refresh_btn.clicked.connect(self._refresh_detail)
+        buttons.addWidget(self.refresh_btn)
+
         self.dl_btn = QPushButton("⬇ 下载（含依赖）")
         self.dl_btn.clicked.connect(self._on_download_with_deps)
         buttons.addWidget(self.dl_btn)
@@ -835,6 +869,48 @@ class ModDetailDialog(QDialog):
         if self._installed(self.item.publishedfileid):
             self.dl_btn.setText("✓ 已在库")
             self.dl_btn.setEnabled(False)
+
+    # --------------------------------------------------------------- 手动刷新
+    def _refresh_detail(self) -> None:
+        """手动刷新：强制 bypass 内存与磁盘缓存，重新拉取并回填。
+
+        B1 约束 4。刷新期间给加载占位，旧内容保留可见直到新数据到达。
+        """
+        if not self.api:
+            return
+        # 绕过进程级缓存：直接移除内存条目，force_refresh 再绕过磁盘层
+        DetailPageWorker._page_cache.pop(self.item.publishedfileid, None)
+        self.error_label.setVisible(False)
+        self.deps_placeholder.setText("前置依赖刷新中…")
+        self.comments_placeholder.setText("评论刷新中…")
+        worker = DetailPageWorker(
+            self.api,
+            self.item.publishedfileid,
+            time_updated=self.item.time_updated or 0,
+            force_refresh=True,
+            parent=self,
+        )
+        worker.description_ready.connect(self.set_description)
+        worker.creator_ready.connect(self.set_creator)
+        worker.comments_ready.connect(self.set_comments)
+        worker.total_ready.connect(self.set_comment_count)
+        worker.conflicts_ready.connect(
+            lambda cs: self.set_conflicts([
+                {"id": c.mod_id, "name": c.name, "reason": c.statement}
+                for c in cs
+            ])
+        )
+        worker.deps_ready.connect(
+            lambda deps: self.set_dependencies(
+                [{"id": pid, "title": title} for pid, title in deps]
+            )
+        )
+        worker.failed.connect(self.show_error)
+        worker.failed.connect(lambda _msg: self.set_comments([]))
+        worker.failed.connect(lambda _msg: self.set_dependencies([]))
+        # 持有引用防 GC，旧 worker 交给 Qt 父子关系回收
+        self._detail_worker = worker
+        worker.start()
 
     def _make_scroll_area(self):
         scroll = QScrollArea()
@@ -1132,6 +1208,8 @@ class ModDetailDialog(QDialog):
         try:
             if self._image_worker is not None and self._image_worker.isRunning():
                 self._image_worker.wait(1500)
+            if self._detail_worker is not None and self._detail_worker.isRunning():
+                self._detail_worker.wait(1500)
         except Exception:  # noqa: BLE001
             pass
         super().closeEvent(event)

@@ -70,6 +70,11 @@ class DownloadJob:
     resumed_bytes: int = 0
     # 1.4.0：实际使用的 provider 名（链式回退后记录最终通道）
     channel: str = ""
+    # 1.4.1 C2（t41）：本次运行观察到的 steamcmd 特征 + 历次 attempt 的失败
+    # 文案，供 failure_reason 归类用户可读的失败原因（与熔断器正交）
+    signals: set = field(default_factory=set, repr=False)
+    attempt_messages: list = field(default_factory=list, repr=False)
+    failure_bucket: str = ""
     _stop: threading.Event = field(default_factory=threading.Event, repr=False)
 
     @property
@@ -138,6 +143,8 @@ class DownloadManager:
         self.on_queue_changed: list = []
         self.on_throttle = None     # (kind, line) 节流信号，供 UI 订阅
         self.last_throttle: tuple | None = None
+        # 1.4.1 C2：每个工作线程正在执行的 job（限流信号归到 job 级用）
+        self._local = threading.local()
         # 桥接引擎的限流/超时特征 -> 退避 + 并发降级
         # append 订阅（A-P3：引擎侧已改为订阅者列表，后赋值不覆盖既有订阅）
         self.engine.on_throttle_signal.append(self._on_throttle_signal)
@@ -148,8 +155,12 @@ class DownloadManager:
 
         硬信号（rate_limit / timeout）：全局退避升级 + 并发立刻降到 1。
         软信号（retry）：仅小幅退避（steamcmd 自己已在重试）。
+        另把信号记到当前线程正在跑的 job（1.4.1 C2：失败原因归类用）。
         """
         self.last_throttle = (kind, line, time.time())
+        job = getattr(self._local, "job", None)
+        if job is not None:
+            job.signals.add(kind)
         if kind in ("rate_limit", "timeout"):
             delay = self._backoff.record_failure(kind)
             cur = self._concurrency.on_failure(kind)
@@ -441,12 +452,17 @@ class DownloadManager:
             t.start()
 
     # ------------------------------------------------------------- 单任务
-    def _run_steamcmd(self, job: DownloadJob, install_dir: str, smoother):
+    def _run_steamcmd(self, job: DownloadJob, install_dir: str, smoother, engine=None):
         """串行调用 steamcmd（bug7/8：steamcmd 同会话不支持并发，
         多任务共享 engine 的 _proc 实例字段会竞态崩溃，
-        必须加锁串行；cancel 因此也只会作用于当前唯一任务）。"""
+        必须加锁串行；cancel 因此也只会作用于当前唯一任务）。
+
+        engine 参数：C3 私人账号通道传自己的账号引擎实例，串行锁仍然共用，
+        保证两个 steamcmd 进程永不并发（账号引擎与匿名引擎不互相覆盖 _proc）。
+        """
+        eng = engine or self.engine
         with self._engine_lock:
-            return self.engine.download_item(
+            return eng.download_item(
                 appid=job.appid,
                 item_id=job.id,
                 total_hint=job.total_bytes,
@@ -467,11 +483,23 @@ class DownloadManager:
 
     def _run_provider(self, provider, job: DownloadJob, install_dir: str,
                       smoother) -> DownloadResult:
-        """执行单个 provider。steamcmd 走串行锁路径，其余走 provider.download。"""
+        """执行单个 provider。终端 steamcmd 走串行锁路径；提供 get_engine()
+        的 ENGINE 通道（C3 私人账号）借串行锁跑专属引擎；其余走 provider.download。"""
         name = provider.meta.name
         if name == "steamcmd":
-            # 保持 1.3.9 行为：engine_lock 串行 + engine.download_item
+            # 保持 1.4.0 行为：engine_lock 串行 + engine.download_item
             return self._run_steamcmd(job, install_dir, smoother)
+        # C3：私人账号通道提供 get_engine()（账号凭据构造的专属引擎），
+        # 一起进 engine_lock 串行——两个 steamcmd 进程永不并发。
+        # 执行完回调 note_result：登录失败时会话级停用账号通道（不熔断）。
+        # 无 get_engine 的 ENGINE 型 provider（如测试替身）走标准下载路径。
+        eng = provider.get_engine() if hasattr(provider, "get_engine") else None
+        if eng is not None:
+            res = self._run_steamcmd(job, install_dir, smoother, engine=eng)
+            note = getattr(provider, "note_result", None)
+            if callable(note):
+                note(res)
+            return res
         dest_dir = self._content_dir(job, install_dir)
         return provider.download(
             job.item, dest_dir,
@@ -493,6 +521,13 @@ class DownloadManager:
             sc.set_engine(self.engine)
             if self._on_throttle_signal not in sc.on_throttle_signal:
                 sc.on_throttle_signal.append(self._on_throttle_signal)
+        # C3 私人账号通道同样借用共享引擎的 exe/目录配置
+        ac = reg.get_provider("account_steamcmd", self.api)
+        if ac is not None and hasattr(ac, "set_engine") and \
+                getattr(ac, "engine", None) is not self.engine:
+            ac.set_engine(self.engine)
+            if self._on_throttle_signal not in ac.on_throttle_signal:
+                ac.on_throttle_signal.append(self._on_throttle_signal)
         return reg.build_chain(preferred, api=self.api)
 
     def _run_channel_chain(self, job: DownloadJob, install_dir: str,
@@ -551,9 +586,12 @@ class DownloadManager:
             job.channel = name
             # 熔断反馈：成功重置计数，失败累计（连续 3 次后 60s 冷却跳过该通道）
             # terminal 通道（steamcmd）豁免——它是永不下线的兜底，熔断它会让链变空
+            # breaker_exempt（C3 私人账号通道）豁免——账号凭据问题不熔断任何通道，
+            # 更不能熔断 steamcmd 兜底（t31 风控③：与 terminal 豁免同理）
             if result.status == DownloadStatus.SUCCESS:
                 _reg.record_success(name)
-            elif result.status != DownloadStatus.CANCELLED and not provider.meta.terminal:
+            elif result.status != DownloadStatus.CANCELLED and \
+                    not provider.meta.terminal and not provider.meta.breaker_exempt:
                 _reg.record_failure(name)
             if result.status == DownloadStatus.SUCCESS:
                 return result
@@ -595,6 +633,8 @@ class DownloadManager:
                 cb()
 
     def _exec_job(self, job: DownloadJob) -> None:
+        # 1.4.1 C2：本线程当前 job（限流信号归类用）
+        self._local.job = job
         # 需求 1：任务间随机抖动 + 退避等待（在独立线程中执行，不持锁）
         self._throttle_wait(job)
 
@@ -653,6 +693,10 @@ class DownloadManager:
                 status=DownloadStatus.FAILED,
                 message="steamcmd 报告成功但下载内容为空（可能触发限流）",
             )
+        # 1.4.1 C2（t41）：记录本次 attempt 的失败文案，供终态归类使用
+        # （重试与终态两条路径都要能看到完整历史）
+        if result.status == DownloadStatus.FAILED:
+            job.attempt_messages.append(result.message or "")
         # A-P1：cancel 与完成登记竞态的正式收口。
         # cancel() 的 add(_cancelling) + _stop.set() + 移出 _active +
         # 登记 _done 全程持有 _lock；本判定块同样全程持锁，两者严格串行：
@@ -697,7 +741,23 @@ class DownloadManager:
                     needs_backoff = True
                 else:
                     job.status = JobStatus.FAILED
-                    job.message = result.message or "下载失败"
+                    # 1.4.1 C2（t41）：把原始失败文案归一成不误导的用户可读
+                    # 结论（通用 I/O 绝不映射「需正版账号」——误报红线）。
+                    # 原文仍完整保留在日志与 attempt_messages 里。
+                    from .failure_reason import classify_failure, render_failure
+
+                    raw = result.message or "下载失败"
+                    bucket = classify_failure(
+                        raw,
+                        appid=str(job.appid),
+                        signals=job.signals,
+                        attempt_messages=job.attempt_messages,
+                    )
+                    job.failure_bucket = bucket.value
+                    job.message = render_failure(bucket, raw)
+                    if bucket.value != "generic":
+                        log.info("物品 %s 失败归类 %s（原文：%s）",
+                                 job.id, bucket.value, raw[:120])
                     needs_backoff = True
             else:
                 log.warning("任务 %s 收尾时不在 _active 且非取消，跳过登记", job.id)

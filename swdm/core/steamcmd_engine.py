@@ -224,6 +224,20 @@ class SteamCMDEngine:
         return args
 
     # ------------------------------------------------------------- 核心运行
+    def _redact_secrets(self, line: str) -> str:
+        """账号敏感信息过滤（C3 风控①）。
+
+        steamcmd 输出行可能回显用户名（"Connecting to Steam as <name>" 等）；
+        密码/验证码理论上不会回显，但一并过滤。匿名模式无密钥，原样返回。
+        必须在 log.debug / on_line 之前调用——下游解析用的正则只匹配
+        "Logged-in OK" / "Login Failure" / "Invalid Password" 等固定串，
+        不依赖账号名，替换不影响解析。
+        """
+        for secret in (self.username, self.password, self.guard_code):
+            if secret:
+                line = line.replace(secret, "***")
+        return line
+
     def _run(self, commands: list[str], on_line=None, feed_stdin: str = "",
              install_dir: str = "") -> int:
         """运行 steamcmd 并逐行回调输出。返回退出码。
@@ -268,6 +282,8 @@ class SteamCMDEngine:
                 line = raw.decode("utf-8", "replace").rstrip("\r\n")
                 if not line.strip():
                     continue
+                # C3 风控①：账号名/密码/验证码不得落日志，也不得进 on_line 回调
+                line = self._redact_secrets(line)
                 log.debug("[steamcmd] %s", line)
                 if on_line:
                     on_line(line)
@@ -540,7 +556,9 @@ class SteamCMDEngine:
         except Exception as e:  # noqa: BLE001
             return False, f"引擎异常: {e}"
         if state["ok"]:
-            mode = "匿名" if self.anonymous or not self.username else f"用户 {self.username}"
+            # C3 风控①：返回串不含用户名（该串会进诊断日志/UI）；
+            # 账号名由调用方（设置页）从 auth 自行展示
+            mode = "账号" if not (self.anonymous or not self.username) else "匿名"
             return True, f"{mode}登录成功"
         if state["err"]:
             return False, f"登录失败：{state['err']}"

@@ -35,14 +35,18 @@ class Services:
     downloader: DownloadManager
 
     def refresh_engine(self) -> None:
-        """根据当前配置/认证状态重建引擎参数。"""
+        """根据当前配置重建引擎参数。
+
+        C3（1.4.1）：共享/兜底引擎恒为匿名——账号凭据只进
+        AccountSteamCMDProvider 的专属引擎实例，账号问题永远不会
+        阻塞链尾兜底下载（t31 风控③）。用户改凭据时重置账号通道的
+        会话级失活标记。
+        """
         cfg = self.config
-        user, pw, guard = self.auth.get_credentials()
-        anon = self.auth.is_anonymous()
-        self.engine.anonymous = anon
-        self.engine.username = user
-        self.engine.password = pw
-        self.engine.guard_code = guard
+        self.engine.anonymous = True
+        self.engine.username = ""
+        self.engine.password = ""
+        self.engine.guard_code = ""
         self.engine.exe_path = cfg.get("steamcmd", "exe_path") or ""
         # install_dir 必须有值：配置为空时回落默认库目录
         self.engine.install_dir = (
@@ -54,6 +58,17 @@ class Services:
         self.downloader.max_concurrent = max(
             1, int(cfg.get("network", "max_concurrent_downloads") or 2)
         )
+        # 账号通道：注入 AuthManager + 清除会话级失活（用户刚保存新凭据）
+        try:
+            from swdm.core.providers.account_steamcmd import (
+                reset_auth_state,
+                set_auth_manager,
+            )
+
+            set_auth_manager(self.auth)
+            reset_auth_state()
+        except Exception:  # noqa: BLE001
+            log.debug("账号通道状态重置失败", exc_info=True)
 
     def refresh_api(self) -> None:
         cfg = self.config
@@ -77,12 +92,13 @@ def build_services() -> Services:
         timeout=int(cfg.get("network", "timeout") or 30),
     )
     library = ModLibrary()
+    # C3：共享引擎恒匿名；账号登录由 AccountSteamCMDProvider 用专属引擎承载
     engine = SteamCMDEngine(
         exe_path=cfg.get("steamcmd", "exe_path") or "",
         install_dir=cfg.get("steamcmd", "force_install_dir")
         or cfg.get("general", "library_dir")
         or "",
-        anonymous=auth.is_anonymous(),
+        anonymous=True,
     )
     downloader = DownloadManager(
         engine, library,

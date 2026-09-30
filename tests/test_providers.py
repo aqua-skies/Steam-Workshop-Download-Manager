@@ -411,16 +411,42 @@ def test_ggnetwork_resolve_and_extract():
     prov2._session = lambda: sess2  # type: ignore
     check("429 时 resolve 返回空", prov2.resolve(_item()) == "")
 
-    # queue.position>0 服务端排队中 → 空串干净回退（不轮询）
+    # queue.position>0 但同时给了 url → 实测 position 不是「未就绪」信号，url 优先
     sess_q = _FakeSession(_FakeResp(200, {
         "url": "http://cdn.example/123.gma",
-        "queue": {"position": 3, "total": 5},
+        "queue": {"position": 1, "total": 0},
         "status": 1,
     }))
     prov_q = GGNetworkProvider(config={})
     prov_q._session = lambda: sess_q  # type: ignore
-    check("queue.position>0 时 resolve 返回空（排队回退）",
-          prov_q.resolve(_item()) == "")
+    check("queue.position>0 但带 url 时 resolve 取直链（实测语义）",
+          prov_q.resolve(_item()) == "http://cdn.example/123.gma")
+    # position>0 且无 url → 排队中，空串干净回退（不轮询）
+    sess_qn = _FakeSession(_FakeResp(200, {
+        "queue": {"position": 3, "total": 5},
+        "status": 1,
+    }))
+    prov_qn = GGNetworkProvider(config={})
+    prov_qn._session = lambda: sess_qn  # type: ignore
+    check("queue.position>0 且无 url 时 resolve 返回空（排队回退）",
+          prov_qn.resolve(_item()) == "")
+    # 后端错误体（被删物品的真实回包）→ 空
+    sess_err = _FakeSession(_FakeResp(200, {
+        "result": 10, "status": 3, "error": "need login to account",
+    }))
+    prov_err = GGNetworkProvider(config={})
+    prov_err._session = lambda: sess_err  # type: ignore
+    check("后端 error 体 resolve 返回空", prov_err.resolve(_item()) == "")
+    # api 给的是落地页 URL → 改写为 CDN 直链
+    sess_lp = _FakeSession(_FakeResp(200, {
+        "result": 1,
+        "url": "https://ggntw.com/download/abcTOKEN123",
+        "queue": {"position": 1, "total": 0},
+    }))
+    prov_lp = GGNetworkProvider(config={})
+    prov_lp._session = lambda: sess_lp  # type: ignore
+    check("落地页 url 改写为 cdn.ggntw.com/<token>",
+          prov_lp.resolve(_item()) == "https://cdn.ggntw.com/abcTOKEN123")
     # position=0（已缓存）正常取 url
     sess_q0 = _FakeSession(_FakeResp(200, {
         "url": "http://cdn.example/123.gma",
@@ -430,6 +456,21 @@ def test_ggnetwork_resolve_and_extract():
     prov_q0._session = lambda: sess_q0  # type: ignore
     check("queue.position=0 时 resolve 正常取直链",
           prov_q0.resolve(_item()) == "http://cdn.example/123.gma")
+
+    # probe 健康判定：错误体/无 url 判不可用，带 url 判可用（t32 实测驱动）
+    class _FakeRespText(_FakeResp):
+        def __init__(self, status, json_data=None):
+            super().__init__(status, json_data)
+
+    prov_p = GGNetworkProvider(config={"rate_limit_per_minute": 999})
+    prov_p._session = lambda: _FakeSession(
+        _FakeRespText(200, {"result": 10, "error": "need login to account"}))  # type: ignore
+    check("probe 对错误体判 UNREACHABLE",
+          prov_p.probe() == Availability.UNREACHABLE)
+    prov_p2 = GGNetworkProvider(config={"rate_limit_per_minute": 999})
+    prov_p2._session = lambda: _FakeSession(
+        _FakeRespText(200, {"result": 1, "url": "https://cdn.ggntw.com/x"}))  # type: ignore
+    check("probe 对带 url 响应判 OK", prov_p2.probe() == Availability.OK)
 
     # 压缩包解压
     tmpdir = tempfile.mkdtemp(prefix="swdm_gg_")
@@ -669,25 +710,22 @@ def test_builtin_providers_meta():
           gg.config.get("rate_limit_per_minute") == 20 or True)  # config 可能被测试覆盖
 
 
-# ==================== 11. 兼容门面 ====================
-def test_compat_facade():
-    from swdm.core.cdn_downloader import (
-        download_file,
-        download_item_cdn,
-        resolve_file_url,
-    )
-    # resolve_file_url：item 自带 file_url 直接用
+# ==================== 11. CDN provider（旧门面已于 1.4.1 移除） ====================
+def test_cdn_provider_direct():
+    from swdm.core.providers.cdn import CDNProvider
+    _p = CDNProvider(config={})
+    # resolve：item 自带 file_url 直接用
     it = _item(file_url="http://cdn.example/long-enough-url.gma")
-    check("门面 resolve_file_url 优先自带 url",
-          resolve_file_url(it) == "http://cdn.example/long-enough-url.gma")
+    check("cdn resolve 优先自带 url",
+          _p.resolve(it) == "http://cdn.example/long-enough-url.gma")
     # 匿名无 file_url → 空串
-    check("门面 resolve_file_url 匿名返回空", resolve_file_url(_item()) == "")
-    # download_item_cdn 匿名 → FAILED + 回退提示
-    res = download_item_cdn(_item(), os.path.join(_APPDATA, "facade_dest"))
-    check("门面 download_item_cdn 匿名 FAILED",
+    check("cdn resolve 匿名返回空", _p.resolve(_item()) == "")
+    # download 匿名 → FAILED + 回退提示
+    res = _p.download(_item(), os.path.join(_APPDATA, "facade_dest"))
+    check("cdn download 匿名 FAILED",
           res.status == DownloadStatus.FAILED, str(res.status))
-    check("门面消息含回退提示", "回退" in (res.message or ""), (res.message or "")[:40])
-    check("门面 download_file 可导入", callable(download_file))
+    check("cdn 消息含回退提示", "回退" in (res.message or ""), (res.message or "")[:40])
+    check("cdn http_download 可调用", callable(_p.http_download))
 
 
 # ==================== 12. 链尾兜底保证 ====================
@@ -720,7 +758,7 @@ def main() -> int:
         test_manager_chain_exec,
         test_chain_records_circuit,
         test_builtin_providers_meta,
-        test_compat_facade,
+        test_cdn_provider_direct,
         test_chain_always_ends_with_steamcmd,
     ]
     for t in tests:

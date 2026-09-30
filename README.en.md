@@ -2,6 +2,14 @@
 
 [English](README.en.md) | [中文](README.md)
 
+![version](https://img.shields.io/badge/version-1.4.1-blue)
+![python](https://img.shields.io/badge/python-3.12-3776AB)
+![pyside6](https://img.shields.io/badge/GUI-PySide6-41CD52)
+![platform](https://img.shields.io/badge/platform-Windows-0078D6)
+![license](https://img.shields.io/badge/license-MIT-green)
+![anonymous](https://img.shields.io/badge/downloads-anonymous_no_account-orange)
+![steamcmd](https://img.shields.io/badge/engine-SteamCMD-informational)
+
 > A Python-based desktop app: browse and search the Steam Workshop, download mods **without a Steam account** (anonymous), and manage a categorized local mod library.
 > Built by Atria-Dawn-Preview.
 
@@ -26,6 +34,41 @@ user's preferred channel → other enabled channels (by priority) → steamcmd (
 - Channels that are disabled, unconfigured (missing key), or tripped by the circuit breaker (3 consecutive failures → 60s cooldown) are skipped.
 - Default channel is still `steamcmd`, so the default path is byte-for-byte identical to 1.3.9 — nothing changes unless you switch.
 - **GGNetwork** (`api.ggntw.com`) is an anonymous third-party workshop proxy — it resolves a workshop item URL to an official CDN direct link, no key required. It is a pilot: rate-limited to 20 resolve req/min (token bucket, burst 3) by self-discipline per the provider ToS; download speed is unaffected because the limiter only covers the resolve POST, not CDN transfer.
+
+## Feature Overview
+
+**Browsing & Search**
+- Game picker (favorites / custom AppID; 59 workshop games built in)
+- Keyword search with suggestions + exact tag filtering; 6 sort orders (trend / newest / subscriptions / rating / views / favorites), client-side re-sort after enrichment
+- Paginated browsing + next-page prefetch (low priority, yields to user clicks)
+- Mod detail popup: description / comments / dependency tree / preview images
+
+**Downloads**
+- Multi-provider chain with automatic fallback (1.4.0): GGNetwork anonymous proxy → CDN direct link → SteamCMD tail fallback
+- Range resume, cancel, auto-retry; speed sampling with a rolling window (fixes stuck-at-99% and speed spikes)
+- Automatic dependency downloads (BFS over the dep tree, enqueued together); zero-byte steamcmd output is treated as failure with leftover cleanup
+- Tray notification on completion; quitting from the tray truly exits (no lingering background process)
+
+**Mod Library**
+- SQLite local library: search by game / category / tags / status / keyword
+- Batch enable / disable, categorize, delete (with files), open folder, export filtered results
+- Mod pack import / export; `swdm_meta.json` metadata sidecar next to mod dirs
+
+**GUI & System Integration**
+- Dark / light themes; system tray + single instance + global crash logging
+- Debug tab with live log stream (hidden by default); SteamCMD auto-detected or deployed in one click on first launch
+
+## Screenshots
+
+> Rendered offline from **fixed fixture data** by `tools/make_readme_shots.py` (no live network).
+
+| Workshop browse | Download queue |
+|---|---|
+| ![Workshop browse](docs/screenshots/workshop.png) | ![Download queue](docs/screenshots/downloads.png) |
+
+| Mod library | Settings |
+|---|---|
+| ![Mod library](docs/screenshots/library.png) | ![Settings](docs/screenshots/settings.png) |
 
 ## Quick Start
 
@@ -81,10 +124,11 @@ See [docs/project_structure.md](docs/project_structure.md) for a per-file respon
 
 ## Known Limitations
 
-- Anonymous downloads only work for games whose workshop content does not require game-ownership verification.
+- Anonymous downloads only work for games whose workshop content does not require game-ownership verification (e.g. GMod). **Workshop items of restricted apps (e.g. DayZ 221100) require a Steam account that owns the game** — this is by Valve's design, not a defect: anonymous sessions never receive signed CDN direct links.
 - Category tags on the browse page are provided by the API `tags` field and filtered client-side; server-side tag filtering relies on the `requiredtags[]` parameter.
 - On first use, SteamCMD may need to update itself, which takes a while.
-- The GGNetwork channel has only been validated against offline mocks, never end-to-end over the real network. It is never on the default path — you must explicitly select it.
+- The GGNetwork channel has only been validated against offline mocks, never end-to-end over the real network (end-to-end test planned for 1.4.1). It is never on the default path — you must explicitly select it.
+- Collection batch downloads, the icon system, and thumbnail disk caching are scheduled for 1.4.2.
 
 ## Development
 
@@ -96,7 +140,7 @@ See [docs/project_structure.md](docs/project_structure.md) for a per-file respon
 
 - Source comment / docstring bilingual adaptation (t30): module docstrings across `swdm/` rewritten English-first plus public API docstrings — done
 - GGNetwork end-to-end testing over the real network (by a member with a real network path)
-- Removal of the `cdn_downloader.py` compatibility facade (use `swdm.core.providers.cdn` instead)
+- ~~Removal of the `cdn_downloader.py` compatibility facade (use `swdm.core.providers.cdn` instead)~~ — done (t40, three tests migrated to direct CDNProvider use)
 - Download-tab polish items such as batch pause/resume
 
 ## License

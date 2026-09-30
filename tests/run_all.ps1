@@ -1,8 +1,18 @@
 $ErrorActionPreference = "Continue"
-Set-Location "C:\Users\Lenovo\Desktop\程序设计\steam mod program"
+Set-Location -Path (Split-Path -Path $PSScriptRoot -Parent)
 $env:PYTHONUTF8 = "1"
 $env:QT_QPA_PLATFORM = "offscreen"
-$skip = @("test_acceptance","test_smoke","test_tags","test_deps_live","test_deps_e2e","test_real_download","test_online_parse","test_find_api","test_prefetch","test_steamcmd_deploy","test_engine_autodeploy","test_cultist","test_cultist_deps","test_game_dir_e2e","test_tag_parse_real","test_stress")
+# skip: live-network / stress / smoke scripts are NOT part of the offline
+# regression baseline (test_bundle_ctx/methods are no-assert JS bundle probes,
+# real-network and emit no RESULT line). Network scripts hang/timeout when the
+# local fake-IP proxy is down (2026-09-30); re-run them individually to
+# confirm they are environmental, not code regressions.
+# NOTE: keep this file ASCII-only. A UTF-8-no-BOM file with Chinese comments
+# is mis-decoded by powershell.exe 5.1 (ANSI codepage), which silently merges
+# the last comment line into the $skip assignment and disables the skip list
+# (90 scripts incl. hanging network scripts). pwsh 7 and a UTF-8 BOM both
+# parse it correctly; ASCII-only is immune in every shell.
+$skip = @("test_acceptance","test_smoke","test_tags","test_deps_live","test_deps_e2e","test_real_download","test_online_parse","test_find_api","test_prefetch","test_steamcmd_deploy","test_engine_autodeploy","test_cultist","test_cultist_deps","test_game_dir_e2e","test_tag_parse_real","test_stress","test_bundle_ctx","test_bundle_methods","test_bulk_games","test_multi_game","test_page_content")
 $tests = Get-ChildItem tests -Filter "test_*.py" | Where-Object { $skip -notcontains $_.BaseName } | Sort-Object Name
 $pass = 0
 $fail = 0

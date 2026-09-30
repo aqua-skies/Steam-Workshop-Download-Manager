@@ -10,7 +10,7 @@ import sys
 
 APP_NAME = "SWDM"
 APP_DISPLAY = "Steam 工坊下载管理器"
-APP_VERSION = "1.4.0"  # bumped per release; mirrors installer/swdm.iss SWDMVersion
+APP_VERSION = "1.4.1"  # bumped per release; mirrors installer/swdm.iss SWDMVersion
 
 
 def _user_data_root() -> str:

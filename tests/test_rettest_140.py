@@ -309,7 +309,7 @@ check("B5b 熔断后链尾仍是 steamcmd",
       _chain3 and _chain3[-1].meta.name == "steamcmd")
 reg.record_success("cdn")
 
-# B6 ggnetwork queue.position>0 守卫干净回退
+# B6 ggnetwork 守卫语义（t32 修复后：url 优先，position 仅在无 url 时表示排队）
 _gg = reg.get_provider("ggnetwork")
 
 
@@ -325,12 +325,33 @@ class _FakeSess:
         return _FakeResp()
 
 
+class _QueuedResp:
+    status_code = 200
+
+    def json(self):
+        return {"queue": {"position": 3}}   # 无 url：排队中
+
+
+class _QueuedSess:
+    def post(self, *a, **k):
+        return _QueuedResp()
+
+
 _orig_sess = _gg._session
 _gg._session = lambda: _FakeSess()
 try:
     _u = _gg.resolve(WorkshopItem(publishedfileid="999004", title="T",
                                   appid="4000"))
-    check("B6 queue.position>0 → resolve 返空串（干净回退）", _u == "", repr(_u))
+    check("B6 有 url 时优先返回 url（position 不再误吞成功响应）",
+          _u == "http://x/y.gma", repr(_u))
+finally:
+    _gg._session = _orig_sess
+_gg._session = lambda: _QueuedSess()
+try:
+    _u2 = _gg.resolve(WorkshopItem(publishedfileid="999004b", title="T2",
+                                   appid="4000"))
+    check("B6b 无 url 且 position>0 → 返空串（排队中干净回退）",
+          _u2 == "", repr(_u2))
 finally:
     _gg._session = _orig_sess
 
@@ -389,12 +410,13 @@ _gsc = GameSearchClient()
 check("C3a 最低间隔 0.7s", abs(_gsc._min_interval - 0.7) < 1e-9,
       str(_gsc._min_interval))
 _gsc._record_failure(requests.ConnectionError("10053"))
-_rem = _gsc._cooldown_until - time.time()
+# 熔断细节委托 CircuitBreaker（t34 起），用公开 API 判冷却（私有属性已移除）
+_rem = _gsc.cooldown_remaining()
 check("C3b 连接熔断 → 冷却 15s", 14.0 <= _rem <= 15.0, f"remain={_rem:.1f}")
+check("C3b2 is_in_cooldown 与剩余时间一致", _gsc.is_in_cooldown())
 _gsc._cache.clear()
 check("C3c 冷却内 search 返空", _gsc.search("garry") == [])
-_gsc._cooldown_until = 0.0
-_gsc._fail_streak = 0
+_gsc._breaker.force_trip(0.0)          # 立即解除冷却（测试用）
 _gsc._cache["garry"] = (1e12, [("4000", "Garry's Mod")])
 check("C3d 缓存命中即时返回",
       len(_gsc.search("garry")) == 1)

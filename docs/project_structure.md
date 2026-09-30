@@ -127,9 +127,10 @@ steam mod program/
 - `ApiCache`（TTL + LRU + `get_or_compute` + `invalidate`）、`get_api_cache()`、`make_cache_key`。
 - **纪律**：`browse()` 返回的 `WorkshopItem` 是可变 dataclass，`enrich()` 就地修改——**缓存命中返回前必须深拷贝**，否则污染缓存。
 
-#### `cdn_downloader.py` — CDN 兼容门面（**1.4.1 移除**）
-- `resolve_file_url` / `download_file` / `download_item_cdn`：平迁自 `providers/cdn.py` 的兼容层，顶部已标注"新代码请用 `swdm.core.providers.cdn`"。
-- 存在理由：旧测试（test_cdn / test_core_sweep）零改动，1.3.9 回归基线直接复用。
+#### `cdn_downloader.py` — **已于 1.4.1 移除**
+- 1.4.0 期间的 CDN 兼容门面（`resolve_file_url` / `download_file` / `download_item_cdn`，
+  平迁自 `providers/cdn.py`）。1.4.1 移除：test_cdn / test_core_sweep / test_providers
+  已全部改为直接使用 `providers/cdn.py` 的 `CDNProvider`。
 
 ### `swdm/core/providers/` — 下载 provider 抽象层（**1.4.0 新增**）
 

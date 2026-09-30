@@ -6,6 +6,8 @@ detail dialog, hover prefetch (yielding to user clicks, t15), URL import, and co
 """
 from __future__ import annotations
 
+import threading
+
 from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -317,6 +319,14 @@ class WorkshopTab(QWidget):
         self._prefetch_timer.timeout.connect(self._do_prefetch_detail)
         self._prefetch_id: str | None = None
         self._prefetching: set[str] = set()
+        # B2：下一页预取定时器——当前页渲染完后延迟预取下一页，
+        # 用户点"下一页"时直接命中缓存（零网络、秒切）
+        self._nextpage_timer = QTimer(self)
+        self._nextpage_timer.setSingleShot(True)
+        self._nextpage_timer.setInterval(800)
+        self._nextpage_timer.timeout.connect(self._do_prefetch_next_page)
+        self._nextpage_prefetching = False
+        self._nextpage_thread: threading.Thread | None = None
         self.image_loader = ImageLoader()
         self.image_loader.bus.loaded.connect(self._on_image_loaded)
         self._build()
@@ -394,6 +404,12 @@ class WorkshopTab(QWidget):
         self._last_search_pairs: list[tuple[str, str]] = []
         # 回车确认游戏时若联想结果尚未到达，置标记等结果到达后自动选中第一项
         self._pending_enter_select = False
+        # 技术债：搜索命中熔断冷却时记下待发词，冷却结束后自动重发一次
+        # （否则用户输入的词在冷却期内被静默丢弃，联想再无反应）
+        self._pending_search_term: str = ""
+        self._search_retry_timer = QTimer(self)
+        self._search_retry_timer.setSingleShot(True)
+        self._search_retry_timer.timeout.connect(self._retry_pending_search)
         # 每代际请求的标签过滤参数：结果到达后据此做客户端精确过滤
         # （服务端 requiredtags 只是近似匹配）
         self._tags_by_gen: dict[int, list[str]] = {}
@@ -408,13 +424,13 @@ class WorkshopTab(QWidget):
         # 避免工具栏按钮堆砌（按上下级整理，常用操作才占首屏）
         self.more_btn = QPushButton("⋯ 更多")
         self.more_btn.setProperty("secondary", True)
-        self.more_btn.setToolTip("收藏游戏 / 添加自定义游戏 / 导入 URL 或合集")
+        self.more_btn.setToolTip("收藏游戏 / 添加自定义游戏 / 批量粘贴导入链接或 ID")
         more_menu = QMenu(self.more_btn)
         self.fav_action = more_menu.addAction("☆ 收藏游戏")
         self.fav_action.triggered.connect(self._toggle_favorite)
         act_add = more_menu.addAction("＋ 添加自定义游戏…")
         act_add.triggered.connect(self._add_custom_game)
-        act_import = more_menu.addAction("🔗 导入 URL / 合集…")
+        act_import = more_menu.addAction("🔗 批量粘贴导入…")
         act_import.triggered.connect(self._import_url)
         self.more_btn.setMenu(more_menu)
         row1.addWidget(self.more_btn)
@@ -679,6 +695,22 @@ class WorkshopTab(QWidget):
             self._search_client = GameSearchClient()
         client = self._search_client
 
+        # 技术债：熔断冷却期内的请求会被静默丢弃。记下待发词，
+        # 冷却结束后由 _search_retry_timer 自动重发一次同一词，
+        # 避免用户输入石沉大海（本地结果仍在，网络联想会补上）
+        try:
+            in_cooldown = client.is_in_cooldown()
+        except Exception:  # noqa: BLE001
+            in_cooldown = False
+        if in_cooldown:
+            self._pending_search_term = text
+            try:
+                remaining = client.cooldown_remaining()
+            except Exception:  # noqa: BLE001
+                remaining = 0.0
+            self._search_retry_timer.start(int((remaining + 0.5) * 1000))
+            return
+
         class _SearchWorker(QThread):
             ready = Signal(list, int)
 
@@ -698,6 +730,18 @@ class WorkshopTab(QWidget):
             lambda res, v: self._on_search_ready(res, v)
         )
         self._search_worker.start()
+
+    def _retry_pending_search(self) -> None:
+        """冷却结束后重发一次待选词（仅当输入框仍是那个词）。"""
+        term = self._pending_search_term
+        if not term:
+            return
+        if self.game_combo.currentText().strip() != term:
+            # 用户已改词，旧词不再重发（_do_game_search 会处理新词）
+            self._pending_search_term = ""
+            return
+        self._pending_search_term = ""
+        self._do_game_search()
 
     def _local_game_matches(self, text: str) -> list:
         """本地游戏库匹配（内置 + 收藏 + 自定义），零网络请求。"""
@@ -742,6 +786,8 @@ class WorkshopTab(QWidget):
         # 在途取消：版本不匹配说明已有更新的搜索，丢弃本次结果
         if version != self._search_version:
             return
+        # 本次搜索已成功送达，冷却重发的待发词（若有）不再需要
+        self._pending_search_term = ""
         ed = self.game_combo.lineEdit()
         if ed is None:
             return
@@ -884,6 +930,8 @@ class WorkshopTab(QWidget):
         self._pending_refresh = False
         self._clear_cards()
         self._items = []
+        # B2：新请求发出，作废待发的下一页预取（代际+1 已使旧预取无效）
+        self._nextpage_timer.stop()
         tags = [t.strip() for t in self.tag_edit.text().split(",") if t.strip()]
         self._worker_gen += 1           # O6：新请求代际+1，旧结果作废
         gen = self._worker_gen
@@ -953,6 +1001,8 @@ class WorkshopTab(QWidget):
                 self.status_label.setText(hint)
             else:
                 self.status_label.setText(f"{base} · {hint}" if base else hint)
+        # B2：当前页渲染完成，调度下一页预取（代际+熔断+满页三重校验）
+        self._schedule_prefetch_next_page(gen)
 
     def _on_list_failed(self, msg: str) -> None:
         self._list_overlay.stop()
@@ -1066,6 +1116,12 @@ class WorkshopTab(QWidget):
         cached = DetailPageWorker._page_cache.get(item_id)
         if cached:                      # 已有 5 分钟缓存，无需预取
             return
+        # B1：磁盘缓存已命中也跳过预取
+        from swdm.core.detail_cache import get_detail_cache
+
+        disk_ok, _disk_html = get_detail_cache().get(item_id)
+        if disk_ok:
+            return
         if item_id in self._prefetching:  # 正在预取
             return
         self._prefetching.add(item_id)
@@ -1078,7 +1134,7 @@ class WorkshopTab(QWidget):
                 self._api = api
                 self._iid = str(iid)
 
-            def run(self) -> None:
+            def run(self):
                 import time as _time
 
                 try:
@@ -1089,6 +1145,8 @@ class WorkshopTab(QWidget):
                         DetailPageWorker._page_cache[self._iid] = (
                             _time.time(), html
                         )
+                        # B1：预取结果同步落磁盘（跨重启命中）
+                        get_detail_cache().set(self._iid, html)
                 except Exception:  # noqa: BLE001
                     pass
                 self.done.emit(self._iid)
@@ -1098,6 +1156,107 @@ class WorkshopTab(QWidget):
             lambda iid, wr=w: (self._prefetching.discard(iid), wr.deleteLater())
         )
         w.start()
+
+    # ------------------------------------------------- B2 下一页预取
+    def _schedule_prefetch_next_page(self, gen: int) -> None:
+        """当前页渲染完成：若本页满页，延迟预取下一页。
+
+        只在「有下一页」的可能时预取（本页物品数 < 单页上限说明已到末页）。
+        代际过期则不启动；任何用户操作（切游戏/搜索/排序/翻页）都会
+        bump _worker_gen，旧预取自然作废。
+        """
+        if gen != self._worker_gen:
+            return
+        # 单页上限 30（与 BrowseWorker numperpage 一致）
+        if len(self._items) < 30:
+            return
+        # 熔断冷却期内不预取（连接已断/连续失败，预取只会空打）
+        breaker = getattr(self.svc.api, "_browse_breaker", None)
+        if breaker is not None and breaker.in_cooldown():
+            return
+        self._nextpage_timer.start()
+
+    def _do_prefetch_next_page(self) -> None:
+        """后台预取下一页列表入 ApiCache（用户翻页时零网络命中）。
+
+        用 daemon 线程而非 QThread：预取只暖缓存、不需要 UI 信号，
+        daemon 保证进程退出时不被在途网络请求挂住（实测 QThread 版
+        会让测试进程在退出阶段卡死）。
+
+        【硬约束落地】
+        1. 熔断退避：复用 GameSearchClient 同一 CircuitBreaker 实现
+           （api._browse_breaker），连接错误/连续失败 → 冷却 15s 跳过
+        2. 深拷贝：预取只调 browse()，命中/未命中/hub 三条路径均已
+           深拷贝，预取不开新返回路径、不自己写缓存
+        3. 代际丢弃：请求前后均校验代际，过期则不发包/不处理，
+           结果从不触碰 UI，绝不覆盖当前页
+        """
+        if self._nextpage_prefetching:
+            return
+        # 用户点击/依赖下载在飞时，预取让出网络槽位（t15 礼让语义）
+        if getattr(self.svc.api, "_priority_pending", 0):
+            # 稍后重试（用户请求完成后重排）
+            self._nextpage_timer.start()
+            return
+        breaker = getattr(self.svc.api, "_browse_breaker", None)
+        if breaker is not None and breaker.in_cooldown():
+            return
+        appid = self._current_appid()
+        if not appid:
+            return
+        # 预取前再次校验：期间用户可能已切游戏/翻页
+        gen = self._worker_gen
+        next_page = self._page + 1
+        search = self.search_edit.text().strip()
+        sort = self.sort_combo.currentData()
+        tags = [t.strip() for t in self.tag_edit.text().split(",") if t.strip()]
+        # 缓存键必须与 browse() 内部完全一致（language/numperpage），
+        # 否则预热的条目与翻页时的查找键不匹配，预取白做
+        from swdm.core.api_cache import get_api_cache, make_cache_key
+
+        key = make_cache_key(appid, next_page, sort, search, tags or [],
+                             "schinese", 30)
+        if get_api_cache().get(key)[0]:
+            return
+        self._nextpage_prefetching = True
+
+        def _warm() -> None:
+            try:
+                # 代际已变（用户切游戏/搜索/翻页）→ 静默丢弃，不发包
+                if gen != self._worker_gen:
+                    log.info("丢弃过期代际 %s 的下一页预取（当前 %s）",
+                             gen, self._worker_gen)
+                    return
+                # 只暖缓存：browse 内部写 ApiCache 并在所有路径深拷贝，
+                # 返回值预取不使用（不渲染，绝不动当前页）
+                self.svc.api.browse(appid, page=next_page, search_text=search,
+                                    sort=sort, required_tags=tags or None)
+                self._on_nextpage_prefetched(gen, key)
+            except Exception:  # noqa: BLE001
+                # 预取失败静默忽略（用户翻页时 browse 内有降级兜底）
+                log.debug("下一页预取失败 page=%s", next_page, exc_info=True)
+            finally:
+                self._nextpage_prefetching = False
+
+        t = threading.Thread(target=_warm, name="swdm-nextpage-prefetch",
+                             daemon=True)
+        self._nextpage_thread = t
+        t.start()
+
+    def _on_nextpage_prefetched(self, gen: int, key: str) -> None:
+        """预取完成记账（仅日志，结果已在 browse 内写入 ApiCache）。
+
+        key 由 GUI 线程在调度时预算好传入：worker 线程不读 Qt 控件。
+        """
+        # 代际过期：静默丢弃，绝不覆盖当前页（照搬 t25 A-U5 已验证机制）
+        if gen != self._worker_gen:
+            log.info("丢弃过期代际 %s 的下一页预取回包（当前 %s）",
+                     gen, self._worker_gen)
+            return
+        from swdm.core.api_cache import get_api_cache
+
+        hit = get_api_cache().get(key)[0]
+        log.debug("下一页预取完成 key=%s 缓存命中=%s", key[:48], hit)
 
     # ------------------------------------------------------------- 分页
     def _prev_page(self) -> None:
@@ -1276,7 +1435,9 @@ class WorkshopTab(QWidget):
         dlg.search_requested.connect(self._on_quick_search)
 
         # 异步解析详情数据（描述/评论/依赖），回填弹窗
-        worker = DetailPageWorker(self.svc.api, item_id, parent=dlg)
+        worker = DetailPageWorker(
+            self.svc.api, item_id, time_updated=it.time_updated or 0, parent=dlg
+        )
         worker.description_ready.connect(dlg.set_description)
         worker.creator_ready.connect(dlg.set_creator)
         worker.comments_ready.connect(dlg.set_comments)
@@ -1425,15 +1586,27 @@ class WorkshopTab(QWidget):
         self._refresh_list()
 
     def _import_url(self) -> None:
+        """B5 批量粘贴导入：多行输入框，一次粘贴任意多个工坊链接/ID。
+
+        与 B3 剪贴板监听共用 resolve_any_url 入口（_import_tokens）；
+        这是手动版，可一次处理多个链接、会展开合集、可交互补 AppID。
+        用 QInputDialog.getMultiLineText 保持与既有单行导入相同的
+        静态方法协议（测试可打桩替换，无需真实交互）。
+        """
         from PySide6.QtWidgets import QInputDialog
 
-        text, ok = QInputDialog.getText(
-            self, "导入 URL / 合集 / ID",
-            "粘贴工坊页面链接、合集链接或物品 ID（多个用逗号或换行分隔）：",
+        text, ok = QInputDialog.getMultiLineText(
+            self, "批量粘贴导入",
+            "每行一个工坊物品链接或物品 ID（也支持逗号分隔）：\n"
+            "支持 https://steamcommunity.com/sharedfiles/filedetails/?id=… 链接",
         )
         if not ok or not text.strip():
             return
         tokens = [t.strip() for t in text.replace("\n", ",").split(",") if t.strip()]
+        self._import_tokens(tokens)
+
+    def _import_tokens(self, tokens: list[str]) -> None:
+        """解析 token 列表为 (appid, ids) 并入队（B3/B5 共用）。"""
         appid = self._current_appid()
         ids: list[str] = []
         for tok in tokens:
@@ -1447,6 +1620,8 @@ class WorkshopTab(QWidget):
             QMessageBox.warning(self, "导入", "未能从输入中解析出任何物品 ID")
             return
         if not appid:
+            from PySide6.QtWidgets import QInputDialog
+
             appid, _ok = QInputDialog.getText(self, "AppID", "这些物品属于哪个游戏？输入 AppID：")
             if not _ok or not appid.strip().isdigit():
                 return

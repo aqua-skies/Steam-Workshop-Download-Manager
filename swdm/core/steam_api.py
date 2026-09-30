@@ -249,6 +249,11 @@ class SteamAPI:
         self._endpoint_lock = threading.Lock()
         # 高优先级（用户点击）请求计数：预取请求据此礼让槽位
         self._priority_pending = 0
+        # B2：浏览页共享熔断器——连接级失败/连续失败冷却 15s，
+        # 下一页预取据此停止空打（与 GameSearchClient 复用同一实现）
+        from .circuit import CircuitBreaker
+
+        self._browse_breaker = CircuitBreaker()
         self._session = requests.Session()
         self._session.headers["User-Agent"] = _UA
         # 实测（本机单 IP，item 3803871160）：steamcommunity 429 由请求头
@@ -304,6 +309,10 @@ class SteamAPI:
         # 实测稳定 200，间隔从 6s 放宽到 3s 提升连续打开详情的响应
         "/sharedfiles/": 3.0,
         "/workshop/browse/": 2.0,    # 浏览页：相对宽松
+        # C1（1.4.1）：库更新检查的批量元数据端点。50 条/批，大库 10+ 批，
+        # 与详情页同量级耗时，用相同 3s 基准（_api_post 不经 api_cache，
+        # 节流在 check_updates 内按批生效）
+        "/ISteamRemoteStorage/": 3.0,
     }
     _endpoint_last: dict[str, float] = {}
 
@@ -433,6 +442,55 @@ class SteamAPI:
             else:
                 log.debug("物品 %s result=%s（不存在或不可用）", pf.get("publishedfileid"), item.result)
         return out
+
+    def check_updates(
+        self,
+        records: list[tuple[str, int]],
+        progress=None,
+        cancel=None,
+    ) -> list[str]:
+        """批量比对库内记录与 Steam 最新 time_updated，返回有更新的 item id 列表。
+
+        C1（1.4.1）库更新检查（手动按钮版）：
+
+        - ``records``: [(item_id, local_time_updated)]；本地快照为 0 或缺失
+          时该条跳过（无快照无法比对，避免误报全库更新）。
+        - ``progress(done, total)``: 每批完成后回调（大库不能假死）。
+        - ``cancel()``: 返回 True 时中止后续批次（用户关闭进度对话框）。
+        - **不经 api_cache**：``_api_post`` 直接走网络，比对的永远是 Steam
+          当前值（硬约束 1——否则比的是旧快照，更新被静默吞掉）。
+        - 复用 ``_endpoint_throttle`` 的 ``/ISteamRemoteStorage/`` 端点基准
+          （硬约束 4），批间间隔与详情页一致。
+        - 已知限流/网络失败：本批判未知，跳过该批继续下一批（不因单批
+          失败把整次检查废掉）；未知条目不进结果集。
+        """
+        targets = [(str(i), int(t or 0)) for i, t in records if i and int(t or 0) > 0]
+        if not targets:
+            if progress:
+                progress(0, 0)
+            return []
+        BATCH = 50
+        batches = [targets[i:i + BATCH] for i in range(0, len(targets), BATCH)]
+        updated: list[str] = []
+        for bi, batch in enumerate(batches):
+            if cancel and cancel():
+                break
+            # 端点节流（priority=False：后台检查不与用户点击争槽）
+            self._endpoint_throttle("/ISteamRemoteStorage/", priority=False)
+            try:
+                details = self.get_file_details([i for i, _ in batch])
+            except Exception as e:  # noqa: BLE001
+                log.warning("更新检查第 %d/%d 批失败，跳过: %s", bi + 1, len(batches), e)
+                details = {}
+            for item_id, local_tu in batch:
+                item = details.get(item_id)
+                if item is None:
+                    continue                 # 本批失败或物品不存在：不进结果集
+                if item.time_updated > local_tu:
+                    updated.append(item_id)
+            if progress:
+                progress(min((bi + 1) * BATCH, len(targets)), len(targets))
+        return updated
 
     def get_collection_details(self, collection_id: str) -> list[str]:
         """获取合集内的全部物品 id。"""
@@ -721,6 +779,8 @@ class SteamAPI:
             raise
         except requests.RequestException as e:
             log.error("抓取浏览页失败 (appid=%s): %s", appid, e)
+            # B2：连接级失败计入共享熔断器（预取据此停止空打）
+            self._browse_breaker.record_failure(e)
             return []
 
         card_matches = list(self._CARD_RE.finditer(html))
@@ -736,11 +796,13 @@ class SteamAPI:
                     appid, len(hub_items),
                 )
                 cache.set(key, hub_items)
+                self._browse_breaker.record_success()
                 # 与命中路径一致：返回深拷贝，enrich() 就地修改不污染缓存
                 return [copy.deepcopy(it) for it in hub_items]
 
         log.info("浏览页 appid=%s page=%s -> %d 个物品", appid, page, len(items))
         cache.set(key, items)
+        self._browse_breaker.record_success()
         # 未命中路径同样必须深拷贝：本列表即缓存内的对象，调用方
         #（BrowseWorker.enrich）就地修改会污染缓存，使命中路径的
         # 深拷贝保护失效

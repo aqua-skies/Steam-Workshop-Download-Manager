@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import io as _io  # noqa: E402
 
 from swdm.core import WorkshopItem  # noqa: E402
-from swdm.core.cdn_downloader import (  # noqa: E402
-    download_file,
-    download_item_cdn,
-    resolve_file_url,
-)
+from swdm.core.providers.cdn import CDNProvider  # noqa: E402
+from swdm.core.steamcmd_engine import DownloadStatus  # noqa: E402
+
+# 门面已于 1.4.1 移除，测试直接用 provider API（cdn_downloader facade removed in 1.4.1）
+_cdn = CDNProvider(config={})
 
 out = _io.StringIO()
 def p(*a):
@@ -79,9 +79,9 @@ sess.headers["User-Agent"] = "SWDM-test/1.0"
 
 # 1) 完整下载
 dest = os.path.join(_TMP, "full.bin")
-r = download_file(BASE + "/full.bin", dest, session=sess)
-check("完整下载成功", r["ok"], r["message"])
-check("字节数正确", r["bytes"] == len(PAYLOAD), str(r["bytes"]))
+r = _cdn.http_download(BASE + "/full.bin", dest, sess)
+check("完整下载成功", r.status == DownloadStatus.SUCCESS, r.message)
+check("字节数正确", r.bytes_done == len(PAYLOAD), str(r.bytes_done))
 check("内容一致", open(dest, "rb").read() == PAYLOAD)
 
 # 2) 断点续传：先写一半，再下载
@@ -89,10 +89,10 @@ half = os.path.join(_TMP, "resume.bin")
 with open(half, "wb") as f:
     f.write(PAYLOAD[:len(PAYLOAD)//2])
 progress = []
-r = download_file(BASE + "/resume.bin", half, session=sess,
-                  on_progress=lambda pct, done, msg: progress.append((pct, done)))
-check("断点续传成功", r["ok"], r["message"])
-check("续传后字节数正确", r["bytes"] == len(PAYLOAD), str(r["bytes"]))
+r = _cdn.http_download(BASE + "/resume.bin", half, sess,
+                       on_progress=lambda pct, done, msg: progress.append((pct, done)))
+check("断点续传成功", r.status == DownloadStatus.SUCCESS, r.message)
+check("续传后字节数正确", r.bytes_done == len(PAYLOAD), str(r.bytes_done))
 check("续传后内容一致", open(half, "rb").read() == PAYLOAD)
 check("续传有进度回调", len(progress) > 0,
       f"{len(progress)} 次，首次 pct={progress[0][0]:.0f}")
@@ -101,7 +101,8 @@ check("续传有进度回调", len(progress) > 0,
 item = WorkshopItem(
     publishedfileid="999", appid="4000", title="t", file_size=1024,
 )
-res = download_item_cdn(item, os.path.join(_TMP, "cdn_dir"), api=None)
+_cdn.api = None
+res = _cdn.download(item, os.path.join(_TMP, "cdn_dir"))
 check("匿名 CDN 返回 FAILED", res.status.value == "failed",
       str(res.status))
 check("失败消息含回退提示", res.message and "回退" in res.message, res.message[:40])
@@ -111,16 +112,16 @@ item2 = WorkshopItem(
     publishedfileid="998", appid="4000", title="t2", file_size=len(PAYLOAD),
     file_url=BASE + "/item.bin",
 )
-res2 = download_item_cdn(item2, os.path.join(_TMP, "cdn_dir2"))
+res2 = _cdn.download(item2, os.path.join(_TMP, "cdn_dir2"))
 check("有 file_url 时 CDN 下载成功", res2.status.value == "success",
       str(res2.status))
 check("CDN 下载内容一致",
       os.path.isfile(res2.path) and open(res2.path, "rb").read() == PAYLOAD,
       res2.path or "")
 
-# 5) resolve_file_url：优先用物品自带 url
+# 5) resolve：优先用物品自带 url
 check("resolve 优先用自带 file_url",
-      resolve_file_url(item2) == BASE + "/item.bin")
+      _cdn.resolve(item2) == BASE + "/item.bin")
 
 srv.shutdown()
 result = "\n".join(out.getvalue().splitlines())

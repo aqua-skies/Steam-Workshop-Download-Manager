@@ -228,46 +228,83 @@ check("无作者链接的块被跳过（如已删除评论）",
       ) == [])
 
 # =========================================================== parse_available_tags
+# 真实形态（bug14 修复后）：浏览页标签是 <form id="TagsFilterForm"> 内
+# name="requiredtags[]" 的 checkbox 控件，取 value 属性、绝不回退链接文本
+# （回退会把页脚/导航链接当标签——cookie/隐私政策混入的直接根源）。
 _HTML_TAGS = """
 <div class="rightSection">
   <div class="browseFilter" id="tagFilter">
     <div class="browseFilterTitle">Browse by tag</div>
-    <div class="tagFilter">
-      <a href="https://steamcommunity.com/workshop/browse/?appid=4000&amp;requiredtags=Map">Map</a>
-      <a href="https://steamcommunity.com/workshop/browse/?appid=4000&amp;requiredtags=Weapon">Weapon</a>
-      <a href="https://steamcommunity.com/workshop/browse/?appid=4000&amp;requiredtags=NPC">NPC</a>
-    </div>
+    <form id="TagsFilterForm" method="GET" action="/workshop/browse/">
+      <input type="checkbox" name="requiredtags[]" value="Map" id="tag_Map">
+      <label for="tag_Map">Map</label>
+      <input type="checkbox" name="requiredtags[]" value="Weapon" id="tag_Weapon">
+      <label for="tag_Weapon">Weapon</label>
+      <input type="checkbox" name="requiredtags[]" value="NPC" id="tag_NPC">
+      <label for="tag_NPC">NPC</label>
+    </form>
   </div>
   <div class="browseFilter">
     <div class="browseFilterTitle">Sort by</div>
-    <a href="https://steamcommunity.com/workshop/browse/?appid=4000&amp;browsesort=mostrecent">Most Recent</a>
+    <select name="browsesort">
+      <option value="mostrecent">Most Recent</option>
+    </select>
   </div>
 </div>
 """
 _tags = parse_available_tags(_HTML_TAGS)
 check("浏览页标签解析", _tags == ["Map", "Weapon", "NPC"], str(_tags))
 
-# --- 排序链接不应误入标签（requiredtags 锚点精确）---
+# --- 排序控件不应误入标签（requiredtags[] 锚点精确）---
 check("标签不含排序项", "Most Recent" not in _tags)
 
-# --- 边界：URL 编码的标签名 ---
+# --- 边界：HTML 实体编码的标签名（value 属性经 html.unescape）---
 _HTML_ENC = (
-    '<div class="tagFilter">'
-    '<a href="...?requiredtags=Buildings%20%26amp%3B%20Props">Buildings</a>'
-    '</div>'
+    '<input type="checkbox" name="requiredtags[]" '
+    'value="Buildings &amp; Props">'
 )
-check("URL 编码标签解码", parse_available_tags(_HTML_ENC) == ["Buildings & Props"],
+check("HTML 实体编码标签解码",
+      parse_available_tags(_HTML_ENC) == ["Buildings & Props"],
       str(parse_available_tags(_HTML_ENC)))
 
-# --- 边界：容器锚点降级（无 tagFilter/browseFilter 容器 -> 全页面兜底）---
+# --- 边界：无 TagsFilterForm 容器 -> 全页面控件兜底 ---
 _HTML_FALLBACK = (
     '<div class="something">'
-    '<a href=".../workshop/browse/?appid=4000&requiredtags=Addon">Addon</a>'
+    '<input type="checkbox" name="requiredtags[]" value="Addon">'
     "</div>"
 )
 check("无容器时全页面兜底",
       parse_available_tags(_HTML_FALLBACK) == ["Addon"],
       str(parse_available_tags(_HTML_FALLBACK)))
+
+# --- 边界：下拉框形态（name 在 <select> 上，option 自身无 name）---
+_HTML_SELECT = (
+    '<form id="TagsFilterForm">'
+    '<select name="requiredtags[]">'
+    '<option value="-1">&lt; none specified &gt;</option>'
+    '<option value="Scenario">Scenario</option>'
+    '<option value="Campaign">Campaign</option>'
+    '</select>'
+    "</form>"
+)
+check("下拉框标签解析（跳过 -1 占位项）",
+      parse_available_tags(_HTML_SELECT) == ["Scenario", "Campaign"],
+      str(parse_available_tags(_HTML_SELECT)))
+
+# --- 边界：select 占位项与纯数字 value 不当标签 ---
+check("纯数字 value 不当标签",
+      parse_available_tags(
+          '<input name="requiredtags[]" value="12345">'
+      ) == [])
+
+# --- 边界：链接形态不再被误解析（bug14 根源回归保护）---
+_HTML_LINKS = (
+    '<a href="/workshop/browse/?appid=4000&requiredtags=Map">Map</a>'
+    '<a href="/cookie_policy">Cookie Policy</a>'
+)
+check("链接形态不当标签（bug14 回归保护）",
+      parse_available_tags(_HTML_LINKS) == [],
+      str(parse_available_tags(_HTML_LINKS)))
 
 # --- 边界：空态 ---
 check("空 HTML 标签返回空", parse_available_tags("") == [])
