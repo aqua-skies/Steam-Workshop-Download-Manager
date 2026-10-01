@@ -1,9 +1,9 @@
 [PASS] 初始无专属配置 
-[PASS] 未配置游戏回退全局目录 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_se42_rfs\SWDM\mods
-[PASS] set_game_dir 返回生效目录 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_se42_rfs\MyGModMods
-[PASS] 配置后读取一致 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_se42_rfs\MyGModMods
+[PASS] 未配置游戏回退全局目录 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_2s4o6vbq\SWDM\mods
+[PASS] set_game_dir 返回生效目录 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_2s4o6vbq\MyGModMods
+[PASS] 配置后读取一致 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_2s4o6vbq\MyGModMods
 [PASS] configured_game_dirs 含 4000 
-[PASS] 内容根目录拼接正确 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_se42_rfs\MyGModMods\steamapps\workshop\content\4000
+[PASS] 内容根目录拼接正确 C:\Users\Lenovo\AppData\Local\Temp\swdm_gamedirs_2s4o6vbq\MyGModMods\steamapps\workshop\content\4000
 [PASS] 未配置游戏仍回退全局 
 [PASS] 清除后回退全局 
 [PASS] 清除后 configured 为空 
@@ -11,5 +11,5 @@
 [PASS] 表格含 2 个条目 2
 [PASS] 条目含游戏名 
 [PASS] 条目按名排序 
-[PASS] 持久化后仍有 2 条 {'4000': 'C:\\Users\\Lenovo\\AppData\\Local\\Temp\\swdm_gamedirs_se42_rfs\\A', '252490': 'C:\\Users\\Lenovo\\AppData\\Local\\Temp\\swdm_gamedirs_se42_rfs\\B'}
+[PASS] 持久化后仍有 2 条 {'4000': 'C:\\Users\\Lenovo\\AppData\\Local\\Temp\\swdm_gamedirs_2s4o6vbq\\A', '252490': 'C:\\Users\\Lenovo\\AppData\\Local\\Temp\\swdm_gamedirs_2s4o6vbq\\B'}
 [PASS] 空白路径视为清除 

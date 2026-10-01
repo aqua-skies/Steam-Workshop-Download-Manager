@@ -199,6 +199,21 @@ try:
     check("工坊: 卡片下载入队不崩", True)
 except Exception as e:  # noqa: BLE001
     check("工坊: 卡片下载入队不崩", False, f"{type(e).__name__}: {e}")
+# F3 修复后 svc.downloads_tab 已注入，_download_item 会真正建立占位行
+# （S5b 卖点路径已恢复）；清掉残留再进入下载页断言，保持空表前提
+try:
+    win.svc.downloader.clear_completed()
+except Exception:  # noqa: BLE001
+    pass
+try:
+    with win.svc.downloader._lock:
+        win.svc.downloader._queue.clear()
+        win.svc.downloader._active.clear()
+except Exception:  # noqa: BLE001
+    pass
+dt._row_map.clear()
+while dt.table.rowCount():
+    dt.table.removeRow(0)
 
 # --- 标签栏：选游戏自动拉取（网络失败走 _on_tags_failed，不崩）
 try:
