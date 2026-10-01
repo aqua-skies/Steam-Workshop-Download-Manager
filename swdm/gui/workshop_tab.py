@@ -6,13 +6,17 @@ detail dialog, hover prefetch (yielding to user clicks, t15), URL import, and co
 """
 from __future__ import annotations
 
+import atexit
 import threading
+import time
+import weakref
 
 from PySide6.QtCore import Qt, QThread, QTimer, Signal
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QCompleter,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -30,7 +34,7 @@ from PySide6.QtWidgets import (
 
 from swdm.core import all_games, game_name
 from swdm.core.game_dirs import game_install_dir, set_game_dir
-from swdm.core.games import add_custom
+from swdm.core.games import add_custom, alias_appid, normalize_name
 from swdm.core.logger import get_logger
 from swdm.core.paths import LIBRARY_DIR
 from swdm.core.steam_api import SteamAPI
@@ -40,6 +44,55 @@ from swdm.gui.widgets import LoadingOverlay, SmoothScrollBar
 from swdm.gui.workers import BrowseWorker, ImageLoader
 
 log = get_logger("swdm.gui.workshop")
+
+
+# ------------------------------------------------------------------ m1 硬崩修复
+# 后台 QThread 保活池。QThread 无 C++ parent 时，Python 包装器是唯一
+# 持有者：旧实现把 worker 存进单一 self._xxx_worker 属性，新请求覆盖
+# 属性后旧引用归零 → GC 析构仍在 run() 的 C++ 线程 →
+# "QThread: Destroyed while thread is still running" → SIGSEGV。
+# 规则：worker start 前登记进池，finished（run() 已返回、线程已停）才
+# 移除；进程退出时 atexit 有界等待在途线程，避免退出阶段 GC 踩同一颗雷。
+_BG_THREADS: list[QThread] = []
+
+
+def _register_bg_thread(t) -> None:
+    """登记进保活池，finished 时自动移除（弱引用避免引用环）。
+
+    对没有 finished 信号的对象（如测试桩 QObject）静默跳过，
+    不让保活机制本身破坏调用方流程。
+    """
+    _BG_THREADS.append(t)
+    try:
+        t.finished.connect(
+            lambda wr=weakref.ref(t): _unregister_bg_thread(wr)
+        )
+    except (RuntimeError, AttributeError):  # noqa: BLE001
+        pass
+
+
+def _unregister_bg_thread(ref) -> None:
+    t = ref()
+    if t is None:
+        return
+    try:
+        _BG_THREADS.remove(t)
+    except ValueError:
+        pass
+
+
+def _drain_bg_threads() -> None:
+    """退出闸：有界等待所有在途后台线程跑完再让解释器回收。"""
+    for t in list(_BG_THREADS):
+        try:
+            if t.isRunning():
+                t.requestInterruption()
+                t.wait(2000)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+atexit.register(_drain_bg_threads)
 
 
 class _TagsFetchWorker(QThread):
@@ -134,6 +187,15 @@ class ModCardWidget(QWidget):
     def __init__(self, item, parent=None) -> None:
         super().__init__(parent)
         self.item = item
+        # 设计令牌试点（m4）：卡片走全局 QSS 对象名规则，内联样式移除
+        # （内联 setStyleSheet 优先级高于全局 QSS，是令牌统一的最大障碍）
+        self.setObjectName("swdmCard")
+        # 悬停态：QSS :hover 依赖 WA_Hover 才能触发重绘
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        # QSS 背景绘制：普通 QWidget 默认不画 stylesheet 背景（palette 已被
+        # QSS 同步但 paintEvent 不绘），WA_StyledBackground 让 style 画
+        # PE_Widget（含 bg / 1px 描边 / 8px 圆角），卡片才真正浮起
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._build(item)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
@@ -166,7 +228,8 @@ class ModCardWidget(QWidget):
         self.thumb = QLabel()
         self.thumb.setFixedSize(96, 96)
         self.thumb.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.thumb.setStyleSheet("background:#262b32; border-radius:4px;")
+        # m4：样式走 QSS #cardThumb 令牌规则（bg + 描边 + radius 3）
+        self.thumb.setObjectName("cardThumb")
         self.thumb.setText("🖼")
         lay.addWidget(self.thumb)
 
@@ -177,7 +240,7 @@ class ModCardWidget(QWidget):
         mid_host.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         title = _ElidedLabel(it.title or f"mod {it.publishedfileid}")
         title.setObjectName("cardTitle")
-        title.setStyleSheet("font-weight:600; font-size:13px; color:#e8ecf2;")
+        # m4：样式走 QSS #cardTitle 令牌规则（13px/600/#E8EAF0）
         # 字符挤压修复：不换行时必须省略，否则长标题溢出挤压相邻控件
         title.setFixedHeight(20)
         title.setTextFormat(Qt.TextFormat.PlainText)
@@ -185,12 +248,14 @@ class ModCardWidget(QWidget):
         mid.addWidget(title)
 
         self.meta = _ElidedLabel(self._meta_text(it))
-        self.meta.setStyleSheet("color:#8a909a; font-size:11px;")
+        # m4：样式走 QSS #cardMeta 令牌规则（11px/#9AA3AF）
+        self.meta.setObjectName("cardMeta")
         self.meta.setTextFormat(Qt.TextFormat.PlainText)
         mid.addWidget(self.meta)
 
         tags = _ElidedLabel("  ".join(f"[{t}]" for t in it.tags[:5]))
-        tags.setStyleSheet("color:#5f8fd0; font-size:10px;")
+        # m4：样式走 QSS #cardTags 令牌规则（11px/Steam 蓝 #66C0F4）
+        tags.setObjectName("cardTags")
         tags.setFixedHeight(16)
         tags.setTextFormat(Qt.TextFormat.PlainText)
         mid.addWidget(tags)
@@ -418,6 +483,22 @@ class WorkshopTab(QWidget):
             ed.textEdited.connect(self._on_search_text_edited)
             # bug2：输入游戏名后按回车，等效于选中下拉项，触发刷新+标签拉取
             ed.returnPressed.connect(self._on_game_enter)
+            # m2：联想改用 QCompleter（替代 game_combo.clear() 重建——
+            # 后者在输入途中销毁 popup 内部构件，打断后续按键，
+            # 即用户报告的"Backspace 只能删一个字符"，且有 SIGSEGV 风险）。
+            # combo 的下拉列表保持完整游戏表不变，联想候选进 completer
+            # 模型，职责分离；候选项 UserRole 存 appid，选中即切游戏。
+            self._suggestion_model = QStandardItemModel(self)
+            self._game_completer = QCompleter(self)
+            self._game_completer.setModel(self._suggestion_model)
+            self._game_completer.setCaseSensitivity(
+                Qt.CaseSensitivity.CaseInsensitive)
+            self._game_completer.setFilterMode(Qt.MatchFlag.MatchContains)
+            # 候选由我们预过滤排序，completer 只负责弹窗与键盘导航
+            self._game_completer.setCompletionMode(
+                QCompleter.CompletionMode.UnfilteredPopupCompletion)
+            ed.setCompleter(self._game_completer)
+            self._game_completer.activated.connect(self._on_suggestion_activated)
         row1.addWidget(self.game_combo, 1)
 
         # 低频操作（收藏/添加游戏/导入合集）收进"更多"菜单，
@@ -499,6 +580,10 @@ class WorkshopTab(QWidget):
         self.list_layout.setSpacing(6)
         self.list_layout.addStretch()
         self.list_scroll.setWidget(self.list_content)
+        # m4：滚动区透明化（视口+内容件 autoFill 亮灰，QSS 层不可达）
+        from swdm.gui.design_system import prepare_scroll_area
+
+        prepare_scroll_area(self.list_scroll)
         # 平滑滚动 + 加载遮罩
         sc_bar = SmoothScrollBar.install_on(self.list_scroll)
         # 滚轮一次只滚约半行（默认一整行，目不暇接）
@@ -564,42 +649,52 @@ class WorkshopTab(QWidget):
 
     def _current_appid(self) -> str:
         """解析当前游戏 AppID（bug2：editable combo 输入文字时
-        currentData 为空，需多层回退）。"""
+        currentData 为空，需多层回退）。
+
+        m1：选中联想项后 lineEdit 是全格式 "Name  (appid)"，
+        任何比较都先按 '(' 切出名字部分再比对，纯名字与全格式
+        都能命中（否则落空 '请先选择或输入游戏 AppID'）。
+        """
         text = self.game_combo.currentText().strip()
         idx = self.game_combo.currentIndex()
         # editable combo：用户输入新文字时 currentIndex 仍指向上一选中项，
         # 其 itemData 与当前输入无关（u2：直接采用会把上一个游戏当成当前
         # 游戏，导致"输入其他游戏一直显示未识别/识别错"）。
         # 只有下拉项文本与输入文本一致时，itemData 才可信。
+        low = normalize_name(text.split("(")[0].strip())
         if idx >= 0:
-            item_text = self.game_combo.itemText(idx).split("(")[0].strip()
+            item_text = normalize_name(
+                self.game_combo.itemText(idx).split("(")[0].strip())
             d = self.game_combo.itemData(idx)
-            if d and item_text.lower() == text.lower():
+            if d and item_text and item_text == low:
                 return str(d)
         if text.isdigit():
             return text
         # 下拉项文本形如 "Name  (appid)"：按名字匹配下拉项
-        low = text.lower()
         for i in range(self.game_combo.count()):
-            if self.game_combo.itemText(i).split("(")[0].strip().lower() == low:
+            it = normalize_name(self.game_combo.itemText(i).split("(")[0].strip())
+            if it and it == low:
                 d = self.game_combo.itemData(i)
                 if d:
                     return str(d)
         # 最近一次联想结果缓存
         for appid, name in getattr(self, "_last_search_pairs", []):
-            if name.strip().lower() == low:
+            if normalize_name(name) == low:
                 return str(appid)
         # 内置游戏表
         for g in all_games():
-            if g["name"].lower() == low:
+            if normalize_name(g["name"]) == low:
                 return g["appid"]
-        return ""
+        # 本地别名表（中文名/简称离线兜底）
+        return alias_appid(text)
 
     @staticmethod
     def _match_score(name: str, text: str) -> int:
-        """名称与输入的匹配度：精确 3 > 开头 2 > 包含 1 > 不匹配 0。"""
-        n = (name or "").strip().lower()
-        t = text.strip().lower()
+        """名称与输入的匹配度：精确 3 > 开头 2 > 包含 1 > 不匹配 0。
+        归一化比较（去撇号/空格/大小写/全角），故 "dont starve" ==
+        "Don't Starve"（m2 中英文适配）。"""
+        n = normalize_name(name)
+        t = normalize_name(text)
         if not n or not t:
             return 0
         if n == t:
@@ -611,14 +706,17 @@ class WorkshopTab(QWidget):
         return 0
 
     def _best_guess_appid(self, text: str) -> str:
-        """精确匹配失败后的模糊回退：取联想结果/内置表中最佳匹配项。"""
+        """精确匹配失败后的模糊回退：别名表/联想结果/内置表中最佳匹配项。"""
+        a = alias_appid(text)
+        if a:
+            return a
         pairs = getattr(self, "_last_search_pairs", [])
         best = max(
             ((self._match_score(n, text), str(a)) for a, n in pairs),
             default=(0, ""),
         )
         if best[0] > 0:
-            return best[1]
+            return str(best[1])
         for g in all_games():
             if self._match_score(g["name"], text) > 0:
                 return g["appid"]
@@ -641,6 +739,16 @@ class WorkshopTab(QWidget):
         editable combo 输入文字不触发 currentIndexChanged，导致
         标签不更新、列表提示"请先输入游戏 AppID"）。"""
         text = self.game_combo.currentText().strip()
+        # m2 去重：一次回车会被 combo 事件过滤器与 lineEdit 双重路由，
+        # 同文本 500ms 内的第二次调用直接吸收（避免双倍搜索与状态抖动）
+        now = time.monotonic()
+        if (
+            text == getattr(self, "_last_enter_text", None)
+            and now - getattr(self, "_last_enter_ts", 0.0) < 0.5
+        ):
+            return
+        self._last_enter_text = text
+        self._last_enter_ts = now
         appid = self._current_appid() or self._best_guess_appid(text)
         if appid:
             self._select_game_by_appid(appid, text)
@@ -675,8 +783,8 @@ class WorkshopTab(QWidget):
             if local:
                 self._fill_search_results(local[:8], is_local=True)
             else:
-                # 无本地匹配：关掉上一次残留的下拉，避免候选与输入不符
-                self.game_combo.hidePopup()
+                # 无本地匹配：关掉上一次残留的联想弹窗，避免候选与输入不符
+                self._fill_search_results([])
         self._search_timer.start()
 
     def _do_game_search(self) -> None:
@@ -725,11 +833,19 @@ class WorkshopTab(QWidget):
                 except Exception:  # noqa: BLE001
                     self.ready.emit([], self._v)
 
-        self._search_worker = _SearchWorker(client, text, version)
-        self._search_worker.ready.connect(
-            lambda res, v: self._on_search_ready(res, v)
-        )
-        self._search_worker.start()
+        w = _SearchWorker(client, text, version)
+        # m2 线程规矩：用绑定方法而非 lambda 连接。PySide6 对裸 lambda
+        # 用 DirectConnection → 槽在工作线程执行 → GUI 部件被非主线程访问
+        # （真正的崩溃元凶）。绑定 self（主线程 QWidget affinity）→
+        # AutoConnection → 队列到主线程执行。
+        w.ready.connect(self._on_search_ready)
+        # m1：保活池持有引用直到 finished（run 返回）。旧实现只有
+        # self._search_worker 单引用，被下一次搜索覆盖后仍在 run()
+        # 的旧线程即被 GC 析构 → 硬崩。版本号过滤逻辑不受影响：
+        # 旧 worker 的 ready 结果到达时仍按 version 丢弃。
+        _register_bg_thread(w)
+        self._search_worker = w   # 兼容旧外部引用，真实保活在 _BG_THREADS
+        w.start()
 
     def _retry_pending_search(self) -> None:
         """冷却结束后重发一次待选词（仅当输入框仍是那个词）。"""
@@ -744,16 +860,21 @@ class WorkshopTab(QWidget):
         self._do_game_search()
 
     def _local_game_matches(self, text: str) -> list:
-        """本地游戏库匹配（内置 + 收藏 + 自定义），零网络请求。"""
-        t = text.lower()
+        """本地游戏库匹配（内置 + 收藏 + 自定义 + 别名表），零网络请求。
+        归一化后子串匹配，中英文互通（m2）。"""
+        t = normalize_name(text)
         out = []
+        # 别名表命中置顶（中文/简称离线兜底）
+        a = alias_appid(text)
+        if a:
+            out.append((a, game_name(a)))
         for g in all_games():
             appid, name = str(g.get("appid", "")), str(g.get("name", ""))
-            if t in name.lower() or t in appid:
+            if t and (t in normalize_name(name) or t in appid):
                 out.append((appid, name))
         for appid in (self.svc.config.get("favorites_games") or []):
             n = game_name(appid)
-            if n and (t in n.lower() or t in str(appid)):
+            if n and (t in normalize_name(n) or t in str(appid)):
                 out.append((appid, n))
         seen, uniq = set(), []
         for appid, name in out:
@@ -762,25 +883,31 @@ class WorkshopTab(QWidget):
                 uniq.append((appid, name))
         return uniq[:12]
 
+    def _on_suggestion_activated(self, text: str) -> None:
+        """联想候选项被选中（点击或回车高亮项）：按项内 appid 切游戏。"""
+        idx = self._game_completer.currentIndex()
+        appid = idx.data(Qt.ItemDataRole.UserRole) if idx.isValid() else ""
+        if not appid:
+            return
+        name = (text or "").split("(")[0].strip()
+        self._select_game_by_appid(str(appid), name)
+
     def _fill_search_results(self, results, is_local: bool = False) -> None:
-        """填充联想候选到下拉框（不清空用户输入，选中状态与输入文本一致）。"""
+        """填充联想候选到 QCompleter 模型。不动 game_combo 的下拉表，
+        也不重建/清空 lineEdit —— 输入途中销毁构件会打断按键序列。"""
         ed = self.game_combo.lineEdit()
         if ed is None:
             return
-        cur_text = ed.text()
-        self.game_combo.blockSignals(True)
-        self.game_combo.clear()
+        self._suggestion_model.clear()
         for appid, name in results:
-            self.game_combo.addItem(f"{name}  ({appid})", appid)
-        # clear()+addItem 会使 combo 内部 currentIndex 变为 0，
-        # currentText 与 lineEdit 文本不一致（回车/currentData 会错读）；
-        # 显式置 -1：无选中项，当前游戏仍以 lineEdit 文本为准
-        self.game_combo.setCurrentIndex(-1)
-        self.game_combo.blockSignals(False)
-        ed.setText(cur_text)
-        # 本地/网络结果都弹下拉，体感一致（旧逻辑本地结果不弹）
+            item = QStandardItem(f"{name}  ({appid})")
+            item.setData(str(appid), Qt.ItemDataRole.UserRole)
+            self._suggestion_model.appendRow(item)
         if results:
-            self.game_combo.showPopup()
+            self._game_completer.setCompletionPrefix("")
+            self._game_completer.complete()
+        else:
+            self._game_completer.popup().hide()
 
     def _on_search_ready(self, results, version: int) -> None:
         # 在途取消：版本不匹配说明已有更新的搜索，丢弃本次结果
@@ -912,6 +1039,9 @@ class WorkshopTab(QWidget):
         self._page = max(1, self._page)
         self.prev_btn.setEnabled(self._page > 1)
         self.page_label.setText(f"第 {self._page} 页")
+        # m2：即时反馈——发起搜索/翻页的瞬间状态栏进入"搜索中"，
+        # 不等 350ms 去抖与网络回包（用户反馈：操作后画面毫无变化）
+        self.status_label.setText("搜索中…")
         # 去抖：用户快速切换游戏/翻页/搜索时，合并为最后一次请求
         # （Steam 社区按 IP 限流，短时间多次请求会触发 429）
         self._refresh_timer.start(350)
@@ -960,10 +1090,19 @@ class WorkshopTab(QWidget):
         self._worker.progress.connect(self.status_label.setText)
         self._list_overlay.start("正在加载工坊列表…")
         self._worker.failed.connect(self._on_list_failed)
-        self._worker.items_ready.connect(
-            lambda items, g=gen: self._on_items_ready(items, g))
-        self._worker.items_ready.connect(lambda _items: self._list_overlay.stop())
+        # m2 线程规矩：跨线程信号必须连绑定方法（队列连接），
+        # 裸 lambda 是 DirectConnection → 槽跑在工作线程里改 GUI（崩溃元凶）
+        self._worker.items_ready.connect(self._on_items_ready)
+        self._worker.items_ready.connect(self._stop_list_overlay)
+        # m1：无 parent 的 QThread 必须进保活池，否则 self._worker
+        # 被下一次刷新覆盖后旧线程在 run() 中被 GC 析构 → 硬崩
+        _register_bg_thread(self._worker)
         self._worker.start()
+
+    def _stop_list_overlay(self, *args) -> None:
+        """items_ready 到达即停加载遮罩（队列连接的桥接槽，
+        签名兼容 (items, gen) 与无参）。"""
+        self._list_overlay.stop()
 
     def _on_items_ready(self, items: list, gen: int) -> None:
         """O6（net N1）：代际过期则丢弃，防止快速操作时旧结果覆盖新结果。"""
@@ -1091,8 +1230,20 @@ class WorkshopTab(QWidget):
     def _on_image_loaded(self, url: str, pixmap) -> None:
         # O1（algo #1）：url→cards 索引替代全表扫描
         # （旧实现每张图片到达都遍历全部卡片，30 图×30 卡=900 次比较）
-        for card in self._url_index.get(url, ()):
-            card.set_thumbnail(pixmap)
+        cards = self._url_index.get(url)
+        if not cards:
+            return
+        for card in list(cards):
+            # m1：翻页/清空时卡片已 deleteLater，图片回调到达晚于
+            # C++ 对象销毁 → 'Internal C++ object already deleted'。
+            # 检验目标存活：失败即跳过并清理死索引。
+            try:
+                card.set_thumbnail(pixmap)
+            except RuntimeError:
+                try:
+                    cards.remove(card)
+                except ValueError:
+                    pass
 
     # ------------------------------------------------------------- 悬停预取
     def _on_card_hover(self, item_id: str) -> None:
@@ -1155,6 +1306,9 @@ class WorkshopTab(QWidget):
         w.done.connect(
             lambda iid, wr=w: (self._prefetching.discard(iid), wr.deleteLater())
         )
+        # m1：无 parent 的 QThread 进保活池（done 槽里 deleteLater，
+        # finished 后池中移除，两者顺序安全）
+        _register_bg_thread(w)
         w.start()
 
     # ------------------------------------------------- B2 下一页预取
@@ -1344,6 +1498,9 @@ class WorkshopTab(QWidget):
         self._dep_worker.result.connect(
             lambda payload: self._on_deps_resolved(items, appid, payload, ask)
         )
+        # m1：无 parent 的 QThread 进保活池，self._dep_worker 被下次
+        # 下载覆盖时旧解析线程仍在 run() → 旧实现会硬崩
+        _register_bg_thread(self._dep_worker)
         self._dep_worker.start()
 
     def _refresh_download_ui(self, items: list, appid: str) -> None:
@@ -1442,21 +1599,12 @@ class WorkshopTab(QWidget):
         worker.creator_ready.connect(dlg.set_creator)
         worker.comments_ready.connect(dlg.set_comments)
         worker.total_ready.connect(dlg.set_comment_count)
-        worker.conflicts_ready.connect(
-            lambda cs: dlg.set_conflicts([
-                {"id": c.mod_id, "title": c.name, "reason": c.statement}
-                for c in cs
-            ])
-        )
-        worker.deps_ready.connect(
-            lambda deps: dlg.set_dependencies(
-                [{"id": pid, "title": title} for pid, title in deps]
-            )
-        )
+        worker.conflicts_ready.connect(dlg.set_conflicts_raw)
+        worker.deps_ready.connect(dlg.set_dependencies_raw)
         worker.failed.connect(dlg.show_error)
-        # 网络受限时在弹窗里显示"加载失败"，并把空态切到"加载完成"
-        worker.failed.connect(lambda _msg: dlg.set_comments([]))
-        worker.failed.connect(lambda _msg: dlg.set_dependencies([]))
+        # m2 线程规矩：failed 的 lambda 同上，改绑定方法
+        worker.failed.connect(dlg.clear_comments)
+        worker.failed.connect(dlg.clear_dependencies)
         worker.start()
         self._detail_worker = worker
 
@@ -1543,6 +1691,9 @@ class WorkshopTab(QWidget):
         worker = _TagsFetchWorker(self.svc.api, appid)
         worker.tags_ready.connect(self._on_tags_ready)
         worker.failed.connect(self._on_tags_failed)
+        # m1：无 parent 的 QThread 进保活池，self._tags_worker 被
+        # 下次拉取覆盖时旧线程仍在 run() → 旧实现会硬崩
+        _register_bg_thread(worker)
         worker.start()
         self._tags_worker = worker
 

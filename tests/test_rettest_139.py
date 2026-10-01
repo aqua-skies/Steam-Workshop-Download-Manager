@@ -74,23 +74,28 @@ guess = WT._current_appid() or WT._best_guess_appid("garry")
 check("U3d 模糊输入有合理回退候选", guess == "4000", str(guess))
 
 # =========================================================== U2 搜索联想下拉
-# 用户视角：输入字符立刻有本地候选下拉
+# 用户视角：输入字符立刻有本地候选下拉（1.4.2 起：QCompleter 模型，
+# 不再 clear()+addItem 进 game_combo）
 WT._local_game_matches = lambda t: [("4000", "Garry's Mod")]
 ed = WT.game_combo.lineEdit()
 ed.setText("gar")
 WT._on_search_text_edited("gar")
 app.processEvents()
+
+def _suggest_texts():
+    return [WT._suggestion_model.item(r).text()
+            for r in range(WT._suggestion_model.rowCount())]
+
 check("U2 输入即出本地联想下拉",
-      WT.game_combo.count() > 0
-      and "Garry's Mod" in WT.game_combo.itemText(0),
-      repr(WT.game_combo.itemText(0) if WT.game_combo.count() else ""))
+      len(_suggest_texts()) > 0 and "Garry's Mod" in _suggest_texts()[0],
+      repr(_suggest_texts()[:2]))
 
 # 联想结果按匹配度排序：精确匹配第一
 WT._local_game_matches = lambda t: [("4000", "Garry's Mod"), ("107410", "Arma 3")]
 WT._on_search_text_edited("garry")
 check("U2b 联想按匹配度排序（精确优先）",
-      WT.game_combo.itemText(0).startswith("Garry's Mod"),
-      repr(WT.game_combo.itemText(0)))
+      _suggest_texts() and _suggest_texts()[0].startswith("Garry's Mod"),
+      repr(_suggest_texts()[:2]))
 
 # =========================================================== U4 搜索回车
 # 用户视角：回车 = 确认第一个候选，游戏被选中

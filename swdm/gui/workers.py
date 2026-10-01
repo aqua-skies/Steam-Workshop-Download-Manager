@@ -30,7 +30,7 @@ log = get_logger("swdm.gui.workers")
 class BrowseWorker(QThread):
     """浏览/搜索工坊列表。"""
 
-    items_ready = Signal(list)     # list[WorkshopItem]
+    items_ready = Signal(list, int)  # (list[WorkshopItem], 代际号)
     progress = Signal(str)
     failed = Signal(str)
 
@@ -67,8 +67,11 @@ class BrowseWorker(QThread):
                 self.progress.emit(f"抓取到 {len(items)} 个物品，正在补全元数据…")
                 if self.enrich and items:
                     self.api.enrich(items)
-            # 熔断期内的结果仍可展示（缓存兜底），但代际过期直接丢弃
-            self.items_ready.emit(items)
+            # 熔断期内的结果仍可展示（缓存兜底），但代际过期直接丢弃。
+            # m2：信号携带代际号（2 参），供 WorkshopTab 以绑定方法
+            # 队列连接接收（1.4.1 用闭包 lambda 补 gen——直连后与槽位
+            # 元数不符会 TypeError，见 t6 F1）。
+            self.items_ready.emit(items, self.generation)
         except RateLimitError as e:
             log.warning("浏览触发限流: %s", e)
             self.failed.emit(
@@ -109,9 +112,14 @@ class _ImageTask(QRunnable):
         )
 
     def run(self) -> None:
-        path = self._api.fetch_image(self._url, max(self._size))
-        _pending_sizes[self._url] = self._size
-        _image_bus.ready.emit(self._url, path)
+        try:
+            path = self._api.fetch_image(self._url, max(self._size))
+            _pending_sizes[self._url] = self._size
+            _image_bus.ready.emit(self._url, path)
+        except RuntimeError:
+            # m1：进程退出/模块回收后信号源可能已被销毁
+            # （'Signal source has been deleted'），图片回调不硬崩
+            pass
 
 
 class _ImageDownloadTask(QRunnable):
@@ -141,10 +149,20 @@ class _ImageDownloadTask(QRunnable):
 
             b64 = base64.b64encode(resp.content).decode("ascii")
             mime = resp.headers.get("Content-Type", "image/png").split(";")[0]
-            _image_bus.ready.emit(self._url, f"data:{mime};base64,{b64}")
+            try:
+                _image_bus.ready.emit(self._url, f"data:{mime};base64,{b64}")
+            except RuntimeError:
+                # m1：退出阶段总线已销毁（Signal source has been deleted）
+                pass
+        except RuntimeError:
+            # m1：_image_bus 已被回收时的兜底，不硬崩
+            pass
         except Exception:  # noqa: BLE001
             # 失败：发空路径触发占位逻辑（_build_pixmap 对空 path 保留占位图）
-            _image_bus.ready.emit(self._url, "")
+            try:
+                _image_bus.ready.emit(self._url, "")
+            except RuntimeError:
+                pass
 
 
 class ImageLoader:

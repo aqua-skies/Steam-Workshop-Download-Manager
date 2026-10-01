@@ -60,20 +60,20 @@ def step() -> None:
             win.workshop_tab._refresh_list()
             state["phase"] = 2
         elif p == 2 and el > 9.0:
-            n = win.workshop_tab.list_widget.count()
-            log.info("[GUI测试] 阶段3：列表项数量 = %d", n)
+            n = len(win.workshop_tab._cards())
+            log.info("[GUI测试] 阶段3：列表卡片数量 = %d", n)
             shot("02_workshop.png")
             state["phase"] = 3
         elif p == 3 and el > 10.5:
             # 选最小的一项下载（快速验证）
-            if win.workshop_tab.list_widget.count() > 0:
+            if len(win.workshop_tab._cards()) > 0:
                 log.info("[GUI测试] 阶段4：下载最小的 mod")
                 items = win.workshop_tab._items
                 smallest = min(items, key=lambda i: i.file_size or 10**12) if items else None
                 pid = smallest.publishedfileid if smallest else None
                 if not pid:
-                    item = win.workshop_tab.list_widget.item(0)
-                    pid = item.data(Qt.ItemDataRole.UserRole)
+                    # 卡片兜底：取第一张卡片的物品 id（替代已移除的 list_widget）
+                    pid = win.workshop_tab._cards()[0].item.publishedfileid
                 log.info("[GUI测试] 选中 %s (size=%s)", pid,
                          smallest.file_size if smallest else "?")
                 win.workshop_tab._download_item(pid)
@@ -105,7 +105,7 @@ def step() -> None:
             snap = win.svc.downloader.snapshot()
             stats = win.svc.library.stats()
             summary = {
-                "workshop_items": win.workshop_tab.list_widget.count(),
+                "workshop_items": len(win.workshop_tab._cards()),
                 "active_downloads": len(snap["active"]),
                 "done_downloads": len(snap["done"]),
                 "library_total": stats["total"],

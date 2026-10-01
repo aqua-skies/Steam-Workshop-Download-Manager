@@ -11,7 +11,7 @@
 
 #define SWDMAppName        "SWDM - Steam 工坊下载管理器"
 #define SWDMAppNameShort   "SWDM"
-#define SWDMVersion        "1.4.1"
+#define SWDMVersion        "1.4.2"
 #define SWDMPublisher      "SWDM"
 #define SWDMExeName        "SWDM.exe"
 

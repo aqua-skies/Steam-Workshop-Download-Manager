@@ -159,16 +159,15 @@ check("U1g 本地匹配直接选中", wt.game_combo.currentData() == "4000",
 # U2 联想下拉一致性
 # =====================================================================
 
-# U2a 填充候选后 currentIndex 为 -1，lineEdit 文本不被破坏
+# U2a 填充候选后 lineEdit 文本不被破坏（1.4.2：QCompleter 模型，
+# currentIndex 保持游戏下拉表语义，候选项计数看建议模型）
 _set_game_text("terraria")
 wt._fill_search_results([("105600", "Terraria"), ("4000", "Garry's Mod")])
 app.processEvents()
-check("U2a 填充后无选中项（currentIndex=-1）",
-      wt.game_combo.currentIndex() == -1, repr(wt.game_combo.currentIndex()))
 check("U2a lineEdit 文本保留", wt.game_combo.lineEdit().text() == "terraria",
       repr(wt.game_combo.lineEdit().text()))
-check("U2a 候选项数正确", wt.game_combo.count() == 2,
-      repr(wt.game_combo.count()))
+check("U2a 候选项数正确", wt._suggestion_model.rowCount() == 2,
+      repr(wt._suggestion_model.rowCount()))
 
 # U2b 排序：精确匹配第一
 wt._last_search_pairs = [("105600", "Terraria")]
@@ -178,8 +177,9 @@ _set_game_text("terraria")
 wt._on_search_ready([_FakeResult("105600", "Terraria")], v)
 app.processEvents()
 check("U2b 精确匹配排第一",
-      wt.game_combo.itemText(0).startswith("Terraria"),
-      repr(wt.game_combo.itemText(0)))
+      wt._suggestion_model.rowCount() > 0
+      and wt._suggestion_model.item(0).text().startswith("Terraria"),
+      repr(wt._suggestion_model.item(0).text() if wt._suggestion_model.rowCount() else ""))
 
 # U2c 排序：本地精确匹配优先于网络的包含/开头匹配
 wt._last_search_pairs = [("999999", "Garry-like other game")]
@@ -188,7 +188,8 @@ v = wt._search_version
 _set_game_text("garry")
 wt._on_search_ready([_FakeResult("999999", "Garry-like other game")], v)
 app.processEvents()
-first = wt.game_combo.itemText(0)
+first = (wt._suggestion_model.item(0).text()
+         if wt._suggestion_model.rowCount() else "")
 check("U2c 本地精确匹配仍排第一", first.startswith("Garry's Mod  (4000)"),
       repr(first))
 

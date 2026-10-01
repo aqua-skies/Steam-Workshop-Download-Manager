@@ -102,9 +102,10 @@ ed.setText("g")
 wt._on_search_text_edited("g")
 app.processEvents()
 check("输入即出本地联想结果",
-      wt.game_combo.count() > 0
-      and "Garry's Mod" in wt.game_combo.itemText(0),
-      repr(wt.game_combo.itemText(0) if wt.game_combo.count() else ""))
+      wt._suggestion_model.rowCount() > 0
+      and "Garry's Mod" in wt._suggestion_model.item(0).text(),
+      repr(wt._suggestion_model.item(0).text()
+           if wt._suggestion_model.rowCount() else ""))
 
 # ---- 3) 标签追加：详情页点标签 → 标签栏出现 chip 并选中
 wt.tag_bar.set_tags(["已有标签"])

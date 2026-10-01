@@ -429,9 +429,14 @@ try:
 except Exception:  # noqa: BLE001
     pass
 app.processEvents()
+# 1.4.2：联想进 QCompleter 模型（不再 clear+addItem 入 game_combo）
+def _c3e_texts():
+    return [wt._suggestion_model.item(r).text()
+            for r in range(wt._suggestion_model.rowCount())]
+
 check("C3e 本地联想即时出候选（不等 0.7s）",
-      wt.game_combo.count() > 0 and "Garry's Mod" in wt.game_combo.itemText(0),
-      repr(wt.game_combo.itemText(0) if wt.game_combo.count() else ""))
+      len(_c3e_texts()) > 0 and "Garry's Mod" in _c3e_texts()[0],
+      repr(_c3e_texts()[:2]))
 
 # ====================================================== D. 关联交互
 # D1 通道切换 ↔ 在飞任务：job.channel 由链内实际跑通的通道记录

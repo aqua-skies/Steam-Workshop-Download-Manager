@@ -75,6 +75,10 @@ class MainWindow(QMainWindow):
 
         self.workshop_tab = WorkshopTab(self.svc)
         self.downloads_tab = DownloadsTab(self.svc)
+        # F3：把下载页注入服务容器——workshop_tab._refresh_download_ui 的
+        # 「勾选下载即时占位行」（bug1/13 即时反馈）此前因
+        # svc.downloads_tab 不存在抛 AttributeError 被 except 吞成死路径
+        self.svc.downloads_tab = self.downloads_tab
         self.library_tab = LibraryTab(self.svc)
         self.settings_tab = SettingsTab(self.svc)
         self.debug_tab = DebugTab(self.svc)
@@ -257,10 +261,16 @@ class MainWindow(QMainWindow):
 
     def _apply_theme(self) -> None:
         from swdm.core.config import get_config
+        from swdm.gui.design_system import design_qss
         from swdm.gui.styles import qss
 
         theme = get_config().get("general", "theme") or "dark"
-        self.setStyleSheet(qss(theme))
+        # QSS 2.0：modern = 旧 QSS + 设计令牌 overlay（叠加层）；
+        # classic 或 overlay 缺失时 design_qss 内部自动降级回 1.x qss。
+        try:
+            self.setStyleSheet(design_qss(theme))
+        except Exception:  # noqa: BLE001
+            self.setStyleSheet(qss(theme))
         self._watch_system_theme(theme)
         try:
             icon_path = resource_path("swdm", "resources", "icon.ico")
@@ -296,11 +306,15 @@ class MainWindow(QMainWindow):
     def _on_system_theme_changed(self, _scheme) -> None:
         """系统配色变化时重应用 QSS（仅当用户选了「跟随系统」）。"""
         from swdm.core.config import get_config
+        from swdm.gui.design_system import design_qss
         from swdm.gui.styles import qss
 
         theme = get_config().get("general", "theme") or "dark"
         if theme == "auto":
-            self.setStyleSheet(qss("auto"))
+            try:
+                self.setStyleSheet(design_qss("auto"))
+            except Exception:  # noqa: BLE001
+                self.setStyleSheet(qss("auto"))
 
     def _refresh_status_bar(self) -> None:
         stats = self.svc.library.stats()

@@ -324,6 +324,10 @@ class SettingsTab(QWidget):
 
         # 装入滚动区域：内容超出窗口高度时可滚动，控件不再被压扁
         scroll.setWidget(content)
+        # m4：滚动区透明化（视口+内容件 autoFill 亮灰，QSS 层不可达）
+        from swdm.gui.design_system import prepare_scroll_area
+
+        prepare_scroll_area(scroll)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.addWidget(scroll)

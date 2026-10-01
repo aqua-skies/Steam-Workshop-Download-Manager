@@ -33,6 +33,9 @@ class Services:
     library: ModLibrary
     engine: SteamCMDEngine
     downloader: DownloadManager
+    # F3：下载页引用由 MainWindow._build 注入（workshop_tab
+    # 「勾选下载即时占位行」经 svc.downloads_tab.add_pending_batch 可达）
+    downloads_tab: object = None
 
     def refresh_engine(self) -> None:
         """根据当前配置重建引擎参数。

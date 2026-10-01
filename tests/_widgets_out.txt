@@ -4,7 +4,7 @@ PASS
 [PASS] spinner angle 落在 [0,360) angle=137.5
 [PASS] spinner 动画已启动 
 [PASS] spinner 旋转中动画仍在运行 
-[PASS] spinner 旋转后角度仍在 [0,360) angle=173.6
+[PASS] spinner 旋转后角度仍在 [0,360) angle=174.0
 [PASS] spinner.stop() 后动画停止 
 [PASS] spinner.stop() 后角度归零 
 [PASS] overlay 初始不可见 
@@ -22,7 +22,7 @@ PASS
 [PASS] 滚动动画进行中 value=90
 [PASS] QScrollArea 内滚动落到目标值 value=100
 [PASS] 独立滚动条范围正确 
-[PASS] 独立滚动条滚动动画进行中 value=534
+[PASS] 独立滚动条滚动动画进行中 value=536
 [PASS] 独立滚动条最终落到 600 value=600
 [PASS] 独立滚动条回到 0 value=0
 [PASS] 连续滚动最终落到 900 value=900

@@ -49,27 +49,27 @@ app = QApplication.instance() or QApplication(sys.argv[:1])
 # ====================================================== P0 打包终态
 print("\n--- P0 打包终态 ---")
 
-_exe = "installer\\Output\\SWDM-Setup-1.4.1.exe"
+_exe = "installer\\Output\\SWDM-Setup-1.4.2.exe"
 check("P0a 安装包存在", os.path.isfile(_exe))
 check("P0b 安装包 >40MB", os.path.getsize(_exe) > 40 * 1024 * 1024,
       f"{os.path.getsize(_exe) / 1048576:.1f}MB")
-check("P0c changelog_1.4.1.md 存在", os.path.isfile("docs\\changelog_1.4.1.md"))
+check("P0c changelog_1.4.2.md 存在", os.path.isfile("docs\\changelog_1.4.2.md"))
 
 with open("swdm\\core\\paths.py", encoding="utf-8") as f:
     _pv = [ln for ln in f if "APP_VERSION" in ln]
-check("P0d paths.py APP_VERSION=1.4.1", any('APP_VERSION = "1.4.1"' in ln for ln in _pv))
+check("P0d paths.py APP_VERSION=1.4.2", any('APP_VERSION = "1.4.2"' in ln for ln in _pv))
 with open("installer\\swdm.iss", encoding="utf-8") as f:
     _iv = [ln for ln in f if "SWDMVersion" in ln and "define" in ln]
-check("P0e swdm.iss SWDMVersion=1.4.1", any("1.4.1" in ln for ln in _iv))
+check("P0e swdm.iss SWDMVersion=1.4.2", any("1.4.2" in ln for ln in _iv))
 
 from swdm.gui.main_window import MainWindow  # noqa: E402
 from swdm.core.paths import APP_VERSION  # noqa: E402
 
-check("P0f 运行时 APP_VERSION=1.4.1", APP_VERSION == "1.4.1", APP_VERSION)
+check("P0f 运行时 APP_VERSION=1.4.2", APP_VERSION == "1.4.2", APP_VERSION)
 win = MainWindow()
 win.svc.refresh_engine = lambda: None
 win.svc.refresh_api = lambda: None
-check("P0g MainWindow 标题含 v1.4.1", "1.4.1" in win.windowTitle(), win.windowTitle())
+check("P0g MainWindow 标题含 v1.4.2", "1.4.2" in win.windowTitle(), win.windowTitle())
 
 _acts = win.menuBar().actions()
 _help = [a for a in _acts if "帮助" in a.text()]

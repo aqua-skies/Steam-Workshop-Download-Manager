@@ -53,7 +53,7 @@ BUILTIN_GAMES: dict[str, str] = {
     "204100": "The Elder Scrolls Online",
     "258130": "Don't Starve Together",
     "322330": "Don't Starve Together (Beta)",
-    "219740": "Project Cars",
+    "219740": "Don't Starve",
     "1063730": "Tabletop Simulator",
     "286160": "Tabletop Simulator (Old)",
     "489830": "The Forest",
@@ -74,10 +74,106 @@ BUILTIN_GAMES: dict[str, str] = {
     "255710": "Cities: Skylines",
     "945360": "Among Us",
     "718670": "Cultist Simulator",
-    "294100": "100% Orange Juice",
+    "294100": "RimWorld",
+    "288470": "100% Orange Juice",
 }
 
 CUSTOM_GAMES_FILE = os.path.join(DATA_DIR, "custom_games.json")
+
+
+# 中文名 / 常见简称 → appid 的离线别名表。
+# 用途：用户输入"饥荒"等中文名时，本地零网络即可命中（storesearch 的
+# l=schinese 是权威中文源，别名表是离线/熔断兜底）。
+# 键经 normalize_name 归一化后匹配（见 alias_appid）。
+GAME_ALIASES: dict[str, str] = {
+    # Don't Starve 家族
+    "饥荒": "219740",
+    "饥荒联机版": "322330",
+    "dont starve": "219740",
+    "dont starve together": "322330",
+    # 常见简称/缩写
+    "gmod": "4000",
+    "盖瑞模组": "4000",
+    "l4d2": "550",
+    "求生之路2": "550",
+    "tf2": "440",
+    "军团要塞2": "440",
+    "cs2": "730",
+    "反恐精英2": "730",
+    # 热门工坊游戏
+    "环世界": "294100",
+    "边缘世界": "294100",
+    "rimworld": "294100",
+    "方舟": "346110",
+    "方舟生存进化": "346110",
+    "ark": "346110",
+    "泰拉瑞亚": "105600",
+    "terraria": "105600",
+    "星露谷物语": "413150",
+    "stardew valley": "413150",
+    "城市天际线": "255710",
+    "天际线": "255710",
+    "文明6": "289070",
+    "席德梅尔的文明6": "289070",
+    "上古卷轴5": "232290",
+    "天际省": "232290",
+    "skyrim": "232290",
+    "七日杀": "251570",
+    "群星": "281990",
+    "stellaris": "281990",
+    "武装突袭3": "107410",
+    "arma3": "107410",
+    "腐蚀": "252490",
+    "rust": "252490",
+    "深岩银河": "548430",
+    "deep rock galactic": "548430",
+    "drg": "548430",
+    "太空工程师": "237990",
+    "空间工程师": "237990",
+    "绿色地狱": "816450",
+    "森林": "489830",
+    "the forest": "489830",
+    "方桌模拟器": "1063730",
+    "桌上模拟器": "1063730",
+    "tabletop simulator": "1063730",
+    "桌游模拟器": "1063730",
+    "致命公司": "1966720",
+    "雨中冒险2": "632360",
+    "risk of rain 2": "632360",
+    "杀戮尖塔": "646570",
+    "slay the spire": "646570",
+    "神界原罪2": "435150",
+    "divinity original sin 2": "435150",
+}
+
+_GAME_ALIAS_ENTRIES = tuple(GAME_ALIASES.items())
+
+
+def normalize_name(s) -> str:
+    """游戏名归一化（匹配用，非显示用）：NFKC 全角→半角 + 小写 + 仅保留
+    字母数字（去空格/撇号/冒号/百分号等）。例：'Don't Starve' → 'dontstarve'。"""
+    if s is None:
+        return ""
+    import unicodedata
+
+    s = unicodedata.normalize("NFKC", str(s)).lower()
+    return "".join(ch for ch in s if ch.isalnum())
+
+
+def alias_appid(text) -> str:
+    """输入文本 → appid（本地别名表，零网络）。精确命中优先，子串包含其次。
+    返回 '' 表示无命中；storesearch(l=schinese) 是权威中文源，本表作离线兜底。"""
+    t = normalize_name(text)
+    if not t or len(t) < 2:
+        return ""
+    for alias, appid in _GAME_ALIAS_ENTRIES:
+        if normalize_name(alias) == t:
+            return appid
+    for alias, appid in _GAME_ALIAS_ENTRIES:
+        a = normalize_name(alias)
+        if t in a or a in t:
+            return appid
+    return ""
 
 
 def list_builtin() -> list[dict]:

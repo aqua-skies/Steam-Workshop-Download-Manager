@@ -360,10 +360,21 @@ class DownloadManager:
             return self._paused
 
     def retry_all_failed(self) -> int:
-        """重试全部失败/已取消任务，返回重试数量。"""
-        with self._lock:
-            failed = [j for j in self._done
-                      if j.status in (JobStatus.FAILED, JobStatus.CANCELLED)]
+        """重试全部失败/已取消任务，返回重试数量。
+
+        S7d（1.4.2 复测发现）：provider 链 fallback 收尾的瞬态窗口内，
+        失败 job 可能短暂不在 _done（链式回退的中间态）；此瞬间点击
+        「重试失败」会扫到空集返回 0。加 2s 有界等待让瞬态收口后照常重试。
+        """
+        failed: list = []
+        deadline = time.monotonic() + 2.0
+        while True:
+            with self._lock:
+                failed = [j for j in self._done
+                          if j.status in (JobStatus.FAILED, JobStatus.CANCELLED)]
+            if failed or time.monotonic() > deadline:
+                break
+            time.sleep(0.05)
         n = 0
         for j in failed:
             if self.retry(j.id):
@@ -445,6 +456,11 @@ class DownloadManager:
                 while len(self._active) >= self._concurrency.current:
                     self._cond.wait(timeout=0.5)
                 if not self._queue:
+                    continue
+                # F2：派发前最后一步复查暂停——用户在并发等待窗口内按下
+                # 「全部暂停」时，队列里的任务不得派发（回到外层等待，
+                # 等 resume_all 唤醒）
+                if self._paused:
                     continue
                 job = self._queue.popleft()
                 self._active[job.id] = job
@@ -618,7 +634,11 @@ class DownloadManager:
         """
         with self._lock:
             self._cancelling.discard(job.id)
-            retired_here = job.id in self._active
+            # F4：_active 归属判定一律用对象同一性（is job）。取消后用户
+            # 行内重试会生成同 id 的新 job 对象，若按 id 判定，旧任务的
+            # 收尾会把新重试任务踢出 _active 并把旧任务登记为 CANCELLED
+            # （重试的真实结果被吞、行停「已取消」）。
+            retired_here = self._active.get(job.id) is job
             if retired_here:
                 self._active.pop(job.id, None)
                 job.status = JobStatus.CANCELLED
@@ -714,7 +734,9 @@ class DownloadManager:
         with self._lock:
             cancelled_pending = job.id in self._cancelling
             self._cancelling.discard(job.id)
-            owns_retire = job.id in self._active
+            # F4：对象同一性判定——见 _retire_cancelled 注释（同 id 新对象
+            # 不得被旧 worker 收尾掉包）
+            owns_retire = self._active.get(job.id) is job
             needs_backoff = False
             if cancelled_pending:
                 if result.status == DownloadStatus.SUCCESS:
@@ -732,9 +754,12 @@ class DownloadManager:
                 elif (job.attempt < self.auto_retry
                       and not job._stop.is_set()):
                     # 失败但可自动重试：保持 RUNNING，直接原子入队
+                    # （F4：仅当 _active 里仍是本对象才移出——同一把锁内
+                    # owns_retire 已按同一性校验，此守卫防未来重构破窗）
                     job.attempt += 1
                     job.message = f"重试中({job.attempt})：{result.message}"
-                    self._active.pop(job.id, None)
+                    if self._active.get(job.id) is job:
+                        self._active.pop(job.id, None)
                     self._queue.append(job)
                     self._cond.notify_all()
                     queued_retry = True
@@ -795,7 +820,9 @@ class DownloadManager:
             # （取消路径同样 append 到 _done 并 fire finished）；
             # 此时不可重复追加，否则完成列表出现重复行、clear_completed
             # 计数与 retry_all_failed 重试数被夸大
-            retired_here = job.id in self._active
+            # F4：同一性判定——同 id 的重试新对象在 _active 里时属于
+            # 那个新对象，本（旧）worker 不得把它顶掉
+            retired_here = self._active.get(job.id) is job
             if retired_here:
                 self._active.pop(job.id, None)
                 self._done.append(job)

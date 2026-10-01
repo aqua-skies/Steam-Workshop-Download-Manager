@@ -282,9 +282,16 @@ class PreviewImageWorker(QThread):
                 self._raw_ready.emit(data)
             else:
                 self.failed.emit("预览图为空")
+        except RuntimeError:
+            # m1：弹窗/本 worker 的 C++ 对象先于 run() 结束被销毁时，
+            # 信号源已删（'Signal source has been deleted'），不硬崩
+            pass
         except Exception as e:  # noqa: BLE001
             log.warning("预览图加载失败 %s: %s", (self._url or "")[:80], e)
-            self.failed.emit("预览图加载失败")
+            try:
+                self.failed.emit("预览图加载失败")
+            except RuntimeError:
+                pass
 
     def _fetch_bytes(self) -> bytes | None:
         """子线程：下载图片原始字节。优先复用 api 的缓存与代理。"""
@@ -922,6 +929,10 @@ class ModDetailDialog(QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
         scroll.setWidget(host)
+        # m4：滚动区透明化（视口+内容件 autoFill 亮灰，QSS 层不可达）
+        from swdm.gui.design_system import prepare_scroll_area
+
+        prepare_scroll_area(scroll)
         return scroll, host, layout
 
     @staticmethod
@@ -1038,6 +1049,28 @@ class ModDetailDialog(QDialog):
         """显示加载失败提示（不崩 UI）。"""
         self.error_label.setText(f"⚠ {msg}")
         self.error_label.setVisible(True)
+
+    # m2 线程规矩：以下桥接槽供跨线程信号以绑定方法（队列连接）调用，
+    # 替代工作坊页里的 lambda 直连——裸 lambda 走 DirectConnection，
+    # 会在工作线程里执行 GUI 修改（崩溃元凶）。
+    def set_conflicts_raw(self, conflicts) -> None:
+        """冲突原始对象（含 .mod_id/.name/.statement）→ 标准化。"""
+        self.set_conflicts([
+            {"id": c.mod_id, "title": c.name, "reason": c.statement}
+            for c in (conflicts or [])
+        ])
+
+    def set_dependencies_raw(self, deps) -> None:
+        """前置依赖原始对组 (appid, title)。"""
+        self.set_dependencies([{"id": pid, "title": title} for pid, title in (deps or [])])
+
+    def clear_comments(self, _msg: str = "") -> None:
+        """加载失败时把评论区切到空态（显示"加载失败"占位）。"""
+        self.set_comments([])
+
+    def clear_dependencies(self, _msg: str = "") -> None:
+        """加载失败时把依赖区切到空态。"""
+        self.set_dependencies([])
 
     # --------------------------------------------------------------- 渲染
     def _clear_layout(self, layout: QLayout) -> None:

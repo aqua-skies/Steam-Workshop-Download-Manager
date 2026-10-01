@@ -51,7 +51,7 @@ def check(name, cond, e=""):
 # =====================================================================
 _exe = os.path.join(_ROOT, "build", "dist", "SWDM", "SWDM.exe")
 _manual = os.path.join(_ROOT, "build", "dist", "SWDM", "_internal", "manual")
-_installer = os.path.join(_ROOT, "installer", "Output", "SWDM-Setup-1.4.1.exe")
+_installer = os.path.join(_ROOT, "installer", "Output", "SWDM-Setup-1.4.2.exe")
 
 check("P1 SWDM.exe 存在且 >8MB", os.path.isfile(_exe)
       and os.path.getsize(_exe) > 8_000_000,
@@ -68,18 +68,18 @@ check("P3 安装包存在且 >40MB", os.path.isfile(_installer)
 if os.path.isfile(_installer):
     _bin = open(_installer, "rb").read()
     # VS_VERSION_INFO 中 ProductVersion 以 UTF-16LE 存储
-    check("P3b 安装包内嵌版本资源为 1.4.1",
-          "1.4.1".encode("utf-16le") in _bin)
+    check("P3b 安装包内嵌版本资源为 1.4.2",
+          "1.4.2".encode("utf-16le") in _bin)
 else:
-    check("P3b 安装包内嵌版本资源为 1.4.1", False, "installer missing")
+    check("P3b 安装包内嵌版本资源为 1.4.2", False, "installer missing")
 
 from swdm.core.paths import APP_VERSION  # noqa: E402
 
-check("P4 源码 APP_VERSION == 1.4.1", APP_VERSION == "1.4.1", APP_VERSION)
+check("P4 源码 APP_VERSION == 1.4.2", APP_VERSION == "1.4.2", APP_VERSION)
 _iss = os.path.join(_ROOT, "installer", "swdm.iss")
 _iss_txt = open(_iss, "r", encoding="utf-8").read() if os.path.isfile(_iss) else ""
-check("P4b swdm.iss 定义 1.4.1",
-      "SWDMVersion" in _iss_txt and '"1.4.1"' in _iss_txt, "")
+check("P4b swdm.iss 定义 1.4.2",
+      "SWDMVersion" in _iss_txt and '"1.4.2"' in _iss_txt, "")
 
 if os.path.isfile(_exe):
     _exe_bin = open(_exe, "rb").read()

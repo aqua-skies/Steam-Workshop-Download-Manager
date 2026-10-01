@@ -56,6 +56,11 @@ datas += collect_data_files("truststore")
 # 首次使用时自动解压到数据目录）
 datas += [("swdm/resources/steamcmd.zip", "swdm/resources")]
 
+# m4 / QSS 2.0：设计令牌 overlay（swdm/gui/design_system.py 经
+# resource_path 加载；缺失时静默降级回 1.x 内置 QSS）
+datas += [("swdm/resources/qss/dark.qss", "swdm/resources/qss"),
+          ("swdm/resources/qss/light.qss", "swdm/resources/qss")]
+
 # A1（t42）：用户手册单文件交付物随包打入 manual/；
 # 菜单「帮助 > 用户手册」打开 HTML，PDF 作为离线/打印回退
 MANUAL_HTML = "docs/manual/dist/SWDM-用户手册.html"

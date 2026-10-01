@@ -145,6 +145,10 @@ class TagBar(QWidget):
         self._row.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self._row.addStretch()
         self._scroll.setWidget(self._host)
+        # m4：滚动区透明化（视口+内容件 autoFill 亮灰，QSS 层不可达）
+        from swdm.gui.design_system import prepare_scroll_area
+
+        prepare_scroll_area(self._scroll)
         root.addWidget(self._scroll)
 
         # 已选标签行（高亮 + ✕，点击 ✕ 删除）
