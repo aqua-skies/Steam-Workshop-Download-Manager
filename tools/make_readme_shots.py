@@ -15,6 +15,12 @@ import sys
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("PYTHONUTF8", "1")
 
+# offscreen QPA 不枚举 Windows 系统字体（默认查 PySide6/lib/fonts，Qt 不再自带字体）
+# → 0 个字体族，连 ASCII 都无字形，成图全是豆腐块。指到 %WINDIR%\Fonts 修复。
+_WINFONTS = os.path.join(os.environ.get("WINDIR") or r"C:\Windows", "Fonts")
+if os.path.isdir(_WINFONTS):
+    os.environ.setdefault("QT_QPA_FONTDIR", _WINFONTS)
+
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
 
@@ -36,6 +42,13 @@ OUT = os.path.join(_ROOT, "docs", "screenshots")
 os.makedirs(OUT, exist_ok=True)
 
 app = QApplication.instance() or QApplication(sys.argv)
+
+# 显式中文字体：offscreen 默认字体经 fontdb 兜底不一定命中 CJK 字形，
+# 且需与真实 Windows 观感一致（微软雅黑）
+from PySide6.QtGui import QFont  # noqa: E402
+
+app.setFont(QFont("Microsoft YaHei", 9))
+
 win = MainWindow()
 win.resize(1280, 800)
 
