@@ -193,14 +193,24 @@ app.processEvents()
 check("工坊: 再点全选取消全部", not wt.dl_selected_btn.isEnabled())
 
 # --- 卡片下载按钮（不入队真实下载，只验证信号路径不崩）
+# F3 修复后 _download_item 会真正建占位行并启动真实下载生命周期
+# （含 2s jitter + 自动重试的在途 worker 信号，清理段收不回 → ghost 行
+# 竞态，qa 探针 _probe_ghost_row.py 证明）。此处 stub 掉 enqueue，
+# 只验证同步信号路径；产品行为（占位行）由 test_retest_round1_142
+# S5b 在真实链路下验证。
+from swdm.core.downloader import DownloadJob as _StubJob  # noqa: E402
+
+_orig_enqueue = win.svc.downloader.enqueue
+win.svc.downloader.enqueue = lambda item, appid: _StubJob(item=item, appid=appid)
 try:
     wt._download_item("1000")
     app.processEvents()
     check("工坊: 卡片下载入队不崩", True)
 except Exception as e:  # noqa: BLE001
     check("工坊: 卡片下载入队不崩", False, f"{type(e).__name__}: {e}")
-# F3 修复后 svc.downloads_tab 已注入，_download_item 会真正建立占位行
-# （S5b 卖点路径已恢复）；清掉残留再进入下载页断言，保持空表前提
+finally:
+    win.svc.downloader.enqueue = _orig_enqueue
+# 清掉占位行残留，保持下载页断言的空表前提
 try:
     win.svc.downloader.clear_completed()
 except Exception:  # noqa: BLE001

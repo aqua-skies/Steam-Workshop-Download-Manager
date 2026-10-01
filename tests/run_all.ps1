@@ -12,7 +12,11 @@ $env:QT_QPA_PLATFORM = "offscreen"
 # the last comment line into the $skip assignment and disables the skip list
 # (90 scripts incl. hanging network scripts). pwsh 7 and a UTF-8 BOM both
 # parse it correctly; ASCII-only is immune in every shell.
-$skip = @("test_acceptance","test_smoke","test_tags","test_deps_live","test_deps_e2e","test_real_download","test_online_parse","test_find_api","test_prefetch","test_steamcmd_deploy","test_engine_autodeploy","test_cultist","test_cultist_deps","test_game_dir_e2e","test_tag_parse_real","test_stress","test_bundle_ctx","test_bundle_methods","test_bulk_games","test_multi_game","test_page_content")
+# test_hub_page added 2026-10-02: connects directly to steamcommunity.com
+# (/app/{appid}/workshop/ real pages); ConnectTimeout when the local fake-IP
+# proxy is down (proxy online -> passes, verified at 1.4.1). Same environmental
+# category as above; re-run individually once the proxy is back up.
+$skip = @("test_acceptance","test_smoke","test_tags","test_deps_live","test_deps_e2e","test_real_download","test_online_parse","test_find_api","test_prefetch","test_steamcmd_deploy","test_engine_autodeploy","test_cultist","test_cultist_deps","test_game_dir_e2e","test_tag_parse_real","test_stress","test_bundle_ctx","test_bundle_methods","test_bulk_games","test_multi_game","test_page_content","test_hub_page")
 $tests = Get-ChildItem tests -Filter "test_*.py" | Where-Object { $skip -notcontains $_.BaseName } | Sort-Object Name
 $pass = 0
 $fail = 0

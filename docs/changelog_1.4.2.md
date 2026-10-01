@@ -124,7 +124,7 @@
 
 - `tests/test_browse_render.py`（**新增**）：真实 BrowseWorker + 桩 API → 卡片数 > 0、stderr 无 TypeError（F1 回归守卫，cards=2 ALL PASS）。
 - `tests/test_retest_round1_142.py`（**新增**，qa-owner）：28 项纯 QTest 用户剧本（换游戏→联想→回车→mod 搜索→翻页→勾选→暂停/重试→取消/行内重试）。
-- 更新到新契约（QCompleter 建议 model 取代 combo clear+addItem、数据修正后 "RimWorld" 取代错误的 "100% Orange Juice" 期望、版本绑定 1.4.2）：`test_game_search_fix`、`test_rettest_139`、`test_rettest_140`、`test_rettest_141`、`test_t45_retest`、`test_v136`、`test_gui`（`list_widget` → `_cards()`）。
+- 更新到新契约（QCompleter 建议 model 取代 combo clear+addItem、数据修正后 "RimWorld" 取代错误的 "100% Orange Juice" 期望、版本绑定 1.4.2）：`test_game_search_fix`、`test_rettest_139`、`test_rettest_140`、`test_rettest_141`、`test_t45_retest`、`test_v136`、`test_gui`（`list_widget` → `_cards()`）、`test_gui_sweep`（F3 修复后 `_download_item` 现在真的建立占位行——补残留行清理恢复空表前提）。
 - 手册扉页版本 1.4.2 + dist 重建（`tools/build_manual.py`：HTML 566KB、PDF 1.66MB、版本绑定 check 全绿）。
 
 ---
