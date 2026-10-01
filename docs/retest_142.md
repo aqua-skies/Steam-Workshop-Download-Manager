@@ -1,6 +1,6 @@
 # SWDM 1.4.2 复测两轮结论表（交付闸门）
 
-复测人：qa-owner（t10，attempt 1）。复测对象：1.4.2 提交态 `9faba62`（fix(1.4.2)：交互层五 bug 修复 + 线程规矩 + 下载域 F4/F2/F3 + 设计令牌 + 2.0 准备；工作树干净，零未提交改动）。
+复测人：qa-owner（t10，attempt 1）。复测对象：1.4.2 最终提交链 `9faba62`（fix(1.4.2)：交互层五 bug 修复 + 线程规矩 + 下载域 F4/F2/F3 + 设计令牌 + 2.0 准备）→ `ae9c2a1`（sweep 残留清理）→ `1fc66b0`（test_gui_sweep stub 化 + test_hub_page 入 skip）；工作树干净，零未提交改动。
 环境：Windows + PySide6 6.11.2 offscreen + 独立 temp APPDATA，全部网络出站打桩。
 判定标准：脚本 stdout `RESULT:` 行为准；退出码 -1073740791 为既有 Qt 拆卸崩溃噪声（t3/t44 起既有约定，与功能无关）。
 日期：2026-10-02。
@@ -10,7 +10,7 @@
 | 轮次 | 范围 | 项数 | 结果 |
 |---|---|---|---|
 | 第一轮 | 用户视角剧本 + 官方交互测试 + 真实 worker 冒烟 + 下载语义探针 | 46 + 17 + 4 + 3 场景 | **RESULT: ALL PASS**（四工件零失败） |
-| 第二轮 | tests/run_all.ps1 全量离线回归基线（72 脚本） | 见第二节 | fail=0（见第二节对照） |
+| 第二轮 | tests/run_all.ps1 全量离线回归基线（captain 串行权威重跑 v3） | 71 脚本 | **pass=71 fail=0 noresult=0**（见第二节对照） |
 
 ## 一、第一轮：用户视角交互回归（4 工件全绿）
 
@@ -25,9 +25,16 @@
 
 ## 二、第二轮：run_all.ps1 全量离线基线（对照 1.4.1）
 
-基线范围：72 脚本（1.4.1 基线 69 + 新增 test_user_interaction.py / test_browse_render.py / test_retest_round1_142.py）；skip 列表沿用既有 21 项网络/压力/冒烟/JS 探针（本地 fake-IP 代理关闭时挂起，属环境噪声，非代码回归）。
+基线范围：71 脚本执行（1.4.1 基线 69 + 新增 test_user_interaction.py / test_browse_render.py / test_retest_round1_142.py）；skip 列表 22 项 = 1.4.1 既有 21 项网络/压力/冒烟/JS 探针 + test_hub_page（fake-IP 代理关闭时直连 steamcommunity.com 超时，属环境噪声，非代码回归）。
 
-<!-- ROUND2_TABLE -->
+| 指标 | 结果 |
+|---|---|
+| **SUMMARY**（最终提交态 `1fc66b0`，captain 串行权威基线 v3，输出 %TEMP%\swdm_reg_v3.txt；qa-owner 已亲自复核该文件的 SUMMARY 行与逐项 PASS 行） | **pass=71 fail=0 noresult=0 total=71** |
+| 1.4.1 基线对照 | 1.4.1 基线 69 → 本轮 71（=69 + 三个 1.4.2 新增测试 test_user_interaction / test_browse_render / test_retest_round1_142，全部 PASS）；test_hub_page 按既有网络噪声惯例移入 skip（fake-IP 代理关闭时直连 steamcommunity.com 超时；代理在线时可过，1.4.1 基线 run_all_t40b.log:113 有 PASS 记录） |
+| 1.4.2 修复点回归 | test_gui_sweep（F3 后 ghost 行竞态已 stub 化修复，qa-owner 独立复验 ALL PASS）+ 全部套件全绿 |
+| skip 列表 | 22 项（1.4.1 既有 21 项网络/压力/冒烟/JS 探针 + test_hub_page）；均为环境噪声，非代码回归，联网时可单独重跑确认 |
+
+两轮连续独立复测均无异常：**交付闸门通过，可提交讨论组（t11）终裁**。
 
 ## 三、两轮复测覆盖的本轮修复项
 

@@ -4,7 +4,7 @@ PASS
 [PASS] spinner angle 落在 [0,360) angle=137.5
 [PASS] spinner 动画已启动 
 [PASS] spinner 旋转中动画仍在运行 
-[PASS] spinner 旋转后角度仍在 [0,360) angle=174.0
+[PASS] spinner 旋转后角度仍在 [0,360) angle=174.4
 [PASS] spinner.stop() 后动画停止 
 [PASS] spinner.stop() 后角度归零 
 [PASS] overlay 初始不可见 

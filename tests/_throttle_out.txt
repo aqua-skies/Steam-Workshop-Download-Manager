@@ -92,7 +92,7 @@
 [PASS] 回升场景：失败在前、三次成功在后 ['failed', 'success', 'success', 'success']
 [PASS] 失败降到 1 后，三次持续成功回升到 2 2
 [PASS] 任务开始前发生了 sleep（抖动） 1 次
-[PASS] 抖动量在 [base*0.6, base*1.4] 内 [1.713968906526874]
+[PASS] 抖动量在 [base*0.6, base*1.4] 内 [2.0659597677493577]
 [PASS] 抖动后任务仍成功 success
 [PASS] 硬信号：并发->1 1
 [PASS] 硬信号：退避等级 +1 1
