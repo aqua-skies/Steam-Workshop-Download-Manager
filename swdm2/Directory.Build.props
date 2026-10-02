@@ -7,9 +7,9 @@
     Velopack 打包与安装器版本同源（C4 版本号双端同步纪律）。
   -->
   <PropertyGroup>
-    <Version>0.1.0</Version>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
+    <Version>0.2.0</Version>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
     <Company>aqua-skies</Company>
     <Product>SWDM 2.0</Product>
   </PropertyGroup>

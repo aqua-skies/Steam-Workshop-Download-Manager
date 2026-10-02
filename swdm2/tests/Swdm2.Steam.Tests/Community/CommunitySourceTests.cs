@@ -44,7 +44,7 @@ public sealed class CommunitySourceTests
         Assert.All(items, i => Assert.True(i.Id.Value > 0));
 
         var kfc = items.FirstOrDefault(i => i.Id.Value == 3808352517);
-        Assert.NotNull(kfc);
+        Assert.True(kfc.Id.Value == 3808352517, "KFC item (3808352517) not found in fixture"); // 值类型 tuple 无 NotNull 语义（xUnit2002)
         Assert.Equal("KFC - Chicken Bucket", kfc.Title);
         Assert.Contains("images.steamusercontent.com/ugc/", kfc.PreviewUrl ?? "");
     }
