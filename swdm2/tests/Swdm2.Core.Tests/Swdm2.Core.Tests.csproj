@@ -8,7 +8,15 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>Swdm2.Core.Tests</RootNamespace>
+    <!-- 产品仅 Windows（WPF）；Core.Tests 消费 DpapiCredentialStore（Windows-only DPAPI），程序集级声明 -->
+    <SupportedOSPlatform>windows</SupportedOSPlatform>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatformAttribute">
+      <_Parameter1>windows</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />

@@ -26,6 +26,9 @@ public sealed class PathService : IPathService
 
     public string ConfigFile => Path.Combine(Root, "config.json");
 
+    /// <summary>凭据文件：<c>&lt;Root&gt;/credentials.bin</c>（DPAPI 密文，D1.4）。</summary>
+    public string CredentialsFile => Path.Combine(Root, "credentials.bin");
+
     public PathService(PathMode mode, string? rootOverride = null)
     {
         Mode = mode;

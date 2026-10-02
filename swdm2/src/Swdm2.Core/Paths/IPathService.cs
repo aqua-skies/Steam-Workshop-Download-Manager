@@ -29,6 +29,9 @@ public interface IPathService
     /// <summary>配置文件路径：<c>&lt;Root&gt;/config.json</c>。</summary>
     string ConfigFile { get; }
 
+    /// <summary>凭据文件路径：<c>&lt;Root&gt;/credentials.bin</c>（DPAPI 密文，D1.4 ICredentialStore 消费）。</summary>
+    string CredentialsFile { get; }
+
     /// <summary>启动期一次性创建 Root 及其标准子目录（steamcmd / downloads/staging / logs）。幂等。</summary>
     void EnsureDirectories();
 }
