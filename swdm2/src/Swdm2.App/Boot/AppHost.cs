@@ -57,7 +57,13 @@ public static class AppHost
         var runner = new SteamCmdRunner(redaction);
 
         var bus = new DownloadEventBus(Math.Max(1, download.ProgressThrottleMs));
-        var provider = new SteamCmdProvider(deployer, runner, bus, breaker);
+        // D4.4 provider 链路由：SteamKit CDN 主→steamcmd 兜底（按错误类型路由）
+        var steamCmd = new SteamCmdProvider(deployer, runner, bus, breaker);
+        var cdnSession = new SteamKitSessionManager(timeoutSeconds: 10); // 沙箱短超时：CM 阻断→Network 快回退链
+        var cdnClient = new SteamKitCdnClient(cdnSession, timeoutSeconds: 10,
+            chunkParallelism: download.MaxChunkParallelism);
+        var cdnProvider = new SteamKitCdnProvider(cdnSession, cdnClient, bus);
+        var provider = new DownloadProviderRouter(cdnProvider, steamCmd, bus);
         var queue = new DownloadQueue();
         var maxConcurrent = Math.Max(1, download.MaxConcurrentDownloads);
         var scheduler = new DownloadScheduler(queue, provider.ExecuteAsync, maxConcurrent);
