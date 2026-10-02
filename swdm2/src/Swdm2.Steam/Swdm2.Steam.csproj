@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Swdm2.Core\Swdm2.Core.csproj" />
@@ -9,5 +9,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+<ItemGroup>
+    <InternalsVisibleTo Include="Swdm2.Steam.Tests" />
+  </ItemGroup>
 
 </Project>

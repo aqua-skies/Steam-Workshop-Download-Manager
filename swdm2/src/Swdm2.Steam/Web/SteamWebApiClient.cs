@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Swdm2.Core.Domain;
 using Swdm2.Core.Results;
 using Swdm2.Steam.Connectivity;
+using Swdm2.Steam.Resilience;
 
 namespace Swdm2.Steam.Web;
 
@@ -28,19 +29,26 @@ public sealed class SteamWebApiClient : ISteamWebApiClient
 
     private readonly IHttpClientFactory _factory;
     private readonly IConnectivityGate? _gate;
+    private readonly IThrottler? _throttler;
+    private readonly ICircuitBreaker? _breaker;
     private readonly TimeSpan _timeout;
     private readonly Func<string, string> _endpointOverride;
 
     /// <param name="factory">D2.1 工厂。</param>
     /// <param name="gate">可选可达性门（null=不设防，直接请求）。</param>
+    /// <param name="throttler">可选节流器（D2.4;bucket=<see cref="ThrottleBuckets.Api"/>)。</param>
+    /// <param name="breaker">可选熔断器（D2.4;失败计入熔断，开态直接 Fail(CircuitOpen))。</param>
     /// <param name="timeout">单请求超时（默认 15s;⚠️[参数待重标定] D2.4 节流/熔断接管后由其统一）。</param>
     /// <param name="endpointOverride">测试注入：入参=真实端点 URL，出参=生效 URL（保留路径以区分端点；生产 null=真实端点）。</param>
     public SteamWebApiClient(IHttpClientFactory factory, IConnectivityGate? gate = null,
+                             IThrottler? throttler = null, ICircuitBreaker? breaker = null,
                              TimeSpan? timeout = null, Func<string, string>? endpointOverride = null)
     {
         ArgumentNullException.ThrowIfNull(factory);
         _factory = factory;
         _gate = gate;
+        _throttler = throttler;
+        _breaker = breaker;
         _timeout = timeout ?? TimeSpan.FromSeconds(15);
         _endpointOverride = endpointOverride ?? (_ => DetailsEndpoint);
     }
@@ -56,15 +64,22 @@ public sealed class SteamWebApiClient : ISteamWebApiClient
             : Result<WorkshopItem, SteamError>.Ok(item);
     }
 
-    public async Task<Result<IReadOnlyList<WorkshopItem>, SteamError>> GetPublishedFileDetailsBatchAsync(
+    public Task<Result<IReadOnlyList<WorkshopItem>, SteamError>> GetPublishedFileDetailsBatchAsync(
         IReadOnlyList<PublishedFileId> ids, CancellationToken ct = default)
     {
         if (ids.Count == 0)
-            return Result<IReadOnlyList<WorkshopItem>, SteamError>.Ok(Array.Empty<WorkshopItem>());
-
+            return Task.FromResult(Result<IReadOnlyList<WorkshopItem>, SteamError>.Ok(Array.Empty<WorkshopItem>()));
         if (_gate?.IsApiUnreachable == true)
-            return Result<IReadOnlyList<WorkshopItem>, SteamError>.Fail(SteamError.Network);
+            return Task.FromResult(Result<IReadOnlyList<WorkshopItem>, SteamError>.Fail(SteamError.Network));
+        // D2.4 集成：节流 acquire → 熔断门 → 请求 → 结果计熔断（bucket=api)
+        return ResiliencePipeline.ExecuteAsync(ThrottleBuckets.Api, _throttler, _breaker,
+            _ => CoreFetchDetailsBatchAsync(ids, ct), ct);
+    }
 
+    /// <summary>不经弹性管道的核心请求体（由 <see cref="GetPublishedFileDetailsBatchAsync"/> 包装执行）。</summary>
+    private async Task<Result<IReadOnlyList<WorkshopItem>, SteamError>> CoreFetchDetailsBatchAsync(
+        IReadOnlyList<PublishedFileId> ids, CancellationToken ct)
+    {
         var clientResult = _factory.CreateClient();
         if (!clientResult.IsOk)
             return Result<IReadOnlyList<WorkshopItem>, SteamError>.Fail(clientResult.Error ?? SteamError.None);
@@ -151,7 +166,7 @@ public sealed class SteamWebApiClient : ISteamWebApiClient
             for (var i = 0; i < levelCount; i++)
             {
                 var current = collectionFrontier.Dequeue();
-                var children = await FetchCollectionChildrenAsync(current, ct).ConfigureAwait(false);
+                var children = await FetchCollectionChildrenAsync(current, ct).ConfigureAwait(false); // 内部已含节流/熔断包装
                 if (!children.IsOk)
                     continue; // 嵌套子集合不可达不致整体失败（S4：不可达不调用/失败容忍）
                 foreach (var entry in children.Value!)

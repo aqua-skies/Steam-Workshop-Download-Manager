@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using System.Web;
 using Swdm2.Core.Domain;
 using Swdm2.Core.Results;
+using Swdm2.Steam.Resilience;
 
 namespace Swdm2.Steam.Web;
 
@@ -20,27 +21,46 @@ public sealed class StoreSearchClient : IStoreSearchClient
 
     private readonly IHttpClientFactory _factory;
     private readonly IConnectivityGate? _gate;
+    private readonly IThrottler? _throttler;
+    private readonly ICircuitBreaker? _breaker;
     private readonly TimeSpan _timeout;
     private readonly Func<string, string> _endpointOverride;
 
+    /// <param name="factory">D2.1 工厂。</param>
+    /// <param name="gate">可选可达性门。</param>
+    /// <param name="throttler">可选节流器（D2.4;bucket=<see cref="ThrottleBuckets.Store"/>)。</param>
+    /// <param name="breaker">可选熔断器（D2.4;失败计入熔断，开态 Fail(CircuitOpen))。</param>
+    /// <param name="timeout">单请求超时。</param>
+    /// <param name="endpointOverride">测试注入：入参=真实端点 URL，出参=生效 URL。</param>
     public StoreSearchClient(IHttpClientFactory factory, IConnectivityGate? gate = null,
+                             IThrottler? throttler = null, ICircuitBreaker? breaker = null,
                              TimeSpan? timeout = null, Func<string, string>? endpointOverride = null)
     {
         ArgumentNullException.ThrowIfNull(factory);
         _factory = factory;
         _gate = gate;
+        _throttler = throttler;
+        _breaker = breaker;
         _timeout = timeout ?? TimeSpan.FromSeconds(15);
         _endpointOverride = endpointOverride ?? (_ => StoreSearchEndpoint);
     }
 
-    public async Task<Result<IReadOnlyList<GameInfo>, SteamError>> SearchGamesAsync(string term, CancellationToken ct = default)
+    public Task<Result<IReadOnlyList<GameInfo>, SteamError>> SearchGamesAsync(string term, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(term))
-            return Result<IReadOnlyList<GameInfo>, SteamError>.Fail(SteamError.InvalidConfiguration);
+            return Task.FromResult(Result<IReadOnlyList<GameInfo>, SteamError>.Fail(SteamError.InvalidConfiguration));
 
         if (_gate?.IsApiUnreachable == true) // 可达性门同 Web API（Store 端点统一门）
-            return Result<IReadOnlyList<GameInfo>, SteamError>.Fail(SteamError.Network);
+            return Task.FromResult(Result<IReadOnlyList<GameInfo>, SteamError>.Fail(SteamError.Network));
 
+        // D2.4 集成：节流 acquire → 熔断门 → 请求 → 结果计熔断（bucket=store)
+        return ResiliencePipeline.ExecuteAsync(ThrottleBuckets.Store, _throttler, _breaker,
+            _ => CoreSearchGamesAsync(term, ct), ct);
+    }
+
+    /// <summary>不经弹性管道的核心请求体（由 <see cref="SearchGamesAsync"/> 包装执行）。</summary>
+    private async Task<Result<IReadOnlyList<GameInfo>, SteamError>> CoreSearchGamesAsync(string term, CancellationToken ct)
+    {
         var clientResult = _factory.CreateClient();
         if (!clientResult.IsOk)
             return Result<IReadOnlyList<GameInfo>, SteamError>.Fail(clientResult.Error ?? SteamError.None);
