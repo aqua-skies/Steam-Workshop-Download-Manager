@@ -47,26 +47,37 @@ public sealed class SteamCmdRunner : ISteamCmdRunner
     /// <summary>⚠️[参数待重标定] 看门狗轮询间隔（1.x 0.3s）。</summary>
     public static readonly TimeSpan WatchdogInterval = TimeSpan.FromMilliseconds(300);
 
+    /// <summary>
+    /// ⚠️[参数待重标定] D3.6 进程槽等待超时（M4：超时映射 SteamError.Timeout 而非挂死 UI/队列）。
+    /// 1.x 经验值=无上限串行等待；0.2 队列调度上线后按实测收紧（先问"能否更短"再标定）。
+    /// </summary>
+    public static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromSeconds(120);
+
     private static readonly int[] AcceptExitCodes = { 0, 7 };   // D3.3 实证锚：7=自更新重拉
 
     private readonly IRedactionPolicy? _redaction;
     private readonly TimeSpan _stallTimeout;
     private readonly double _minBytesPerSec;
     private readonly Func<ProcessStartInfo, Process> _start;
+    /// <summary>D3.6 进程级单槽（steamcmd 进程全局串行；1.x 学费：并发实例互相覆盖句柄→NRE）。</summary>
+    private readonly SemaphoreSlim _processSlot = new(1, 1);
+    private readonly TimeSpan _waitTimeout;
 
     /// <summary>进程启动 seam（默认 Process.Start；测试注入 cmd /c 批处理伪造进程）。</summary>
     private static Process DefaultStart(ProcessStartInfo psi)
         => Process.Start(psi) ?? throw new InvalidOperationException("Process.Start 未返回进程");
 
-    public SteamCmdRunner(IRedactionPolicy? redaction = null, TimeSpan? stallTimeout = null, double? minBytesPerSec = null)
-        : this(redaction, stallTimeout, minBytesPerSec, DefaultStart) { }
+    public SteamCmdRunner(IRedactionPolicy? redaction = null, TimeSpan? stallTimeout = null,
+        double? minBytesPerSec = null, TimeSpan? waitTimeout = null)
+        : this(redaction, stallTimeout, minBytesPerSec, waitTimeout, DefaultStart) { }
 
     internal SteamCmdRunner(IRedactionPolicy? redaction, TimeSpan? stallTimeout, double? minBytesPerSec,
-        Func<ProcessStartInfo, Process> start)
+        TimeSpan? waitTimeout, Func<ProcessStartInfo, Process> start)
     {
         _redaction = redaction;
         _stallTimeout = stallTimeout ?? DefaultStallTimeout;
         _minBytesPerSec = minBytesPerSec ?? DefaultMinBytesPerSec;
+        _waitTimeout = waitTimeout ?? DefaultWaitTimeout;
         _start = start ?? DefaultStart;
     }
 
@@ -97,6 +108,24 @@ public sealed class SteamCmdRunner : ISteamCmdRunner
             WorkingDirectory = request.InstallDir,
         };
         foreach (var a in commands) psi.ArgumentList.Add(a);
+
+        // D3.6 进程槽：WaitAsync(timeout, ct) 串行化（M4 超时映射 SteamError.Timeout 而非挂死队列/UI；
+        // steamcmd 进程级单实例语义=1.x 并发句柄覆盖 bug 的根除）
+        bool slotAcquired;
+        try { slotAcquired = await _processSlot.WaitAsync(_waitTimeout, ct).ConfigureAwait(false); }
+        catch (OperationCanceledException)   // 等待期间取消：未持槽、未启进程→无句柄可覆盖
+        {
+            return Result<SteamCmdRunResult, SteamError>.Ok(
+                new SteamCmdRunResult(SteamCmdOutcome.Cancelled, string.Empty, 0, 0, "等待进程槽时取消", 0));
+        }
+        if (!slotAcquired)
+        {
+            // 超时映射（M4）：不挂死 UI/队列；未持槽→不 Release（配对纪律）
+            return Result<SteamCmdRunResult, SteamError>.Fail(SteamError.Timeout);
+        }
+        // 释放纪律（防早释）：全完成后才 Release——进程退出→资源清理→出 try 块→finally Release
+        try
+        {
 
         Process p;
         try { p = _start(psi); }   // seam：测试注入伪造进程（cmd /c 批处理等）
@@ -169,6 +198,12 @@ public sealed class SteamCmdRunner : ISteamCmdRunner
             estimated, "下载成功", elapsed);
         progress?.Report(new SteamCmdProgress(100, state.BytesDone, "完成"));
         return Result<SteamCmdRunResult, SteamError>.Ok(result);
+        }
+        finally
+        {
+            // D3.6 释放纪律：所有 return 之后必执行（防早释=第二任务在第一进程未退完前拿槽）
+            _processSlot.Release();
+        }
     }
 
     // ------------------------------------------------------------------ 命令批拼

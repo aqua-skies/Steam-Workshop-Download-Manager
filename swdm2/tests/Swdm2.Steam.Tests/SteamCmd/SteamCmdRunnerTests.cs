@@ -20,8 +20,11 @@ namespace Swdm2.Steam.Tests.SteamCmd;
 public sealed class SteamCmdRunnerTests
 {
     private const ulong Item = 17906;
+    private const ulong Item2 = 28906;
     private const int App = 4000;
     private const string ContentRel = @"steamapps\workshop\content\4000\17906";
+
+    private static string ContentRelOf(ulong item) => $@"steamapps\workshop\content\4000\{item}";
 
     private static string NewInstallDir()
         => Path.Combine(Path.GetTempPath(), "swdm2_d34_" + Guid.NewGuid().ToString("N")[..8]);
@@ -45,17 +48,26 @@ public sealed class SteamCmdRunnerTests
     private sealed class FakeScript
     {
         private readonly List<string> _lines = new();
+        private readonly ulong _item;
         private int _bytes;
         private bool _writePartial, _hang;
-        private int _exitCode = 0;
+        private int _hangSecs, _exitCode = 0;
+
+        public FakeScript(ulong item = Item) => _item = item;
+
+        public string ContentRel => ContentRelOf(_item);
 
         public FakeScript LoginOk() { _lines.Add("Connecting anonymously to Steam Public...OK"); return this; }
-        public FakeScript Downloading() { _lines.Add("Downloading item 17906"); return this; }
+        public FakeScript Downloading() { _lines.Add($"Downloading item {_item}"); return this; }
         public FakeScript WriteProduct(int bytes) { _bytes = bytes; return this; }
         public FakeScript WritePartialOnFail() { _writePartial = true; return this; }
-        public FakeScript SuccessLine() { _lines.Add($"Success. Downloaded item 17906 to \"{ContentRel}\\mod.bin\" (123456 bytes)"); return this; }
+        public FakeScript SuccessLine() { _lines.Add($"Success. Downloaded item {_item} to \"{ContentRel}\\mod.bin\" ({_successBytes} bytes)"); return this; }
+        /// <summary>自定义报数字节（区分两任务产物，验证句柄不互覆；须先于 SuccessLine 调用）。</summary>
+        public FakeScript WithSuccessBytes(int b) { _successBytes = b; return this; }
+        private int _successBytes = 123456;
         public FakeScript FailLine(string l) { _lines.Add(l); return this; }
         public FakeScript Hang() { _hang = true; return this; }
+        public FakeScript HangSecs(int n) { _hangSecs = n; return this; }
         public FakeScript Exit(int code) { _exitCode = code; return this; }
 
         /// <summary>写批处理（ASCII 全行、无 BOM、相对路径产物），返回路径。</summary>
@@ -71,22 +83,42 @@ public sealed class SteamCmdRunnerTests
                 sb.AppendLine($"powershell -NoProfile -Command \"[IO.File]::WriteAllBytes('{ContentRel}\\mod.bin', (New-Object byte[] {_bytes}))\"");
             if (_writePartial)
                 sb.AppendLine($"powershell -NoProfile -Command \"[IO.File]::WriteAllBytes('{ContentRel}\\partial.bin', (New-Object byte[] 1000))\"");
-            if (_hang)
+            if (_hangSecs > 0)
+                sb.AppendLine($"ping -n {_hangSecs} 127.0.0.1 > nul");
+            else if (_hang)
                 sb.AppendLine("ping -n 60 127.0.0.1 > nul");
             sb.AppendLine($"exit /b {_exitCode}");
             File.WriteAllText(batch, sb.ToString(), new UTF8Encoding(false));
             return batch;
         }
+
+        public int ReportBytes => _successBytes;
     }
 
     private static SteamCmdRunner NewRunner(FakeScript script, string install,
-        TimeSpan? stallTimeout = null, IRedactionPolicy? redaction = null)
+        TimeSpan? stallTimeout = null, IRedactionPolicy? redaction = null, TimeSpan? waitTimeout = null)
     {
-        var batch = script.WriteTo(Path.Combine(install, "fake"), Path.Combine(install, ContentRel));
-        var batchPath = batch;
-        return new SteamCmdRunner(redaction, stallTimeout, null,
+        var batchPath = script.WriteTo(Path.Combine(install, "fake"), Path.Combine(install, script.ContentRel));
+        return new SteamCmdRunner(redaction, stallTimeout, null, waitTimeout,
             psi => BatchStart(batchPath, psi));
     }
+
+    /// <summary>D3.6 并发场景：按请求 item 派发不同脚本（两个任务→两个 production 目录，共享一个 runner=共享进程槽）。</summary>
+    private static SteamCmdRunner NewRunnerMulti(string installRoot, IDictionary<ulong, FakeScript> scripts,
+        TimeSpan? stallTimeout = null, TimeSpan? waitTimeout = null)
+    {
+        Process Seam(ProcessStartInfo psi)
+        {
+            var key = scripts.Keys.Single(k => psi.ArgumentList.Contains(k.ToString()));
+            var s = scripts[key];
+            var batch = s.WriteTo(Path.Combine(installRoot, "fake_" + key), Path.Combine(installRoot, s.ContentRel));
+            return BatchStart(batch, psi);
+        }
+        return new SteamCmdRunner(null, stallTimeout, null, waitTimeout, (Func<ProcessStartInfo, Process>)Seam);
+    }
+
+    private static SteamCmdRunRequest RequestFor(string install, ulong item)
+        => new(new PublishedFileId(item), new AppId(App), "cmd.exe", install);
 
     private static SteamCmdRunRequest Request(string install, string? user = null)
         => new(new PublishedFileId(Item), new AppId(App), "cmd.exe", install, Username: user);
@@ -245,5 +277,110 @@ public sealed class SteamCmdRunnerTests
         private readonly string _secret, _replacement;
         public ReplacePolicy(string secret, string replacement) { _secret = secret; _replacement = replacement; }
         public string Redact(string? text) => (text ?? string.Empty).Replace(_secret, _replacement);
+    }
+
+    // ================================================== D3.6 串行化与句柄纪律 ==================================
+
+    /// <summary>验收①：并发两任务→第二等待（串行）；两任务各自正确产物=句柄不互覆、无 NRE。</summary>
+    [Fact]
+    public async Task D36_Concurrent_Second_Task_Waits_Handle_Not_Overwritten()
+    {
+        var root = NewInstallDir();
+        var slow = new FakeScript(Item).LoginOk().Downloading().WriteProduct(123456)
+            .SuccessLine().HangSecs(4);          // 占槽 ~4s
+        var fast = new FakeScript(Item2).LoginOk().Downloading().WriteProduct(67890)
+            .WithSuccessBytes(67890).SuccessLine();
+        var runner = NewRunnerMulti(root, new Dictionary<ulong, FakeScript> { [Item] = slow, [Item2] = fast },
+            stallTimeout: TimeSpan.FromSeconds(60), waitTimeout: TimeSpan.FromSeconds(30));
+
+        var t1 = runner.DownloadAsync(RequestFor(root, Item));
+        await Task.Delay(300);                    // 让任务1拿到槽
+        var sw = Stopwatch.StartNew();
+        var r2 = await runner.DownloadAsync(RequestFor(root, Item2));
+        sw.Stop();
+        var r1 = await t1;
+
+        Assert.True(r1.IsOk && r1.Value!.Outcome == SteamCmdOutcome.Success);
+        Assert.True(r2.IsOk && r2.Value!.Outcome == SteamCmdOutcome.Success);
+        // 第二任务实际等待了（耗时≈任务1剩余时间，而非瞬时）
+        Assert.True(sw.Elapsed.TotalSeconds >= 2.0, $"第二任务应等待≥2s，实际 {sw.Elapsed.TotalSeconds:F1}s");
+        // 句柄不互覆的证据：两任务各自的正则字节/估算不串号
+        Assert.Equal(123456, r1.Value.BytesDone);
+        Assert.Equal(67890, r2.Value.BytesDone);
+        Assert.Equal(123456, r1.Value.EstimatedBytes);
+        Assert.Equal(67890, r2.Value.EstimatedBytes);
+        Assert.True(File.Exists(Path.Combine(root, slow.ContentRel, "mod.bin")));
+        Assert.True(File.Exists(Path.Combine(root, fast.ContentRel, "mod.bin")));
+    }
+
+    /// <summary>验收②(M4)：等待超时→SteamError.Timeout；不产生 NRE、不覆盖句柄（第二进程从未启动）。</summary>
+    [Fact]
+    public async Task D36_Wait_Timeout_Maps_SteamError_No_Handle_Launched()
+    {
+        var root = NewInstallDir();
+        var starts = 0;
+        var slow = new FakeScript(Item).LoginOk().Downloading().WriteProduct(10)
+            .SuccessLine().HangSecs(4);
+        var runner = new SteamCmdRunner(null, stallTimeout: TimeSpan.FromSeconds(60), null,
+            waitTimeout: TimeSpan.FromMilliseconds(600),
+            psi => { Interlocked.Increment(ref starts); return BatchStart(slow.WriteTo(Path.Combine(root, "fake"), Path.Combine(root, slow.ContentRel)), psi); });
+
+        var t1 = runner.DownloadAsync(RequestFor(root, Item));
+        await Task.Delay(300);
+        var r2 = await runner.DownloadAsync(RequestFor(root, Item2));   // relay 同一脚本占位（超时路径不启动进程）
+        var r1 = await t1;
+
+        Assert.False(r2.IsOk);
+        Assert.Equal(SteamError.Timeout, r2.Error);                     // M4：映射而非挂死
+        Assert.Equal(1, starts);                                        // 第二任务从未启动进程→无句柄
+        // 不覆盖句柄：任务1照常成功（任务2的超时未碰任务1的进程）
+        Assert.True(r1.IsOk && r1.Value!.Outcome == SteamCmdOutcome.Success);
+    }
+
+    /// <summary>验收③：等待期间取消→Cancelled；不 NRE、不误杀任务1进程（1.x 句柄 bug 原地断言）。</summary>
+    [Fact]
+    public async Task D36_Cancel_While_Waiting_Does_Not_Kill_First_Process()
+    {
+        var root = NewInstallDir();
+        var slow = new FakeScript(Item).LoginOk().Downloading().WriteProduct(123456).SuccessLine().HangSecs(3);
+        var fast = new FakeScript(Item2).LoginOk().Downloading().WriteProduct(1).SuccessLine();
+        var runner = NewRunnerMulti(root, new Dictionary<ulong, FakeScript> { [Item] = slow, [Item2] = fast },
+            stallTimeout: TimeSpan.FromSeconds(60), waitTimeout: TimeSpan.FromSeconds(30));
+
+        var t1 = runner.DownloadAsync(RequestFor(root, Item));
+        await Task.Delay(300);
+        using var cts2 = new CancellationTokenSource();
+        var t2 = runner.DownloadAsync(RequestFor(root, Item2), ct: cts2.Token);
+        await Task.Delay(400);
+        cts2.Cancel();                                  // 任务2 在等待槽时被取消
+        var r2 = await t2;
+        var r1 = await t1;
+
+        Assert.True(r2.IsOk);
+        Assert.Equal(SteamCmdOutcome.Cancelled, r2.Value!.Outcome);     // 等待期取消=Cancelled（未持槽）
+        Assert.Equal(0, r2.Value.BytesDone);                             // 无 NRE：字段全部有值
+        // 任务1进程未被动（句柄未被任务2触碰）：仍成功下完
+        Assert.True(r1.IsOk && r1.Value!.Outcome == SteamCmdOutcome.Success);
+        Assert.Equal(123456, r1.Value.BytesDone);
+    }
+
+    /// <summary>验收④（释放纪律/防早释）：任务完成后槽已释放→下一任务短超时也能立刻拿到。</summary>
+    [Fact]
+    public async Task D36_Slot_Released_After_Completion_Next_Task_Immediate()
+    {
+        var root = NewInstallDir();
+        var first = new FakeScript(Item).LoginOk().Downloading().WriteProduct(123456).SuccessLine().HangSecs(1);
+        var second = new FakeScript(Item2).LoginOk().Downloading().WriteProduct(5).SuccessLine();
+        var runner = NewRunnerMulti(root, new Dictionary<ulong, FakeScript> { [Item] = first, [Item2] = second },
+            stallTimeout: TimeSpan.FromSeconds(60), waitTimeout: TimeSpan.FromMilliseconds(800));
+
+        var r1 = await runner.DownloadAsync(RequestFor(root, Item));
+        var sw = Stopwatch.StartNew();
+        var r2 = await runner.DownloadAsync(RequestFor(root, Item2));
+        sw.Stop();
+
+        Assert.True(r1.IsOk && r1.Value!.Outcome == SteamCmdOutcome.Success);
+        Assert.True(r2.IsOk && r2.Value!.Outcome == SteamCmdOutcome.Success);  // 800ms 内拿到=已释放
+        Assert.True(sw.Elapsed.TotalSeconds < 3.0);
     }
 }
