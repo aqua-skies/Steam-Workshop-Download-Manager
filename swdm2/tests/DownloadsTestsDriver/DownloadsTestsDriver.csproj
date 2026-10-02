@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- SP-3 驱动模式（xUnit testhost 沙箱崩溃的替代路径，同 SteamTestsDriver/CoreTestsDriver/UiTestsDriver） -->
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Swdm2.Downloads.Tests.Driver</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Swdm2.Downloads.Tests\Swdm2.Downloads.Tests.csproj" />
+  </ItemGroup>
+
+</Project>
