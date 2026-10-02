@@ -45,6 +45,7 @@
 - **UI 层教训**：联想模型原地更新（勿 clear() 重建）；每个用户操作要有即时反馈（≤150ms）；中英别名/归一化搜索；隐式单例显式化。
 - **Web API 复验纠错（2026-10-02 实测，推翻 csharp_steam_workshop.md §0.4 结论）**：`ISteamRemoteStorage/GetPublishedFileDetails` 匿名**可用且完整**——以真实在线 id 3808352517 实测返回 result:1 + title/description/file_size 4930110/creator/preview_url；此前 result:9 系测试 id 已失效（104484086），非端点不可用。⇒ **2.0 元数据主源 = Web API（结构化），社区页面降为回退源**（浏览列表/依赖 referenced_files 等 API 未覆盖项）。`GetFileSize` 端点确实 404 不存在（剔除）。file_url 字段为空（2017 年移除，下载仍走 steamcmd/CDN）。
 - **端点可达性矩阵（用户 2026-10-02 提出的部署约束）**：用户主机分"有代理/无代理"两类——无代理（典型大陆直连）主机：`api.steampowered.com` 通常直连可用、`steamcommunity.com` 常被 DNS 污染/SNI 重置、`store.steampowered.com/api` 通常可用；有代理主机全通。⇒ Steam 域架构：① Web API 为元数据主源；② 社区页面回退（仅代理可用时）；③ 启动期三端点探测 + 状态栏如实显示（直连/系统代理/自定义代理）；④ 失败引导用户配代理，不静默失败。**C# HttpClient 不读系统代理——须显式接管代理设置。**
+- **首个参数重标定完成（2026-10-02 实测，105 次请求）**：`GetPublishedFileDetails` 匿名调用**零限流**——零间隔 30/30 成功、1s/2s 间隔各 15/15 成功、全程 0 次 429（经 7897 代理出口，香港 IDC）；中位延迟 630ms。⇒ **2.0 Web API 路径不需要 1.x 的 30→90s 退避，用 ~1s 礼貌间隔+瞬时重试即可**。注意：1.x 长退避是 steamcommunity.com **页面抓取**端点（nginx 指纹层）的标定，与 Web API 不同源，不得混用。页面端 429 退避曲线的实测留 D2.6（真触发 429 时测）。实测脚本 tests/_bench_steam_rate.ps1。
 
 ## 四、功能范围基线（1.x 对等 + 2.0 增强）
 
