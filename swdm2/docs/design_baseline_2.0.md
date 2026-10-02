@@ -33,6 +33,7 @@
 ## 三、保留资产清单（2.0 必须继承的"学费"）
 
 来自 docs/architecture/system_contracts.md 与历史教训：
+- **参数类经验必须实测重标定**（用户 2026-10-02 纪律）：下列数值仅作起点，不得照抄——429 退避（1.x 用 30s 起/90s 封顶）、端点节流间隔（详情 3s / browse 2s / RemoteStorage 3s）、并发上限（1.x 单源串行）。2.0 交付前必须有基准实测任务（见 §四验收）回答"能否更短/更小"，实测后才可锁参数。
 - **429 指纹层**：裸 Chrome UA 缺 Accept-Language 必 429；补 `Accept-Language: zh-CN,zh;q=0.9,en;q=0.8` 即 200（34 次实测）；429 响应从不带 Retry-After；Referer/Origin/匿名 cookie 全无效。
 - **403 = IP/代理边缘层**：快速失败抛限定错误，用过期缓存兜底，重试无用。
 - **节流纪律**：端点差异化间隔（详情 3s / browse 2s / RemoteStorage 3s）；锁覆盖 read-sleep-write 全程；用户点击 priority 绕过等待、低优先级让出槽位。
@@ -41,6 +42,8 @@
 - **版本号双端同步**纪律（程序 + 安装器）。
 - **凭据不落日志/不进配置**（DPAPI/keyring 方向在 C# 侧重做）。
 - **UI 层教训**：联想模型原地更新（勿 clear() 重建）；每个用户操作要有即时反馈（≤150ms）；中英别名/归一化搜索；隐式单例显式化。
+- **Web API 复验纠错（2026-10-02 实测，推翻 csharp_steam_workshop.md §0.4 结论）**：`ISteamRemoteStorage/GetPublishedFileDetails` 匿名**可用且完整**——以真实在线 id 3808352517 实测返回 result:1 + title/description/file_size 4930110/creator/preview_url；此前 result:9 系测试 id 已失效（104484086），非端点不可用。⇒ **2.0 元数据主源 = Web API（结构化），社区页面降为回退源**（浏览列表/依赖 referenced_files 等 API 未覆盖项）。`GetFileSize` 端点确实 404 不存在（剔除）。file_url 字段为空（2017 年移除，下载仍走 steamcmd/CDN）。
+- **端点可达性矩阵（用户 2026-10-02 提出的部署约束）**：用户主机分"有代理/无代理"两类——无代理（典型大陆直连）主机：`api.steampowered.com` 通常直连可用、`steamcommunity.com` 常被 DNS 污染/SNI 重置、`store.steampowered.com/api` 通常可用；有代理主机全通。⇒ Steam 域架构：① Web API 为元数据主源；② 社区页面回退（仅代理可用时）；③ 启动期三端点探测 + 状态栏如实显示（直连/系统代理/自定义代理）；④ 失败引导用户配代理，不静默失败。**C# HttpClient 不读系统代理——须显式接管代理设置。**
 
 ## 四、功能范围基线（1.x 对等 + 2.0 增强）
 
