@@ -19,9 +19,11 @@ public sealed class SteamOptions
     /// <summary>
     /// ⚠️[参数待重标定] 端点差异化节流（毫秒）：[0]=社区详情页（1.x=6000）、[1]=workshop/browse（1.x=2000）。
     /// 数组顺序由 Steam 域消费方约定（S11：节流参数不允许硬编码）。B2 重标定候选档 0.5s-8s。
+    /// 注意：类默认为**空数组**——起点值只由 appsettings.json 承载（ConfigurationBinder 对预填数组是**追加**而非替换，
+    /// 预填默认值会让 JSON 值静默拼接到旧值后面；空默认让绑定无歧义）。消费方须校验非空再取下标。
     /// </summary>
     [Range(0, 120000)]
-    public double[] ThrottleMs { get; set; } = { 6000, 2000 };
+    public double[] ThrottleMs { get; set; } = Array.Empty<double>();
 
     /// <summary>⚠️[参数待重标定] 元数据并发上限。1.x 无显式上限概念，2.0 起点 2（B3 重标定）。</summary>
     [Range(1, 16)]
