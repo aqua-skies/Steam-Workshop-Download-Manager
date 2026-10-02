@@ -24,4 +24,9 @@
     <ProjectReference Include="..\..\src\Swdm2.Core\Swdm2.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- D2.5 真实社区页 fixture（2026-10-02 经代理 7897 抓取；内嵌资源=xunit/驱动双模式可移植） -->
+    <EmbeddedResource Include="Community\fixtures\*.html" />
+  </ItemGroup>
+
 </Project>
