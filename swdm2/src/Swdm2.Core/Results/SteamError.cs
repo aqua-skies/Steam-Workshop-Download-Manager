@@ -38,4 +38,10 @@ public enum SteamError
 
     /// <summary>配置无效（D2.1 起：自定义代理 URL 缺失/格式非法、Options 数值越界等启动期可校验错误）。</summary>
     InvalidConfiguration,
+
+    /// <summary>steamcmd 部署链产物损坏（D3.3）：zip 损坏/解压失败/exe 缺失。损坏 zip 重下后仍失败归此（1.x 幂等重下经验）。</summary>
+    CorruptAsset,
+
+    /// <summary>steamcmd 版本校验失败（D3.3）：probe 退出码非法（不在 {0,7}）或 banner 版本串不可解析。实测 banner=版本唯一来源。</summary>
+    VersionCheck,
 }
