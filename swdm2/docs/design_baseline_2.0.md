@@ -28,6 +28,7 @@
 | 7 | 团队：swdm-2.0 沿用域 owner 线（arch-owner 架构/稳定性、visual-owner 视觉/UI、qa-owner 独立复测；captain 集成/构建/交付）——专人专项非必要不换人（用户 2026-10-02 重申） | 用户规矩 |
 | 8 | **下载域双 provider**（2026-10-02 复验后锁定）：SteamKit `CDNClientPool` 真·IDM 内核为主（depot chunk 级并行、默认 8、chunk 自带 SHA 校验——比 IDM 更强；DepotDownloader 源码实证 `isUgc` 路径支持 Workshop 内容）；steamcmd 兜底（无逐字节进度/0 字节假成功等 quirk 保留）；HTTP 直链场景用 bezzad/Downloader 式分段+`.download` 尾部元数据续传；磁盘 IO 单文件偏移直写+NTFS 稀疏占位（不支持则 SetLength 降级） | docs/research2/idm_download_kernel.md + captain 换源复验（DepotDownloader GitHub 主源） |
 | 9 | **WPF 栈选型**（2026-10-02）：MVVM=CommunityToolkit.Mvvm 8.4.x（微软官方、源生成器、AI 生成可靠度最高；Prism 近 2 年无稳定版黄灯、ReactiveUI Rx 易埋雷）；控件=WPF-UI 4.3.0 底座 + **自绘 Card/Hint**（PCL2 本身即 VB.NET+WPF 全自绘 MyCard/MyHint+HSL 主题——"任何控件库都给不了 PCL2 脸"；WPF-UI 456 开放 issue 需锁版本+回归把关；fallback=MahApps.Metro）；DI/日志/配置=MSDI + Serilog 4.4 + Options；线程=async 全链路 + Generic Host BackgroundService 下载队列（HostedService 异常须 worker 内全包 catch）；打包更新=**Velopack 1.2.161 + GitHub Releases**（Squirrel.Windows 已停摆）；7 条致命坑清单转写为代码规范 | docs/research2/wpf_stack.md（数据 GitHub/NuGet API 2026-10-02 直连核验） |
+| 10 | **产品优先级**（用户 2026-10-02 明定）：用户体验 > 安装包体积。打包决策不受体积约束（自包含运行时/内嵌手册与素材/SteamKit+WPF-UI 依赖全量携带均可），"瘦身"只针对冗余产物；可视化质感与功能完整性不得为体积让路 | 用户原话 |
 
 > 对基线 §四功能范围的影响：下载域从"steamcmd 单源 + 体感映射"升级为"真并行内核"，IDM 体感（速度/ETA/分段数/限速/队列）全部为真功能；steamcmd 路径分段数诚实降级 N/A。
 
