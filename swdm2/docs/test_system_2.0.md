@@ -1,7 +1,11 @@
 # SWDM 2.0 测试体系规格（真实输入 + 参数重标定）
 
-> 版次：v1.2 · 2026-10-02 · 维护：qa-20（UiTests / 复测域 owner）
+> 版次：v1.3 · 2026-10-02 · 维护：qa-20（UiTests / 复测域 owner）
 > 依据：`docs/research2/wpf_ui_testing.md`（451 行，FlaUI 方案研究）、`swdm2/docs/architecture_2.0.md`（§3.5 UiTests 契约 / §4 学费清单 / §6 DAG v2.0 + 附录 SP spike 实证）、1.x 既有基准脚本 `tests/_bench_steam_rate.ps1`（Steam 限流基准的三段法原型）
+> **v1.2 → v1.3 变更（bug 归属制回写 · arch-20 通报 StaFact/xunit 二义陷阱，D1.5 实踩）**：
+> - **兼容链陷阱记录**：`Xunit.StaFact 2.1.7` 拉入 **xunit.v3.\*** 传递依赖（xunit.v3.common / xunit.v3.extensibility.core 2.0.0 进图），其 `FactAttribute` 与 **xunit 2.9.0** 的 `FactAttribute` 二义（**CS0433**）——UiTests 工程出现 `[Fact]`/`[Theory]`（非 `[WpfFact]`）即编译失败；D0.2 当时只有 `[WpfFact]`（定义在 StaFact 程序集、无二义）故 build 0-0 通过。
+> - **约束（契约化）**：**UiTests 工程只用 `[WpfFact]`**（纯 FlaUI/UIA 测试）；`[Fact]`/`[Theory]` 归 `Swdm2.Core.Tests`（无 StaFact 依赖，无二义）。备选路线=退回 spike 实证组合 StaFact 1.1.11 + xunit 2.5.3（不拉 v3），但 t3/D0.2 已锁 2.9.0 + 2.1.7，故采推荐路线。
+> - **§5 重标定基准迁出 UiTests**：基准是网络测量程序（不涉 UI），改落 `swdm2/tests/Swdm2.Core.Tests/Calibration/`（plain `[Theory]`，无二义）；UiTests 保持纯 `[WpfFact]`。本次处置实证：UiTests 全部测试改 `[WpfFact]` 后编译 0-0 + 驱动模式 5/5 PASS。
 > **v1.1 → v1.2 变更（bug 归属制回写 · arch-20 通报 + qa-20 本地核验）**：
 > - **`Xunit.StaFact` 版本修正：1.2.1 在 NuGet 上不存在**（版本尾 1.1.11 → 2.0.44 → 2.1.7 → 3.0.13 → 4.x beta；本地 NuGet 缓存核验仅 1.1.11 / 2.1.7）。**采用 2.1.7**，经 **D0.2 三段实证**（restore + 全解决方案 `dotnet build` 0 警告 0 错误；进程外冒烟跑通：`Application.Launch(Swdm2.App.exe)` → UIA3 定位 `AutomationId=MainWindow` → 断言通过 + 窗口截图 216.1 KB，SP-3 驱动模式）。
 > - **特性命名空间实证**：2.1.7 的 `WpfFactAttribute`/`StaFactAttribute` 仍位于命名空间 **`Xunit`**（同 1.1.11）；**`using Xunit.StaFact;` 是错的**——产品冒烟测试 `swdm2/tests/Swdm2.UiTests/Tests/Smoke/AppLaunchSmokeTests.cs` 以 `using Xunit;` + `[WpfFact]` 落地。
@@ -64,7 +68,7 @@
 | `FlaUI.Core` | **5.0.0** | Application / AutomationElement / Mouse / Keyboard / Retry / Capturing | NuGet flatcontainer 权威复验（captain 经 7897 代理直查）：**5.0.0 为 flaui.core/flaui.uia3/flaui.uia2 三包共同最新版**；5.0.0（2024-12-08）移除 .NET Core 3.1/5 等旧框架并支持 nullable，net8.0-windows 目标兼容 |
 | `FlaUI.UIA3` | **5.0.0** | `UIA3Automation`（WPF 原生 UIA3 通路） | 与 FlaUI.Core 同版本（5.0.0） |
 | `xunit` | 2.9.0 | 测试框架 | **D0.2 已直接落 2.9.0**（不再"骨架 2.5.3 顺带升"）；**不跳 xunit 3.x**（StaFact 兼容链未经实证） |
-| `Xunit.StaFact` | **2.1.7** | `[StaFact]` / `[WpfFact]`（STA 线程 + WPF SynchronizationContext） | **D0.2 三段实证**（build 0-0 + 进程外冒烟 PASS 截图 216.1KB）：版本真实存在（版本尾 1.1.11→2.0.44→2.1.7→3.0.13→4.x beta，**1.2.1 不存在**）；⚠️ **特性命名空间在 `Xunit`**（`WpfFactAttribute`/`StaFactAttribute`，同 1.1.11），**不是 `Xunit.StaFact`**——`using Xunit;` 即可，`using Xunit.StaFact;` 编译失败 |
+| `Xunit.StaFact` | **2.1.7** | `[StaFact]` / `[WpfFact]`（STA 线程 + WPF SynchronizationContext） | **D0.2 三段实证**（build 0-0 + 进程外冒烟 PASS 截图 216.1KB）：版本真实存在（版本尾 1.1.11→2.0.44→2.1.7→3.0.13→4.x beta，**1.2.1 不存在**）；⚠️ **特性命名空间在 `Xunit`**（`WpfFactAttribute`/`StaFactAttribute`，同 1.1.11），**不是 `Xunit.StaFact`**——`using Xunit;` 即可；⚠️⚠️ **兼容链陷阱（D1.5 实踩）**：2.1.7 拉入 xunit.v3.* 2.0.0 传递依赖，其 `FactAttribute` 与 xunit 2.9.0 二义（CS0433）→ **UiTests 工程只用 `[WpfFact]`**，`[Fact]`/`[Theory]` 一律归 `Swdm2.Core.Tests`（备选：退回 1.1.11 + xunit 2.5.3） |
 | `xunit.runner.visualstudio` | 2.8.x | VSTest 适配器（`dotnet test` 可见） | 随 xunit 版本对齐 |
 | `Microsoft.NET.Test.Sdk` | 17.8.0 | 测试宿主 | 骨架现状保持 |
 | `coverlet.collector` | 6.0.0 | 覆盖率 | 骨架现状保持 |
@@ -97,6 +101,8 @@
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="Xunit.StaFact" Version="2.1.7" />   <!-- D0.2 实证：特性在命名空间 Xunit，using Xunit; -->
+    <!-- ⚠️ v1.3 契约：本工程只用 [WpfFact]（StaFact 2.1.7 拉入 xunit.v3.*，与 xunit 2.9.0 的
+         FactAttribute 二义 CS0433）。[Fact]/[Theory] 一律落 Swdm2.Core.Tests。 -->
     <PackageReference Include="FlaUI.Core" Version="5.0.0" />
     <PackageReference Include="FlaUI.UIA3" Version="5.0.0" />
   </ItemGroup>
@@ -162,7 +168,7 @@ swdm2/tests/Swdm2.UiTests/
 ├─ Vision/
 │  ├─ OcrChecker.cs                  #   Windows.Media.Ocr（zh-CN）文本断言
 │  └─ PixelDiff.cs                   #   静态区域基线 diff / 动态区域感知哈希容差
-├─ Calibration/                      #   §5 参数重标定基准（Category=Calibration，不涉 UI）
+├─ Calibration/                      #   §5 参数重标定基准（Category=Calibration，不涉 UI）→ **落 `swdm2/tests/Swdm2.Core.Tests/`**（plain [Theory]，见 v1.3 变更）
 │  ├─ B1BackoffCurveTests.cs
 │  ├─ B2EndpointThrottleTests.cs
 │  ├─ B3ConcurrencyCeilingTests.cs
@@ -563,7 +569,7 @@ qa-20 执行基准（双网络环境）
 
 ### 5.4 可执行骨架（xUnit `Category=Calibration`，裸 HttpClient）
 
-> 基准是**网络测量程序**，不依赖 FlaUI / 不启动被测 App，用 BCL `HttpClient` 直测，避免被测客户端实现的二次影响（客户端实现正确性由集成测试管）。放在 `Swdm2.UiTests/Calibration/` 的理由：复用唯一测试项目和 `dotnet test --filter Category=Calibration` 命令（D2.6/D4.8 验证命令一致），无需新项目（对齐架构五项目骨架）；副作用隔离：独立集合 + 默认 `Skip`（无网络时）。
+> **项目归属（v1.3 修正）**：基准是**网络测量程序**，不依赖 FlaUI / 不启动被测 App，用 BCL `HttpClient` 直测，避免被测客户端实现的二次影响（客户端实现正确性由集成测试管）。**落 `swdm2/tests/Swdm2.Core.Tests/Calibration/`**（plain `[Fact]`/`[Theory]`，Core.Tests 无 StaFact 依赖 → 无 xunit.v3 二义；此前规划的 UiTests/Calibration 路径已废止——原因见 v1.3 变更日志的兼容链陷阱）；副作用隔离：独立集合（禁并行）+ 默认 `Skip`（无网络时）。要点：**UiTests 工程内禁止出现 `[Fact]`/`[Theory]`**，一律 `[WpfFact]`。
 
 ```csharp
 [Trait("Category", "Calibration")]
@@ -602,7 +608,7 @@ public sealed class B1BackoffCurveTests
 }
 ```
 
-- 执行：`dotnet test swdm2/tests/Swdm2.UiTests --filter Category=Calibration`（加 `SWDM2_BENCH_PROXY=http://127.0.0.1:7897` 环境变量跑 fake-IP 组；不设为直连组）。
+- 执行：`dotnet test swdm2/tests/Swdm2.Core.Tests --filter Category=Calibration`（或解决方案级 `dotnet test swdm2/Swdm2.sln --filter Category=Calibration`；加 `SWDM2_BENCH_PROXY=http://127.0.0.1:7897` 环境变量跑 fake-IP 组；不设为直连组）。
 - **网络不稳重跑**：单 Theory 档失败（超时/异常）→ 该档标 `EXC` 写入 CSV，重跑命令仅跑该档（`--filter "FullyQualifiedName~B1BackoffCurveTests.Backoff_候选档_实测成功率(waitSeconds:30)"`）。
 
 ### 5.5 输出格式规范
@@ -638,7 +644,7 @@ FlaUI issue #168：CI（TeamCity / GitHub Actions 托管 runner / Azure DevOps �
 | 日常开发 | `dotnet build swdm2/Swdm2.sln -c Debug -warnaserror` | 每次提交前（0 警告 0 错误） |
 | UI 冒烟（P0） | `dotnet test swdm2/tests/Swdm2.UiTests --filter "Category=FlaUI&Category=Smoke"` | 每日 / 每次 UI 改动 |
 | 全量 UI | `dotnet test swdm2/tests/Swdm2.UiTests --filter Category=FlaUI` | **每阶段交付门**（迭代四要素：全量回归含新增与关联交互） |
-| 参数基准 | `dotnet test swdm2/tests/Swdm2.UiTests --filter Category=Calibration` | D2.6 / D4.8 节点 + 每次默认值变更后复测 |
+| 参数基准 | `dotnet test swdm2/tests/Swdm2.Core.Tests --filter Category=Calibration`（v1.3：基准工程迁出 UiTests，见 §5.4） | D2.6 / D4.8 节点 + 每次默认值变更后复测 |
 | 全量方案回归 | `dotnet test swdm2/Swdm2.sln` | D7.1（发布冲刺） |
 
 - 一律在**本机交互会话**运行（用户登录的桌面会话，非 Session 0）。
@@ -689,7 +695,7 @@ FlaUI issue #168：CI（TeamCity / GitHub Actions 托管 runner / Azure DevOps �
 | D5.12 | qa-20 | 即时反馈重标定：A9 ≤150ms 按键→可见反馈延迟计时断言（若 t5 合并入 D5.10，则随 P0 冒烟真实旅程计时） | UiTests 计时断言 |
 | D6.2 | qa-20 | 更新检查弹窗（#18，#255 路径 + 标红态） | `--filter Category=FlaUI` |
 | D6.4 | qa-20 | 复测矩阵：双网络（fake-IP/直连）× 匿名/账号 × 双 provider 全组合 | 矩阵执行表（docs） |
-| D2.6 / D4.8 | arch-20/qa-20 | 基准 B1/B2、B3 报告（t3 §5.5 输出格式）+ Options 锁定 | `--filter Category=Calibration` |
+| D2.6 / D4.8 | arch-20/qa-20 | 基准 B1/B2、B3 报告（t3 §5.5 输出格式）+ Options 锁定 | `dotnet test swdm2/tests/Swdm2.Core.Tests --filter Category=Calibration`（基准工程，v1.3 迁出 UiTests） |
 | D7.1 | qa-20 | 全量回归（全部 P0/P1/P2 + 单元 + 集成 + 双网络矩阵） | `dotnet test swdm2/Swdm2.sln` |
 | D7.2 | qa-20 | bug 测试员连续两轮复测无异常（第二轮直接复用 D6.4 矩阵执行表，不重设计） | 复测表 |
 
@@ -730,7 +736,7 @@ FlaUI issue #168：CI（TeamCity / GitHub Actions 托管 runner / Azure DevOps �
 | 项 | 状态 | 复验通道 |
 |---|---|---|
 | FlaUI 5.0.0 包在 net8.0-windows 目标下的 restore/编译/启动 + 命名空间与 wpf_ui_testing 示例一致 | 包版本**已实证**（captain 经 7897 代理直查 NuGet flatcontainer：flaui.core/flaui.uia3/flaui.uia2 最新均为 5.0.0，"6.0.0"为误读已撤回）；**API 表面已实证**（D0.2：Application.Launch→UIA3 断言 MainWindow PASS） | ✅ 闭环（v1.2）；后续差异写入 `swdm2/docs/` 复验记录 |
-| `Xunit.StaFact` 2.1.7 × xunit 2.9.0 组合 | **已实证**（D0.2：build 0-0 + 进程外冒烟 PASS；特性命名空间 `Xunit` 确认；**1.2.1 系误写、NuGet 不存在，已撤回**） | ✅ 闭环（v1.2） |
+| `Xunit.StaFact` 2.1.7 × xunit 2.9.0 组合 | **已实证**（D0.2：build 0-0 + 进程外冒烟 PASS；特性命名空间 `Xunit` 确认；**1.2.1 系误写、NuGet 不存在，已撤回**）；⚠️**二义陷阱已收口（v1.3）**：2.1.7 拉入 xunit.v3.* → `[Fact]` CS0433 二义 → UiTests 只用 `[WpfFact]`、`[Fact]` 归 Core.Tests | ✅ 闭环（v1.2+ v1.3） |
 | WPF-UI 4.3.0 控件（FluentWindow/TitleBar/NavigationView）的 UIA 暴露与是否需补 AutomationId | 未实证（架构 §8 弯路嫌疑项） | D0.1 spike 记录 |
 | `Windows.Media.Ocr` 中文语言包可用性（zh-CN） | 依赖系统镜像 | D5.2（视觉控件任务）首跑时校验，缺包则降级几何断言（1.x 经验兜底） |
 | 滚轮注入（wheel）在 FlaUI 5.0.0 的 API 表面 | 研究文档未覆盖 | 矩阵 #8 滚动场景实现时确认；必要时 InputSimulator 补 |
