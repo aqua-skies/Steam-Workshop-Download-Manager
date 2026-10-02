@@ -60,7 +60,7 @@
 | visual-20（执行） | App 自绘/主题 | **赞成** | 四要素全绿；阶段 1 范围克制（无删减/新增请求）；基础设施对下游契约齐备；UiTestsDriver 已交 qa-20 审 |
 | arch-20 | Core/Downloads/架构 | *（异步投票中，意见追加于此）* | D1.5r 修复已自验并入库（25086c0）；Core 契约下游就绪 |
 | qa-20 | UiTests/复测 | *（异步投票中 + UiTestsDriver 审阅待办，意见追加于此）* | |
-| captain | 集成/构建/交付 | *（复跑确认后关门，意见追加于此）* | |
+| captain | 集成/构建/交付 | **赞成（确认关门）** 2026-10-02 17:59 | 终验（dd29d18 后独立复跑）：build 0-0；CoreTestsDriver pass=72 fail=0；UiTestsDriver pass=5 fail=0（STA 反射驱动本机跑通，含 AppLaunch 真实进程冒烟）；CHANGELOG/props/评审记录入库。四要素真数全绿，假绿闭环已落地为过程纪律。关门。 |
 
 > 投票追加约定：本节为 append-only；成员回复直接落"意见"列并标注时间。出现反对票时按 DAG §6 放行门流程升级处置（重开 patch 版本）。
 
