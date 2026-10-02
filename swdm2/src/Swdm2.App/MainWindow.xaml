@@ -3,12 +3,25 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Swdm2.App"
         mc:Ignorable="d"
         Title="SWDM 2.0" Height="600" Width="900"
         WindowStartupLocation="CenterScreen"
-        AutomationProperties.AutomationId="MainWindow">
+        AutomationProperties.AutomationId="MainShell">
+    <!-- D3.5b minimum testable shell. Skin-level (title bar, sidebar, themes) deferred to D5.
+         MainShell id = t3 section 3.2 reservation table (start assertion anchor). -->
     <Grid>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Margin="10,8">
+            <Button AutomationProperties.AutomationId="MainShell_Nav_ModDetailButton"
+                    Content="Mod detail (sample)" Padding="12,5" Margin="0,0,8,0"
+                    Command="{Binding NavigateModDetailCommand}"/>
+            <Button AutomationProperties.AutomationId="MainShell_Nav_DownloadsButton"
+                    Content="Downloads" Padding="12,5"
+                    Command="{Binding NavigateDownloadsCommand}"/>
+        </StackPanel>
+        <ContentControl Grid.Row="1" Margin="10" Content="{Binding CurrentPageView}"/>
     </Grid>
 </Window>

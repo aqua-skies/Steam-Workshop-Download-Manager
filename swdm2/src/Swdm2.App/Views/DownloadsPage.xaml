@@ -1,0 +1,66 @@
+<UserControl x:Class="Swdm2.App.Views.DownloadsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:Swdm2.App.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="480" d:DesignWidth="860">
+    <UserControl.Resources>
+        <!-- row template: every interactive element has a reserved AutomationId (t3 section 3.2);
+             ids repeat per row by design (list row subtree lookup). -->
+        <DataTemplate DataType="{x:Type vm:DownloadTaskRowViewModel}">
+            <Grid Margin="0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="90"/>
+                    <ColumnDefinition Width="90"/>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_FileNameText"
+                           Text="{Binding FileName}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_StateText"
+                           Text="{Binding StateText}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="2" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_SpeedText"
+                           Text="{Binding SpeedText}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="3" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_EtaText"
+                           Text="{Binding EtaText}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="4" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_SegmentsText"
+                           Text="{Binding SegmentsText}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="5" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_SizeText"
+                           Text="{Binding SizeText}" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_PauseButton"
+                            Content="Pause" Margin="0,0,4,0" Padding="8,2"
+                            Command="{Binding PauseCommand}"/>
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_ResumeButton"
+                            Content="Resume" Margin="0,0,4,0" Padding="8,2"
+                            Command="{Binding ResumeCommand}"/>
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_RetryButton"
+                            Content="Retry" Margin="0,0,4,0" Padding="8,2"
+                            Command="{Binding RetryCommand}"/>
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_CancelButton"
+                            Content="Cancel" Padding="8,2"
+                            Command="{Binding CancelCommand}"/>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ListBox AutomationProperties.AutomationId="DownloadsPage_TaskList_Items"
+             ItemsSource="{Binding Rows}">
+        <ListBox.ItemContainerStyle>
+            <Style TargetType="ListBoxItem">
+                <Setter Property="AutomationProperties.AutomationId"
+                        Value="DownloadsPage_TaskList_Item"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Padding" Value="4,2"/>
+            </Style>
+        </ListBox.ItemContainerStyle>
+    </ListBox>
+</UserControl>

@@ -1,0 +1,21 @@
+<UserControl x:Class="Swdm2.App.Views.ModDetailPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="480" d:DesignWidth="840">
+    <!-- D3.5b minimum testable skeleton. Skin-level look (PCL2 card layering / shadows) deferred to D5. -->
+    <StackPanel Margin="16">
+        <TextBlock AutomationProperties.AutomationId="ModDetailPage_TitleText"
+                   Text="{Binding Title}" FontSize="18" FontWeight="Bold"
+                   Margin="0,0,0,12" TextTrimming="CharacterEllipsis"/>
+        <TextBlock Text="dependency list (sample)" FontWeight="SemiBold" Margin="0,0,0,6"/>
+        <ListBox AutomationProperties.AutomationId="ModDetailPage_DependencyList_Items"
+                 ItemsSource="{Binding Dependencies}" Height="140" Margin="0,0,0,16"/>
+        <Button AutomationProperties.AutomationId="ModDetailPage_DownloadButton"
+                Content="Download"
+                Command="{Binding DownloadCommand}"
+                Padding="20,8" FontSize="14" HorizontalAlignment="Left"/>
+    </StackPanel>
+</UserControl>

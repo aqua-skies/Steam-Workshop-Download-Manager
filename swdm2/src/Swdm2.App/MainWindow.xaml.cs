@@ -1,13 +1,5 @@
-﻿using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Swdm2.App.Boot;
 
 namespace Swdm2.App;
 
@@ -19,5 +11,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // AppHost.Start() runs before window construction (App.OnStartup order;
+        // the shell VM is the page host + download chain owner).
+        DataContext = AppHost.Shell;
     }
 }

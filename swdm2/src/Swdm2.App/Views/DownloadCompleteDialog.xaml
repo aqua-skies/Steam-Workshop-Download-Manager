@@ -1,0 +1,20 @@
+<Window x:Class="Swdm2.App.Views.DownloadCompleteDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        mc:Ignorable="d"
+        Title="Download complete" Width="460" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <!-- #255 dialog path: self-drawn Window (A7 reliable carrier) with OkButton.
+         Native MessageBox avoided: FlaUI-friendly, skin-able in D5. -->
+    <StackPanel Margin="20">
+        <TextBlock Text="{Binding TaskTitle}" FontWeight="Bold" FontSize="15"
+                   Margin="0,0,0,8" TextWrapping="Wrap"/>
+        <TextBlock Text="product directory:" Margin="0,0,0,4"/>
+        <TextBlock Text="{Binding ProductPath}" TextWrapping="Wrap" Margin="0,0,0,20"/>
+        <Button AutomationProperties.AutomationId="OkButton"
+                Content="OK" HorizontalAlignment="Right" Padding="24,6"
+                Click="OkButton_Click"/>
+    </StackPanel>
+</Window>
