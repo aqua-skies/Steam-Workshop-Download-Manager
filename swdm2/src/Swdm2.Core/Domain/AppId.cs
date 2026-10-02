@@ -4,12 +4,18 @@ namespace Swdm2.Core.Domain;
 /// <remarks>C6：与 <see cref="UgcId"/>/<see cref="PublishedFileId"/> 完全不同的类型，编译期不可互换。</remarks>
 public sealed record AppId
 {
-    /// <summary>AppId 数值。Steam 平台约定为正数。</summary>
-    public int Value { get; init; } = Value != 0
-        ? Value
-        : throw new ArgumentException("AppId 不能为 0。", nameof(Value));
+    private readonly int _value;
 
-    public AppId(int value) { }
+    /// <summary>AppId 数值。Steam 平台约定为正数；引入与 <c>with</c> 克隆时强制校验。</summary>
+    public int Value
+    {
+        get => _value;
+        init => _value = value != 0
+            ? value
+            : throw new ArgumentException("AppId 不能为 0。", nameof(Value));
+    }
+
+    public AppId(int value) => Value = value;
 
     /// <summary>解析字符串形式（如 "440"）。失败返回 false。</summary>
     public static bool TryParse(string? text, out AppId appId)

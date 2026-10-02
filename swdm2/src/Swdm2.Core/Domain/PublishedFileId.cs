@@ -7,12 +7,18 @@ namespace Swdm2.Core.Domain;
 /// </remarks>
 public sealed record PublishedFileId
 {
-    /// <summary>工坊物品 id。Steam 平台约定为非零正数。</summary>
-    public ulong Value { get; init; } = Value != 0
-        ? Value
-        : throw new ArgumentException("PublishedFileId 不能为 0。", nameof(Value));
+    private readonly ulong _value;
 
-    public PublishedFileId(ulong value) { }
+    /// <summary>工坊物品 id。Steam 平台约定为非零正数；引入与 <c>with</c> 克隆时强制校验。</summary>
+    public ulong Value
+    {
+        get => _value;
+        init => _value = value != 0
+            ? value
+            : throw new ArgumentException("PublishedFileId 不能为 0。", nameof(Value));
+    }
+
+    public PublishedFileId(ulong value) => Value = value;
 
     /// <summary>解析字符串形式（如 "3808352517"）。失败返回 false。</summary>
     public static bool TryParse(string? text, out PublishedFileId id)

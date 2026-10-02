@@ -4,16 +4,22 @@ namespace Swdm2.Core.Domain;
 /// <remarks>
 /// C6：与 <see cref="PublishedFileId"/> 是**不同类型**，禁止隐式互换
 /// （DepotDownloader #713 学费：换错 id 得 "A task was cancelled"，UI 必须区分提示）。
-/// 同一个数值的 UgcId 与 PublishedFileId 在领域语义上代表不同实体，永远不应互相代入。
+/// 同一数值的 UgcId 与 PublishedFileId 在领域语义上代表不同实体，永远不应互相代入。
 /// </remarks>
 public sealed record UgcId
 {
-    /// <summary>UGC id。Steam 平台约定为非零正数。</summary>
-    public ulong Value { get; init; } = Value != 0
-        ? Value
-        : throw new ArgumentException("UgcId 不能为 0。", nameof(Value));
+    private readonly ulong _value;
 
-    public UgcId(ulong value) { }
+    /// <summary>UGC id。Steam 平台约定为非零正数；引入与 <c>with</c> 克隆时强制校验。</summary>
+    public ulong Value
+    {
+        get => _value;
+        init => _value = value != 0
+            ? value
+            : throw new ArgumentException("UgcId 不能为 0。", nameof(Value));
+    }
+
+    public UgcId(ulong value) => Value = value;
 
     /// <summary>解析字符串形式。失败返回 false。</summary>
     public static bool TryParse(string? text, out UgcId id)

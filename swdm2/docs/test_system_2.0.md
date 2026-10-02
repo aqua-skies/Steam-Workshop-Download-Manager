@@ -22,7 +22,7 @@
 |---|---|
 | 驱动工具 | **FlaUI 5.0.0（UIA3）**；真实鼠标 `Mouse.MoveTo` + `Mouse.Click`（SetCursorPos + SendInput 真实事件），真实键盘 `Keyboard.Type`（VK / 扫描码 / Unicode 三路） |
 | 测试框架 | xUnit 2.9.x + `Xunit.StaFact`（`[WpfFact]`），**进程外** `Application.Launch(被测 exe, "--test-mode")` |
-| 包清单 | `FlaUI.Core` 5.0.0、`FlaUI.UIA3` 5.0.0、`xunit`、`Xunit.StaFact`、`xunit.runner.visualstudio`、`coverlet.collector`、`Microsoft.NET.Test.Sdk`（§2.1，锁版本 + D0.3 restore 复验条款） |
+| 包清单 | `FlaUI.Core` 5.0.0、`FlaUI.UIA3` 5.0.0、`xunit` 2.9.0、`Xunit.StaFact` 2.1.7、`xunit.runner.visualstudio` 2.8.2、`coverlet.collector` 6.0.0、`Microsoft.NET.Test.Sdk` 17.8.0（§2.1，全部经 t4 spike + D0.2 restore/build/运行实证） |
 | 选择器 | **一律 `AutomationId`**；禁止显示文本、坐标、层级索引、ClassName；页面级容器 id 只用一次，其余 `FindFirstDescendant` |
 | 命名约定 | `<视图>_<控件>_<语义>`（如 `GameSelectPage_SearchBox_Input`）；数据模板项 = `<列表>_Item`；详见 §3 保留 id 清单（App 侧契约） |
 | 等待策略 | `Retry.While` / `Wait.Until` 显式超时；**禁止 `Thread.Sleep`**（测试代码里出现即 review 不通过） |
@@ -63,21 +63,22 @@
 |---|---|---|---|
 | `FlaUI.Core` | **5.0.0** | Application / AutomationElement / Mouse / Keyboard / Retry / Capturing | NuGet flatcontainer 权威复验（captain 经 7897 代理直查）：**5.0.0 为 flaui.core/flaui.uia3/flaui.uia2 三包共同最新版**；5.0.0（2024-12-08）移除 .NET Core 3.1/5 等旧框架并支持 nullable，net8.0-windows 目标兼容 |
 | `FlaUI.UIA3` | **5.0.0** | `UIA3Automation`（WPF 原生 UIA3 通路） | 与 FlaUI.Core 同版本（5.0.0） |
-| `xunit` | 2.9.x | 测试框架 | 骨架现为 2.5.3，D0.3 顺带升到 2.9.x；**不跳 xunit 3.x**（StaFact 兼容链未经实证） |
-| `Xunit.StaFact` | 1.2.1 | `[StaFact]` / `[WpfFact]`（STA 线程 + WPF SynchronizationContext） | 进程外测试建议同样标注（UIA3 的 COM 调用线程语义一致） |
+| `xunit` | 2.9.0 | 测试框架 | **D0.2 已直接落 2.9.0**（不再"骨架 2.5.3 顺带升"）；**不跳 xunit 3.x**（StaFact 兼容链未经实证） |
+| `Xunit.StaFact` | **2.1.7** | `[StaFact]` / `[WpfFact]`（STA 线程 + WPF SynchronizationContext） | **D0.2 三段实证**（build 0-0 + 进程外冒烟 PASS 截图 216.1KB）：版本真实存在（版本尾 1.1.11→2.0.44→2.1.7→3.0.13→4.x beta，**1.2.1 不存在**）；⚠️ **特性命名空间在 `Xunit`**（`WpfFactAttribute`/`StaFactAttribute`，同 1.1.11），**不是 `Xunit.StaFact`**——`using Xunit;` 即可，`using Xunit.StaFact;` 编译失败 |
 | `xunit.runner.visualstudio` | 2.8.x | VSTest 适配器（`dotnet test` 可见） | 随 xunit 版本对齐 |
 | `Microsoft.NET.Test.Sdk` | 17.8.0 | 测试宿主 | 骨架现状保持 |
 | `coverlet.collector` | 6.0.0 | 覆盖率 | 骨架现状保持 |
 
 **版本事实的复验记录（设计对照纪律）**：FlaUI 的 NuGet 最新版为 **5.0.0**（captain 经 7897 代理直查 flatcontainer 实证，三包共同顶版）。早期一度出现的"6.0.0"系对 GitHub main 分支 CHANGELOG 未发布条目的误读，**已撤回**——包版本一律以 NuGet flatcontainer 为权威源，不以搜索片段或仓库 changelog 为准。
-**复验条款（经验复验）**：本机默认网络下 NuGet feed 直连不可达（DNS 被 fake-IP 代理接管），版本存在性已由 flatcontainer 复验闭环，但 API 表面（命名空间/类成员）仍需在 D0.3 restore 时实证：
-1. **D0.3（FlaUI 冒烟链）restore 时实证**：5.0.0 包在 net8.0-windows 目标下可还原、可编译、可启动；`FlaUI.Core.Application` / `FlaUI.Core.Input.Mouse` / `FlaUI.Core.Input.Keyboard` / `FlaUI.Core.Retry` / `FlaUI.Core.Capturing.Capture` / `FlaUI.UIA3.UIA3Automation` 命名空间与 wpf_ui_testing.md 示例一致。
-2. 若实证中发现 API 表面与研究文档不符，把差异写入 `swdm2/docs/` 复验记录并同步本规格（弯路嫌疑处置通道）。
-3. 版本锁死后，`FlaUI.Core`/`FlaUI.UIA3` 升级 = 全量回归门（对齐 A8 的 WPF-UI 同款风险对冲逻辑）。
+**复验条款（经验复验）**：本机默认网络下 NuGet feed 直连不可达（DNS 被 fake-IP 代理接管），但版本存在性与 API 表面已实证闭环：
+1. **版本存在性**：FlaUI 5.0.0 / Xunit.StaFact 2.1.7 全部经 flatcontainer 或 restore 实证（见上两条复验记录）。
+2. **API 表面**：`FlaUI.Core.Application` / `FlaUI.UIA3.UIA3Automation` / `FlaUI.Core.Capturing.Capture` 由 **D0.2 进程外冒烟实证**（Application.Launch → UIA3 断言 MainWindow → 截图 216.1KB）；`Keyboard` / `Mouse` / `Retry` 由 **t4 spike 实证**（真实回车触发 PreviewKeyDown、物理点击、显式等待均跑通）。
+3. 后续产品测试代码首次用到未实证成员（如 `VirtualKeyShort` 全集、wheel 注入）时，随首个测试落地核对（弯路嫌疑处置通道）。
+4. 版本锁死后，`FlaUI.Core`/`FlaUI.UIA3` 升级 = 全量回归门（对齐 A8 的 WPF-UI 同款风险对冲逻辑）。
 
 ### 2.2 目标 csproj（`swdm2/tests/Swdm2.UiTests/Swdm2.UiTests.csproj`）
 
-骨架现状已有 xunit 2.5.3 / TestSdk / coverlet / `UseWPF`，需补 FlaUI 三包 + StaFact + 串行 runner 配置：
+骨架/产品工程现状（D0.2 已落地）：`swdm2/tests/Swdm2.UiTests/Swdm2.UiTests.csproj` 已按本清单接线（xunit 2.9.0 + runner 2.8.2 + StaFact 2.1.7 + FlaUI.Core/UIA3 5.0.0 + TestSdk 17.8.0 + coverlet 6.0.0）+ `xunit.runner.json` 强串行 + `RootNamespace=Swdm2.UiTests`；下为契约副本（唯一权威为工程文件本身）：
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -95,7 +96,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
-    <PackageReference Include="Xunit.StaFact" Version="1.2.1" />
+    <PackageReference Include="Xunit.StaFact" Version="2.1.7" />   <!-- D0.2 实证：特性在命名空间 Xunit，using Xunit; -->
     <PackageReference Include="FlaUI.Core" Version="5.0.0" />
     <PackageReference Include="FlaUI.UIA3" Version="5.0.0" />
   </ItemGroup>
@@ -728,8 +729,8 @@ FlaUI issue #168：CI（TeamCity / GitHub Actions 托管 runner / Azure DevOps �
 
 | 项 | 状态 | 复验通道 |
 |---|---|---|
-| FlaUI 5.0.0 包在 net8.0-windows 目标下的 restore/编译/启动 + 命名空间与 wpf_ui_testing 示例一致 | 包版本**已实证**（captain 经 7897 代理直查 NuGet flatcontainer：flaui.core/flaui.uia3/flaui.uia2 最新均为 5.0.0，"6.0.0"为误读已撤回）；API 表面待 restore 实证 | D0.3 restore 实证；发现差异写入 `swdm2/docs/` 复验记录 |
-| `Xunit.StaFact` 1.2.1 × xunit 2.9.x 组合 | 未实证 | D0.3 同上 |
+| FlaUI 5.0.0 包在 net8.0-windows 目标下的 restore/编译/启动 + 命名空间与 wpf_ui_testing 示例一致 | 包版本**已实证**（captain 经 7897 代理直查 NuGet flatcontainer：flaui.core/flaui.uia3/flaui.uia2 最新均为 5.0.0，"6.0.0"为误读已撤回）；**API 表面已实证**（D0.2：Application.Launch→UIA3 断言 MainWindow PASS） | ✅ 闭环（v1.2）；后续差异写入 `swdm2/docs/` 复验记录 |
+| `Xunit.StaFact` 2.1.7 × xunit 2.9.0 组合 | **已实证**（D0.2：build 0-0 + 进程外冒烟 PASS；特性命名空间 `Xunit` 确认；**1.2.1 系误写、NuGet 不存在，已撤回**） | ✅ 闭环（v1.2） |
 | WPF-UI 4.3.0 控件（FluentWindow/TitleBar/NavigationView）的 UIA 暴露与是否需补 AutomationId | 未实证（架构 §8 弯路嫌疑项） | D0.1 spike 记录 |
 | `Windows.Media.Ocr` 中文语言包可用性（zh-CN） | 依赖系统镜像 | D5.2（视觉控件任务）首跑时校验，缺包则降级几何断言（1.x 经验兜底） |
 | 滚轮注入（wheel）在 FlaUI 5.0.0 的 API 表面 | 研究文档未覆盖 | 矩阵 #8 滚动场景实现时确认；必要时 InputSimulator 补 |
