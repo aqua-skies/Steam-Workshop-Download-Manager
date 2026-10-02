@@ -50,10 +50,10 @@ public sealed class SystemTimeProvider : ITimeProvider
 /// <summary>节流 bucket 键（与 SteamOptions.ThrottleMs 槽位对齐 + D2.x 端点域）。</summary>
 public static class ThrottleBuckets
 {
-    /// <summary>社区详情页（ThrottleMs[0]，1.x 实证 6s;⚠️[参数待重标定] D2.6 B2)。</summary>
+    /// <summary>社区详情页（ThrottleMs[0]，**D2.6 实测 1000ms**:0.5s×20 零失败，天花板≈累计 117 请求由熔断器兜底）。</summary>
     public const string CommunityDetail = "community-detail";
 
-    /// <summary>社区 browse 接口（ThrottleMs[1]，1.x 实证 2s;⚠️[参数待重标定] D2.6 B2)。</summary>
+    /// <summary>社区 browse 接口（ThrottleMs[1]，**D2.6 实测 1000ms**：与详情页同域同限流）。</summary>
     public const string CommunityBrowse = "browse";
 
     /// <summary>api.steampowered.com 元数据（D2.3 域；⚠️[参数待重标定] 100ms 起点——先问能否更小）。</summary>
@@ -74,11 +74,11 @@ public sealed class Throttler : IThrottler
     private readonly ITimeProvider _time;
     private readonly ConcurrentDictionary<string, Bucket> _buckets = new();
 
-    /// <summary>默认间隔（ThrottleMs[0]/[1] 映射社区两槽；api/store 起点见 <see cref="ThrottleBuckets"/> 注释）。</summary>
+    /// <summary>默认间隔（**D2.6 实测**：0.5s×20 连发零失败→间隔非瓶颈；累计请求天花板由熔断器兜底。详见 docs/calibration_1.md）。</summary>
     public static readonly IReadOnlyDictionary<string, TimeSpan> DefaultIntervals = new Dictionary<string, TimeSpan>
     {
-        [ThrottleBuckets.CommunityDetail] = TimeSpan.FromSeconds(6),
-        [ThrottleBuckets.CommunityBrowse] = TimeSpan.FromSeconds(2),
+        [ThrottleBuckets.CommunityDetail] = TimeSpan.FromSeconds(1),
+        [ThrottleBuckets.CommunityBrowse] = TimeSpan.FromSeconds(1),
         [ThrottleBuckets.Api] = TimeSpan.FromMilliseconds(100),
         [ThrottleBuckets.Store] = TimeSpan.FromMilliseconds(250),
     };

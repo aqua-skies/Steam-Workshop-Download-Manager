@@ -17,8 +17,9 @@ public sealed class SteamOptions
     public string? CustomProxyUrl { get; set; }
 
     /// <summary>
-    /// ⚠️[参数待重标定] 端点差异化节流（毫秒）：[0]=社区详情页（1.x=6000）、[1]=workshop/browse（1.x=2000）。
-    /// 数组顺序由 Steam 域消费方约定（S11：节流参数不允许硬编码）。B2 重标定候选档 0.5s-8s。
+    /// ⚠️[参数待重标定] 端点差异化节流（毫秒）：[0]=社区详情页、[1]=workshop/browse。
+    /// **D2.6 实测锁定**：appsettings.json=[1000,1000]——0.5s×20 连发零失败（间隔非瓶颈），
+    /// 天花板≈会话累计 117 请求（非间隔维度）由 D2.4 熔断器兜底（详见 docs/calibration_1.md B2)。
     /// 注意：类默认为**空数组**——起点值只由 appsettings.json 承载（ConfigurationBinder 对预填数组是**追加**而非替换，
     /// 预填默认值会让 JSON 值静默拼接到旧值后面；空默认让绑定无歧义）。消费方须校验非空再取下标。
     /// </summary>

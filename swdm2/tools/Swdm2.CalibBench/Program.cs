@@ -30,6 +30,7 @@ var docsDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", ".."
 Directory.CreateDirectory(docsDir);
 var csvPath = Path.Combine(docsDir, "calibration_1.csv");
 var jsonPath = Path.Combine(docsDir, "calibration_1.json");
+File.WriteAllText(csvPath, "idx,phase,candidate,rep,req,status,ms,len,result,note,ts\n"); // 头先行（增量追加）
 
 var records = new List<Rec>();
 var swAll = Stopwatch.StartNew();
@@ -190,11 +191,13 @@ File.WriteAllText(jsonPath, JsonSerializer.Serialize(summary, jsonOpts));
 Console.WriteLine($"DONE csv={csvPath} json={jsonPath} total={swAll.Elapsed.TotalSeconds:F0}s records={records.Count}");
 return 0;
 
-// ---------- 工具 ----------
+// ---------- 工具（Log 增量追加 CSV：进程/会话中断不丢已采数据） ----------
 void Log(string phase, object candidate, int rep, int req, int status, int ms, int len, string result, string note = "")
 {
-    records.Add(new Rec(idx++, phase, candidate?.ToString() ?? "", rep, req, status, ms, len, result, note,
-        DateTime.Now.ToString("O")));
+    var rec = new Rec(idx++, phase, candidate?.ToString() ?? "", rep, req, status, ms, len, result, note,
+        DateTime.Now.ToString("O"));
+    records.Add(rec);
+    File.AppendAllText(csvPath, rec.ToCsv() + "\n");
 }
 
 public sealed record Rec(int Idx, string Phase, string Candidate, int Rep, int Req, int Status, int Ms, int Len, string Result, string Note, string Ts)

@@ -128,12 +128,12 @@ public sealed class ThrottlerTests
         Assert.Empty(time.FireTimes); // 零间隔=无延迟推进
     }
 
-    /// <summary>默认间隔表与 SteamOptions 槽位一致（1.x 实证起点，C7 标注）。</summary>
+    /// <summary>默认间隔表与 D2.6 实测锁定一致（docs/calibration_1.md B2:1000ms;C7 标注天花板由熔断器兜底）。</summary>
     [Fact]
     public void Default_Intervals_Match_Documented_Starts()
     {
-        Assert.Equal(TimeSpan.FromSeconds(6), Throttler.DefaultIntervals[ThrottleBuckets.CommunityDetail]);
-        Assert.Equal(TimeSpan.FromSeconds(2), Throttler.DefaultIntervals[ThrottleBuckets.CommunityBrowse]);
+        Assert.Equal(TimeSpan.FromSeconds(1), Throttler.DefaultIntervals[ThrottleBuckets.CommunityDetail]);
+        Assert.Equal(TimeSpan.FromSeconds(1), Throttler.DefaultIntervals[ThrottleBuckets.CommunityBrowse]);
         Assert.Equal(TimeSpan.FromMilliseconds(100), Throttler.DefaultIntervals[ThrottleBuckets.Api]);
     }
 }
