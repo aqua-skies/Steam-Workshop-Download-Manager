@@ -2,6 +2,7 @@ using Swdm2.Core.Domain;
 using Swdm2.Core.Results;
 using Swdm2.Downloads.Events;
 using Swdm2.Downloads.Queue;
+using Swdm2.Downloads.Limiter;
 using Swdm2.Steam.Cdn;
 
 namespace Swdm2.Downloads.Providers;
@@ -21,6 +22,7 @@ public sealed class SteamKitCdnProvider : IDownloadProvider, IReportLastError
     private readonly ISteamCdnClient _cdn;
     private readonly IDownloadEventBus _bus;
     private readonly int? _loginTimeoutSeconds;
+    private readonly ISpeedLimiter? _limiter; // D4.7 chunk 调度点消费
 
     /// <summary>qa-20 t27 同模式：槽获取 hook（多 provider 槽扩展接入点）。</summary>
     public Func<DownloadTask, CancellationToken, Task>? ProcessSlotAcquirer { get; set; }
@@ -28,12 +30,13 @@ public sealed class SteamKitCdnProvider : IDownloadProvider, IReportLastError
     public Exception? LastError { get; private set; }
 
     public SteamKitCdnProvider(ISteamSessionManager session, ISteamCdnClient cdn,
-        IDownloadEventBus bus, int? loginTimeoutSeconds = null)
+        IDownloadEventBus bus, int? loginTimeoutSeconds = null, ISpeedLimiter? limiter = null)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _cdn = cdn ?? throw new ArgumentNullException(nameof(cdn));
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         _loginTimeoutSeconds = loginTimeoutSeconds;
+        _limiter = limiter;
     }
 
     public async Task<bool> ExecuteAsync(DownloadTaskEntry entry, CancellationToken ct)
@@ -97,6 +100,8 @@ public sealed class SteamKitCdnProvider : IDownloadProvider, IReportLastError
                     throw new DownloadProviderException(chunk.Error ?? SteamError.InvalidChecksum,
                         $"chunk 失败={chunk.Error}");
                 var data = chunk.Value!.Data;
+                // D4.7 限速双点之一：chunk 调度点（令牌桶按 chunk 字节消费）
+                if (_limiter is not null) await _limiter.WaitAsync(data.Length, ct).ConfigureAwait(false);
                 fileStream.Seek((long)chunk.Value.Offset, SeekOrigin.Begin);
                 await fileStream.WriteAsync(data, ct).ConfigureAwait(false);
                 received += (ulong)data.Length;

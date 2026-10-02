@@ -6,6 +6,7 @@ using Swdm2.Core.Logging;
 using Swdm2.Core.Options;
 using Swdm2.Core.Paths;
 using Swdm2.Downloads.Events;
+using Swdm2.Downloads.Limiter;
 using Swdm2.Downloads.Providers;
 using Swdm2.Downloads.Queue;
 using Swdm2.Steam.Cdn;
@@ -57,12 +58,14 @@ public static class AppHost
         var runner = new SteamCmdRunner(redaction);
 
         var bus = new DownloadEventBus(Math.Max(1, download.ProgressThrottleMs));
+        // D4.7 限速器（令牌桶；0=不限速默认；chunk 调度+HTTP 双点消费）
+        var limiter = new TokenBucketSpeedLimiter(download.MaxSpeedBytesPerSecond);
         // D4.4 provider 链路由：SteamKit CDN 主→steamcmd 兜底（按错误类型路由）
         var steamCmd = new SteamCmdProvider(deployer, runner, bus, breaker);
         var cdnSession = new SteamKitSessionManager(timeoutSeconds: 10); // 沙箱短超时：CM 阻断→Network 快回退链
         var cdnClient = new SteamKitCdnClient(cdnSession, timeoutSeconds: 10,
             chunkParallelism: download.MaxChunkParallelism);
-        var cdnProvider = new SteamKitCdnProvider(cdnSession, cdnClient, bus);
+        var cdnProvider = new SteamKitCdnProvider(cdnSession, cdnClient, bus, limiter: limiter);
         var provider = new DownloadProviderRouter(cdnProvider, steamCmd, bus);
         var queue = new DownloadQueue();
         var maxConcurrent = Math.Max(1, download.MaxConcurrentDownloads);

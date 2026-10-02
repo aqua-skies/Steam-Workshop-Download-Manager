@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using Swdm2.Core.Results;
 using Swdm2.Downloads.Disk;
+using Swdm2.Downloads.Limiter;
 
 namespace Swdm2.Downloads.Segments;
 
@@ -29,11 +31,16 @@ public sealed class HttpSegmentDownloader
     /// <summary>稀疏分配器 seam（生产=null=默认 SparseFileAllocator;注入假=模拟 exFAT 降级）。</summary>
     internal ISparseFileAllocator? Allocator { get; set; }
 
-    public HttpSegmentDownloader(HttpClient client, IResumeStore store, int? maxParallel = null)
+    /// <summary>D4.7 限速双点之一：HTTP 读流点（null=不限速）。</summary>
+    internal ISpeedLimiter? Limiter { get; set; }
+
+    public HttpSegmentDownloader(HttpClient client, IResumeStore store, int? maxParallel = null,
+        ISpeedLimiter? limiter = null)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _maxParallel = Math.Clamp(maxParallel ?? SegmentPlanner.DefaultMaxSegments, 1, 64);
+        Limiter = limiter;
     }
 
     /// <summary>下载（分段或单流；progress=累计字节）。</summary>
@@ -198,6 +205,8 @@ public sealed class HttpSegmentDownloader
         {
             await file.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
             received += read;
+            // D4.7 限速双点之一：单流回退同样读流节流（一致性）
+            if (Limiter is not null) await Limiter.WaitAsync(read, ct).ConfigureAwait(false);
             progress?.Report(received);
         }
         _store.Delete(request.DestinationPath);
@@ -226,6 +235,8 @@ public sealed class HttpSegmentDownloader
                && (read = await stream.ReadAsync(buffer.AsMemory(offset), ct).ConfigureAwait(false)) > 0)
         {
             offset += read;
+            // D4.7 限速双点之一：HTTP 读流点（令牌桶按实际读取字节消费）
+            if (Limiter is not null) await Limiter.WaitAsync(read, ct).ConfigureAwait(false);
         }
         if (offset != buffer.Length)
             throw new InvalidDataException($"段数据短读：{offset}/{buffer.Length}");
