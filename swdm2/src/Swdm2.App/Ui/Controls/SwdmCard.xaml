@@ -1,0 +1,55 @@
+<UserControl x:Class="Swdm2.App.Ui.Controls.SwdmCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True" SnapsToDevicePixels="True"
+             x:Name="CardRoot">
+    <!--
+      SwdmCard — PCL2 MyCard 三层结构（t2 §2.1;A7:根 UserControl=可靠载体，
+      type=Custom，AutomationId 完全暴露，Grid 根会被 UIA 提升吞 id）
+      阴影双路线选型：首版路线 A（内置 DropShadowEffect;滚动列表掉帧再评估 B 9-patch，D5.x）
+      动画时序：90ms 四路并行（标题/箭头/阴影色/阴影 α 0.07→0.4）+150ms 高度
+      +250ms 箭头旋转+200ms 退出 scale −0.08/opacity −1（代码后置 AniHelper.cs）
+    -->
+    <Grid x:Name="RootGrid">
+        <!-- 层 0 阴影：底部多 1px 模拟自然光（t2 §2.1 表） -->
+        <Border x:Name="ShadowLayer" Margin="-3,-3,-3,-4" CornerRadius="5"
+                Background="{DynamicResource swdm-AccentShadowBrush}"
+                Opacity="0.07" IsHitTestVisible="False">
+            <Border.Effect>
+                <DropShadowEffect x:Name="ShadowEffect" Color="{DynamicResource swdm-AccentShadowColor}"
+                                  BlurRadius="6" ShadowDepth="2" Opacity="0.07" Direction="270" />
+            </Border.Effect>
+        </Border>
+        <!-- 层 1 卡面 -->
+        <Border x:Name="CardLayer" CornerRadius="5" IsHitTestVisible="False"
+                BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1"
+                Background="{DynamicResource swdm-SurfaceCardBrush}" />
+        <!-- 层 2 内容 -->
+        <Grid x:Name="MainGrid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid Margin="15,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <!-- 标题 13px Bold（t2 §2.1 表；swdm-TextTitleSm） -->
+                <TextBlock x:Name="TitleText" FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                           TextTrimming="CharacterEllipsis" Text="{Binding Title, ElementName=CardRoot}"/>
+                <!-- 折叠箭头 10×6（顺逆旋转 180°=250ms） -->
+                <Path x:Name="ArrowPath" Grid.Column="1" Width="10" Height="6" Margin="15,0,15,0"
+                      Fill="{DynamicResource swdm-TextSecondaryBrush}"
+                      Data="M2,4 l-2,2 10,10 10,-10 -2,-2 -8,8 -8,-8 z"
+                      RenderTransformOrigin="0.5,0.5">
+                    <Path.RenderTransform>
+                        <RotateTransform x:Name="ArrowRotate" Angle="0"/>
+                    </Path.RenderTransform>
+                </Path>
+            </Grid>
+            <ContentPresenter Grid.Row="1" Margin="0,40,0,12"/>
+        </Grid>
+    </Grid>
+</UserControl>

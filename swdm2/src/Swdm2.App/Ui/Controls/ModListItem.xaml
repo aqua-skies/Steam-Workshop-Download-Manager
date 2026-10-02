@@ -1,0 +1,60 @@
+<UserControl x:Class="Swdm2.App.Ui.Controls.ModListItem"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True" SnapsToDevicePixels="True"
+             Height="42" x:Name="ItemRoot">
+    <!--
+      ModListItem — PCL2 MyListItem 等价（t2 §2.3;pcl2 §4.3)。
+      行高 42;5 列网格=[6px 勾选竖条][Auto padding][4+34 图标][* 标题][右 padding]。
+      双行信息层级：主标题 13(swdm-TextTitleSm)+副标题 11 secondary。
+      悬停浮层 RectBack:CornerRadius 6+scale 0.75→1×1.6 时长；整行按下 0.98。
+      列表行无阴影（t2 §2.1 阴影分工：只给浮起的东西；行靠 RectBack 表达）。
+    -->
+    <Grid x:Name="RootGrid">
+        <!-- 悬停浮层 RectBack（动画：scale 0.75→1,时长×1.6;代码后置） -->
+        <Border x:Name="RectBack" CornerRadius="6"
+                Background="{DynamicResource swdm-SurfaceCardHoverBrush}"
+                BorderBrush="{DynamicResource swdm-StrokeHoverBrush}"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                Opacity="0">
+            <Border.RenderTransform>
+                <ScaleTransform x:Name="RectBackScale" ScaleX="0.75" ScaleY="0.75"/>
+            </Border.RenderTransform>
+        </Border>
+        <!-- 勾选竖条（左侧 5px 圆角，双段生长：40%/200ms OutFluent + 60%/300ms OutBack） -->
+        <Border x:Name="CheckBar" Width="5" HorizontalAlignment="Left" CornerRadius="2"
+                Background="{DynamicResource swdm-Accent500Brush}"
+                Opacity="0"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="6"/>   <!-- 勾选竖条列 -->
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="1" Width="4"/>  <!-- 左 padding -->
+            <!-- 图标 34×34（左 margin 4)：SVG path / 本地位图 / 网络图（三通道，宿主页注入） -->
+            <ContentPresenter x:Name="IconPresenter" Grid.Column="2" Width="34" Height="34"
+                              Margin="4,4,4,4" VerticalAlignment="Center"/>
+            <!-- 主+副标题双行 -->
+            <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="6,0,0,0">
+                <TextBlock x:Name="TitleText" FontSize="{StaticResource swdm-TextTitleSm}"
+                           Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding Title, ElementName=ItemRoot}"/>
+                <TextBlock x:Name="SubtitleText" FontSize="{StaticResource swdm-TextCaption}"
+                           Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                           Opacity="0.6"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding Subtitle, ElementName=ItemRoot}"/>
+            </StackPanel>
+            <!-- 右侧按钮组（25×25，悬停才淡入；宿主页注入） -->
+            <StackPanel x:Name="ButtonGroup" Grid.Column="4" Orientation="Horizontal"
+                        VerticalAlignment="Center" Opacity="0">
+                <ContentPresenter/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

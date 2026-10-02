@@ -1,0 +1,35 @@
+<UserControl x:Class="Swdm2.App.Ui.Controls.Hint"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True" SnapsToDevicePixels="True"
+             x:Name="HintRoot">
+    <!--
+      Hint — PCL2 MyHint 等价（t2 §2.2;pcl2 §5.4 可粘贝 XAML）。
+      根 UserControl（A7 修正：Border 无 AutomationPeer，id 被吞）。
+      左 3px 色条+圆角 2+padding 12,9;四档语义色条（Info/Success/Warning/Error）。
+      用途：网络状态横幅/下载错误/429-403 限流提示。
+    -->
+    <Border x:Name="HintBorder" BorderThickness="3,0,0,0" CornerRadius="2"
+            Background="{DynamicResource swdm-SurfaceCardBrush}"
+            BorderBrush="{Binding SemanticColor, ElementName=HintRoot}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="MessageText" LineHeight="16" Padding="12,9"
+                       TextWrapping="Wrap" VerticalAlignment="Center"
+                       FontSize="{StaticResource swdm-TextBody}"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                       Text="{Binding Message, ElementName=HintRoot}"/>
+            <Button x:Name="CloseButton" Grid.Column="1" Width="20" Height="20"
+                    Margin="0,0,8,0" VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="{Binding CloseAutomationId, ElementName=HintRoot}"
+                    Background="Transparent" BorderThickness="0"
+                    Content="×" FontSize="11"
+                    Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                    Click="CloseButton_Click"/>
+        </Grid>
+    </Border>
+</UserControl>
