@@ -1,6 +1,7 @@
 # SWDM 2.0 视觉实现规格（Visual System Specification）
 
-> 版次：v1.0 · 2026-10-02 · 维护：visual-20（视觉/UI 域 owner）
+> 版次：v1.1 · 2026-10-02 · 维护：visual-20（视觉/UI 域 owner）
+> **v1.1 变更（A7 同步回写，review_2.0_plan.md P1 自办项）**：① §2 通用条款补 AutomationId 载体限制（可靠载体=Window/内容控件/UserControl/WPF-UI 模板部件固定 id；**禁** Grid/ContentControl/Border 及库提升型容器承载测试锚点——SP-2 实证）；② §2.1 SwdmCard 根声明改 UserControl（pcl2 §1.2 可粘贴片段的 `Grid` 根仅作布局参考，Grid 为 UIA 提升型容器、id 被吞，自绘 UserControl id 完全暴露 type=Custom）；③ §2.2 Hint 根 `Border` → UserControl（Border 无 AutomationPeer）；④ §2.4 标题栏片段条件化（仅不用 WPF-UI TitleBar 时落地；走 TitleBar 按钮用模板部件固定 id）。**视觉数值未动**（90ms/150ms/0.07→0.4 等与 §5 对照表口径不变）。
 > 依据：`docs/research2/pcl2_xaml_patterns.md`（可粘贴 XAML + §7 数值速查总表）、`docs/design/visual_language_study.md`（§7 PCL2 数值速查）、`docs/design/design_tokens.md`（令牌定义）、`swdm2/docs/design_baseline_2.0.md`（9 条锁定决策）、`swdm2/docs/architecture_2.0.md`（不变量 A1-A12 + 两项裁决）
 > **文档地位：开发前置门（计划先行纪律）**——本文档（视觉）+ t1 架构规格 + t3 测试规格经 captain 认可、t5 讨论组终裁后，才允许开放开发任务（写产品代码）。研究、骨架与环境准备（含 t4 spike）不算开发。
 > 数值来源声明：全部动画/阴影/几何数值为 **PCL2 源码实测值**（pcl2_xaml_patterns §7 / visual_language_study §7，含源文件行号），作为**起点值**移植；凡参数类数值一律标 ⚠️[参数待重标定]，按经验复验纪律在 D5.x 视觉标定任务中实测后锁定。
@@ -168,11 +169,11 @@ public sealed class ThemeService
 
 ## 2. 组件规格
 
-> 通用质量条款（每个组件适用）：① AutomationId 命名 `<视图>_<控件>_<语义>`（架构 A7），可交互元素无 id = 测试任务不通过（T1）；② `UseLayoutRounding="True"` + `SnapsToDevicePixels="True"` + 文本 `TextOptions.TextFormattingMode="Display"`（架构 A4）；③ 文字裁切一律 `TextTrimming="CharacterEllipsis"`（PCL2 全局默认）；④ 即时反馈：用户操作 ≤150ms 内有可见反馈 ⚠️[参数待重标定：实测能否更短]（A9）；⑤ 颜色一律 `DynamicResource swdm-*`，禁字面量。
+> 通用质量条款（每个组件适用）：① AutomationId 命名 `<视图>_<控件>_<语义>`（架构 A7），可交互元素无 id = 测试任务不通过（T1）；**AutomationId 只设可靠载体**（A7 修正/SP-2：Window / 内容控件 Button·TextBox·ListBox·UserControl / WPF-UI 模板部件固定 id 如 `TitleBarCloseButton`；**禁止**把测试锚点压在 Grid/ContentControl/Border 及库提升型容器上——其 UIA 树提升会吞掉容器自身 id）；② `UseLayoutRounding="True"` + `SnapsToDevicePixels="True"` + 文本 `TextOptions.TextFormattingMode="Display"`（架构 A4）；③ 文字裁切一律 `TextTrimming="CharacterEllipsis"`（PCL2 全局默认）；④ 即时反馈：用户操作 ≤150ms 内有可见反馈 ⚠️[参数待重标定：实测能否更短]（A9）；⑤ 颜色一律 `DynamicResource swdm-*`，禁字面量。
 
 ### 2.1 SwdmCard（卡片：三层结构 + 90ms/150ms 双段 + 阴影双路线）
 
-**结构**（对应 PCL2 MyCard 三层，父容器 `Grid`；pcl2 §1.2 可粘贴 XAML）：
+**结构**（对应 PCL2 MyCard 三层；pcl2 §1.2 可粘贴 XAML）：**根元素必须为 `UserControl`**（A7 修正：pcl2 §1.2 粘贴片段的 `Grid` 根仅作内部布局参考——Grid 是 SP-2 实证的 ❌ UIA 提升型容器，容器 AutomationId 会被吞；自绘 UserControl（type=Custom）id 完全暴露、内容控件可达，是自绘签名组件的标准根）：
 
 | 层 | 控件 | 关键属性 |
 |---|---|---|
@@ -224,20 +225,21 @@ public sealed class ThemeService
 PCL2 `MyHint` 等价（pcl2 §5.4 可粘贴 XAML）：
 
 ```xml
-<!-- Hint.xaml —— 左 3px 色条 + 圆角 2 + padding 12,9 -->
-<Border x:Class="Swdm2.App.Ui.Controls.Hint"
-        BorderThickness="3,0,0,0" CornerRadius="2"
-        UseLayoutRounding="True" SnapsToDevicePixels="True">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-        <TextBlock x:Name="MessageText" LineHeight="16" Padding="12,9" TextWrapping="Wrap"
-                   VerticalAlignment="Center" FontSize="{StaticResource swdm-TextBody}" />
-        <Button x:Name="CloseButton" Grid.Column="1" Width="20" Height="20"
-                Margin="0,0,8,0" VerticalAlignment="Center" AutomationId="..._Hint_Close" />
-    </Grid>
-</Border>
+<!-- Hint.xaml —— 左 3px 色条 + 圆角 2 + padding 12,9；根 UserControl（Border 无 AutomationPeer，见 A7 修正） -->
+<UserControl x:Class="Swdm2.App.Ui.Controls.Hint"
+             UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <Border BorderThickness="3,0,0,0" CornerRadius="2">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="MessageText" LineHeight="16" Padding="12,9" TextWrapping="Wrap"
+                       VerticalAlignment="Center" FontSize="{StaticResource swdm-TextBody}" />
+            <Button x:Name="CloseButton" Grid.Column="1" Width="20" Height="20"
+                    Margin="0,0,8,0" VerticalAlignment="Center" AutomationId="..._Hint_Close" />
+        </Grid>
+    </Border>
+</UserControl>
 ```
 
 **语义档位**（色条 + 图标，沿用令牌）：`Info` = link.default / `Success` = success.500 / `Warning` = warning.500（限流提示专用）/ `Error` = danger.500。文字 = `swdm-TextPrimaryBrush`；背景 = `swdm-SurfaceCardBrush` + 左色条 = 对应语义色。**用途**：网络状态横幅（端点探测结果，架构基线 §三「启动期三端点探测 + 状态栏如实显示」）、下载错误提示、429/403 限流提示（错误分类对齐 `SteamError` 枚举）。
@@ -276,6 +278,11 @@ PCL2 `MyListItem` 等价（pcl2 §4.3 可粘贴 XAML；行高/网格/动画实�
 
 ```xml
 <!-- MainWindow.xaml —— WindowStyle=None + WindowChrome（保留系统贴靠与 DWM 阴影） -->
+<!-- 条件化声明（A7 修正/SP-4 裁决）：本片段的自绘标题栏 + 自定义关闭/最小化钮
+     仅当窗口 chrome 不走 WPF-UI FluentWindow/TitleBar 时落地。
+     若走 WPF-UI TitleBar：关闭/最小化/最大化钮使用控件模板的部件固定 id
+     （TitleBarCloseButton 等，属于 A7 可靠载体"模板部件固定 id"），不再自绘按钮；
+     标题栏渐变皮肤（主题色单端线性渐变）仍按本片段令牌落实。 -->
 <Window x:Class="Swdm2.App.MainWindow"
         WindowStyle="None" ResizeMode="CanResize" ShowInTaskbar="True"
         MinWidth="810" MinHeight="470"
@@ -309,6 +316,8 @@ PCL2 `MyListItem` 等价（pcl2 §4.3 可粘贴 XAML；行高/网格/动画实�
     </Grid>
 </Window>
 ```
+
+> **AutomationId 归属提示**：上图 BtnClose/BtnMin 的自定义 id（`Main_Window_Close/Minimize`）仅自绘标题栏方案下成立；走 WPF-UI TitleBar 时 t3 §3.2 保留 id 清单的窗口级按钮锚点应改为模板部件固定 id（`TitleBarCloseButton` 等，SP-2 实证可达），二者在 A7 可靠载体表内同为合法载体。
 
 - 图标钮几何沿用 PCL2 path（X 与横线几何字符串；pcl2 §2.2）。
 - **WM_NCHITTEST 补充场景**：若需自绘标题栏内的非 Caption 命中区（例如标题栏内嵌搜索框时的拖拽让位），`SourceInitialized` 挂 `HwndSource.AddHook`，命中区宽 8px（PCL2 同值，其 Resizer 8px/角 13px），中部 `relY < 48` 返回 `HTCAPTION`（pcl2 §2.4 可粘贴 WndProc）。

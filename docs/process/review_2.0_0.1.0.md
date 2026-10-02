@@ -58,8 +58,8 @@
 | 成员 | 域 | 投票 | 意见摘要 |
 |---|---|---|---|
 | visual-20（执行） | App 自绘/主题 | **赞成** | 四要素全绿；阶段 1 范围克制（无删减/新增请求）；基础设施对下游契约齐备；UiTestsDriver 已交 qa-20 审 |
-| arch-20 | Core/Downloads/架构 | *（异步投票中，意见追加于此）* | D1.5r 修复已自验并入库（25086c0）；Core 契约下游就绪 |
-| qa-20 | UiTests/复测 | *（异步投票中 + UiTestsDriver 审阅待办，意见追加于此）* | |
+| arch-20 | Core/Downloads/架构 | **赞成**（2026-10-02 18:01） | 独立复跑复现全部数字：build 0 警告 0 错误；CoreTestsDriver pass=72 fail=0（63 [Fact]+9 [Theory] 真数）；UiTestsDriver pass=5 fail=0。四要素齐备。**阶段 2 下游契约确认就绪无阻塞**：Result&lt;T,TErr&gt;（Results/Result.cs，10+10 错误码+Bind/Map 契约测试）、IPathService（双模式+幂等创建）、IOptionsMonitor&lt;T&gt;（App/SwdmConfiguration 三节 Configure+热更新回调实测）、ICredentialStore（DPAPI+C2 明文不落盘/不进异常断言）、IAsyncCache（双向隔离+single-flight+TTL 负缓存）五件均有断言覆盖。D1.5r 修复已自验入库（25086c0）；假绿教训已闭环为过程纪律。无删减/新增请求。 |
+| qa-20 | UiTests/复测 | **赞成**（2026-10-02 18:05） | 三原则同判：精简=六任务+双驱动/版本 props 无冗余（脱敏双层与缓存双向隔离的回归正是 D1.5r 两暗 bug 的固化）；用户体感=0.1.0 不对外、断言锁定承诺+参数押后 D5.10；基本功能=77/0+五件契约就绪。**UiTestsDriver 审阅通过**（①契约一致性：5 测试全 [WpfFact]、零 [Fact]/[Theory]，符合 t3 v1.3"UiTests 只用 [WpfFact]"；②特性匹配完备：纯反射双判据同时规避 CS0433 编译期二义与 D1.5r 假绿；MemberData/ClassData 展开失败显式 `[THEORY-DATA?]` skip 计数不静默吞；③反死锁：STA+每次调用前 SetSynchronizationContext(null)+GetAwaiter().GetResult()；④[Theory] 兜底已内联 InlineData 反射展开）。三条 P2 改进建议已记 §四（①注释措辞、②失败截图+残留进程 Kill、③ Dispatcher 上下文 Watch 项）。无删减/新增请求。 |
 | captain | 集成/构建/交付 | **赞成（确认关门）** 2026-10-02 17:59 | 终验（dd29d18 后独立复跑）：build 0-0；CoreTestsDriver pass=72 fail=0；UiTestsDriver pass=5 fail=0（STA 反射驱动本机跑通，含 AppLaunch 真实进程冒烟）；CHANGELOG/props/评审记录入库。四要素真数全绿，假绿闭环已落地为过程纪律。关门。 |
 
 > 投票追加约定：本节为 append-only；成员回复直接落"意见"列并标注时间。出现反对票时按 DAG §6 放行门流程升级处置（重开 patch 版本）。
@@ -68,9 +68,25 @@
 
 ## 四、遗留自办项（不阻塞 0.1.0 关门）
 
-- **visual-20**：t2 v1.1 回写（SwdmCard 根 Grid→UserControl、Hint 根 Border→UserControl、§2 通用条款补 A7 载体表、标题栏片段条件化）——D5 前完成（review_2.0_plan.md 遗留项）。
-- **qa-20**：t3 v1.x 回写（StaFact 2.1.7 实证约束、Calibration 基准迁 Core.Tests、§7.2 映射同步）；UiTestsDriver 审阅。
+- **visual-20**：t2 v1.1 回写（SwdmCard 根 Grid→UserControl、Hint 根 Border→UserControl、§2 通用条款补 A7 载体表、标题栏片段条件化）——D5 前完成（review_2.0_plan.md 遗留项）。**✅ 本轮已执行**（见 §五 patch 记录）。
+- **qa-20**：t3 v1.x 回写（StaFact 2.1.7 实证约束、Calibration 基准迁 Core.Tests、§7.2 映射同步）**✅ 已闭环（v1.3，767 行 grep 验证无残留）**；UiTestsDriver 审阅 **✅ 通过**（§三，含三条 P2 改进建议）。
 - **arch-20**：WPF-UI API 表面 D0/D5 首用前反射实测（A8b，SP-1 两处漂移已知）。
+- **UiTestsDriver P2 改进**（qa-20 审阅建议，不阻塞 0.1.0）：
+  1. 头部注释措辞修正——"反射执行 …[WpfFact]/[Fact]/[Theory]" 易被读作"UiTests 允许 [Fact]/[Theory]"（t3 v1.3 契约禁止），改为"防御性匹配派生特性（UiTests 契约只应有 [WpfFact]，驱动多匹配不破坏契约）"——**✅ 已实施（本轮）**；
+  2. Q10 契约缺口补齐——失败 catch 分支统一调 `FlaUI.Core.Capturing.Capture.Screen().ToFile(TestArtifacts/fail_<类>_<方法>.png)` + 套件启动前 `Process.GetProcessesByName("Swdm2.App")` 残留 Kill（t3 §2.5 fixture 的驱动级加固）——**✅ 已实施（本轮）**；
+  3. **Watch 项（D5 前扩）**：需要 Dispatcher 回 UI 线程的 [WpfFact] 测试在现驱动下会失败（未设 WPF 上下文）；当前 5 测试均为 FlaUI 同步调用不受影响，D5 UI 测试增多后须扩展 STA/WPF 帧泵。
+
+---
+
+## 五、Patch 记录（append-only，门关闭后的证据追加）
+
+### Patch 1（2026-10-02 ~18:10，visual-20）
+
+- **qa-20 投票追加**（§三）：赞成（18:05）+ UiTestsDriver 审阅通过（四维度逐条：契约一致性/特性匹配完备性/反死锁设计/[Theory] 兜底）。
+- **UiTestsDriver P2.1 + P2.2 实施**：头部注释措辞修正（防御性匹配派生特性，避免被误读为 UiTests 允许 [Fact]/[Theory]）；失败 catch 分支补 `FlaUI.Core.Capturing.Capture.Screen().ToFile(TestArtifacts/fail_…png)`（Q10 契约的驱动级兜底）+ 套件启动前残留 `Swdm2.App` 进程 Kill；复审回归：build 0-0 · UiTestsDriver pass=5 fail=0。
+- **t2 v1.1 回写**（review_2.0_plan.md 遗留自办项 P1，D5 前完成期限提前关闭）：`swdm2/docs/visual_system_2.0.md` 四处 A7 同步——① §2 通用条款补 AutomationId 载体限制（Window/内容控件/UserControl/模板部件固定 id；禁 Grid/ContentControl/Border 及库提升型容器承载测试锚点）；② §2.1 SwdmCard 根元素 `Grid` → `UserControl`（SP-2 实证：Grid 是 ❌ UIA 提升型容器、id 被吞；自绘 UserControl id 完全暴露 type=Custom）；③ §2.2 Hint 根元素 `Border` → `UserControl`（Border 无 AutomationPeer）；④ §2.4 标题栏片段条件化（仅不用 WPF-UI TitleBar 时落地，走 TitleBar 时按钮用模板部件固定 id）。视觉数值未动（90ms/150ms/0.07→0.4 等抽查口径不变，§5 对照表同）。
+
+> P2.3（Dispatcher 亲和测试的 WPF 上下文扩展）为 D5 Watch 项，留待阶段 5 UI 测试增多时处理（§四）。
 
 ---
 
