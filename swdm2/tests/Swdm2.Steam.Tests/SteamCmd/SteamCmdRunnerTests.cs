@@ -230,8 +230,17 @@ public sealed class SteamCmdRunnerTests
 
         Assert.True(result.IsOk);
         Assert.Equal(SteamCmdOutcome.Cancelled, result.Value!.Outcome);
-        await Task.Delay(500);                       // OS 收尸窗口
-        Assert.Empty(Process.GetProcessesByName("ping"));
+        // 动态上界收尸窗口（D3.2 同族教训：固定 500ms 在系统负载下赶不上 OS 进程收尸；
+        // 断言"最终无孤儿"而非"立即无孤儿"——Kill(entireProcessTree) 的语义是终止+回收）
+        var orphanSw = Stopwatch.StartNew();
+        Process[] orphans;
+        do
+        {
+            orphans = Process.GetProcessesByName("ping");
+            if (orphans.Length == 0) break;
+            Thread.Sleep(200);
+        } while (orphanSw.Elapsed < TimeSpan.FromSeconds(5));
+        Assert.Empty(orphans);
         Assert.False(Directory.Exists(Path.Combine(install, ContentRel)), "取消清空目录");
     }
 
