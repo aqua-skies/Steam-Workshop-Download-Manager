@@ -13,7 +13,7 @@ public sealed class SteamOptions
     public ProxyMode Proxy { get; set; } = ProxyMode.SystemProxy;
 
     /// <summary>自定义代理 URL（Proxy=Custom 时生效，如 http://127.0.0.1:7897）。</summary>
-    [_url?]
+    [Url]
     public string? CustomProxyUrl { get; set; }
 
     /// <summary>
