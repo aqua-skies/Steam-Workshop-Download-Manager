@@ -1,0 +1,16 @@
+<Project>
+  <!--
+    SWDM 2.0 统一版本号（单一事实源）。阶段版本号按 DAG（architecture_2.0.md §6）交付门：
+    阶段 1=0.1.0 (D1.7) · 阶段 2=0.2.0 (D2.7) · 阶段 3=0.3.0 (D3.8) · 阶段 4=0.4.0 (D4.10)
+    · 阶段 5=0.5.0 (D5.11) · 阶段 6=0.6.0 (D6.5) · 正式版=2.0.0 (D7.4)。
+    版本号变更 = 修改本文件 Version 一处 + swdm2/CHANGELOG.md 同步新增条目。
+    Velopack 打包与安装器版本同源（C4 版本号双端同步纪律）。
+  -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <Company>aqua-skies</Company>
+    <Product>SWDM 2.0</Product>
+  </PropertyGroup>
+</Project>
