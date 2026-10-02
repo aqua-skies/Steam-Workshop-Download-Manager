@@ -297,6 +297,7 @@ public sealed class DownloadStateMachineTests
                 e.TransitionTo(DownloadState.Paused); // provider 暂停语义（执行内外部暂停）
                 return false; // 暂停≠失败：scheduler 因 state==Paused 保留（不覆盖 Failed)
             }
+            await Task.CompletedTask; // CS1998: 保持 async 签名给 scheduler 执行器契约
             return true; // 恢复后完成
         }
 
@@ -306,7 +307,7 @@ public sealed class DownloadStateMachineTests
         Assert.True(SpinWaitFor(() => calls >= 1, TimeSpan.FromSeconds(5)));
         Assert.True(SpinWaitFor(() => entry.State == DownloadState.Paused, TimeSpan.FromSeconds(2))); // 暂停保留
 
-        Assert.True(await scheduler.ResumeAsync(entry.Task.Id).ConfigureAwait(false));
+        Assert.True(await scheduler.ResumeAsync(entry.Task.Id));
         Assert.True(SpinWaitFor(() => entry.State == DownloadState.Completed, TimeSpan.FromSeconds(5)));
         Assert.Equal(2, calls); // 恢复=重新执行一次
     }
@@ -327,7 +328,7 @@ public sealed class DownloadStateMachineTests
         var queuedOne = await queue.EnqueueAsync(NewTask(2)); // 排队等槽
         await Task.Delay(200);
         Assert.Equal(DownloadState.Downloading, running.State); // 占槽
-        Assert.False(await scheduler.ResumeAsync(queuedOne.Task.Id).ConfigureAwait(false)); // Queued 不可 resume
+        Assert.False(await scheduler.ResumeAsync(queuedOne.Task.Id)); // Queued 不可 resume（xUnit1030：测试方法不用 ConfigureAwait(false)）
         Assert.Equal(DownloadState.Queued, queuedOne.State);
 
         gate.SetResult();
