@@ -33,7 +33,8 @@ public partial class MainWindow : FluentWindow
     private void SpikeCardButton_Click(object sender, RoutedEventArgs e)
     {
         // 不打桩、不替换：MessageBox 该弹还弹，测试像用户一样去点确定
-        MessageBox.Show(this, "这是自绘卡片按钮触发的真实提示弹窗。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        System.Windows.MessageBox.Show(this, "这是自绘卡片按钮触发的真实提示弹窗。", "提示",
+            System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
     }
 
     private void AddResult()

@@ -2,10 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-                xmlns:spike="clr-namespace:Swdm2.Spike.Controls"
-        x:Name="MainWindow"
-        AutomationProperties.AutomationId="MainWindow"
+        xmlns:spike="clr-namespace:Swdm2.Spike.Controls"
         Title="SWDM 2.0 Spike — WPF-UI 4.3.0 + FlaUI 5.0.0"
+        AutomationProperties.AutomationId="MainWindow"
         Width="920" Height="640"
         MinWidth="760" MinHeight="500"
         ExtendsContentIntoTitleBar="True"
@@ -74,7 +73,7 @@
                         <TextBlock Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                                    Text="自绘三层：阴影层（90ms 0.07→0.4 悬停）+ 卡底层 + 内容层，DynamicResource 换主题。"
                                    TextWrapping="Wrap" />
-                        <Button x:Name="SpikeCardButton" Content="打开提示弹窗" Margin="0,10,0,0"
+                        <Button Content="打开提示弹窗" Margin="0,10,0,0"
                                 Click="SpikeCardButton_Click"
                                 AutomationProperties.AutomationId="SpikeCardButton" />
                     </StackPanel>
