@@ -166,15 +166,36 @@ public sealed class SteamKitSessionManager : ISteamSessionManager
         try
         {
             var (result, steamId) = await loggedOn.Task.WaitAsync(TimeSpan.FromSeconds(_timeoutSeconds), ct).ConfigureAwait(false);
+            if (result == EResult.OK)
+            {
+                // D4.2:会话保持连接（CDN manifest 解析与下载的 SteamApps/SteamContent/UnifiedMessages 调用载体）
+                LiveClient = client;
+                LiveManager = manager;
+            }
+            else
+            {
+                client.Disconnect();
+            }
             return (result, steamId);
         }
         catch (TimeoutException)
         {
+            client.Disconnect();
             return (EResult.Timeout, 0);
         }
-        finally
-        {
-            client.Disconnect(); // 会话 token 由后续 D4.3 CDN 下载任务持有；本阶段仅验证登录
-        }
+    }
+
+    /// <summary>已连接的 Live 客户端（D4.2+ CDN 原语消费；未登录=null)。</summary>
+    internal SteamClient? LiveClient { get; private set; }
+
+    /// <summary>Live 回调管理器（同上；SteamKitCdnClient.CallbackPump 驱动）。</summary>
+    internal CallbackManager? LiveManager { get; private set; }
+
+    /// <summary>登出/断线（释放会话；AppHost.StopAsync 消费）。</summary>
+    public void Disconnect()
+    {
+        LiveClient?.Disconnect();
+        LiveClient = null;
+        LiveManager = null;
     }
 }
