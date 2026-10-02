@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "generated": "2026-10-03T06:05:00+08:00",
+    "task": "t37 D4.8",
+    "executor": "arch-20",
+    "bench": "swdm2/tests/Swdm2.UiTests/Calibration/ B3ConcurrencyCalibration (Kestrel 本地 fixture, 禁公网) + MetadataApiConcurrencyCalibration (真 API)",
+    "env": {
+      "proxy": "http://127.0.0.1:7897",
+      "kestrel": "http://127.0.0.1:0 (IPv4 loopback)",
+      "payload": 8388608,
+      "slow_supply_kbps": 256,
+      "real_api": "https://store.steampowered.com/api/storesearch/?term=portal&l=schinese&cc=CN (匿名, Accept-Language 指纹头)"
+    },
+    "discipline": "经验复验: 先问能否更大/能否更小; 判据=增益≥10% 最大档默认 + 错误率<2%"
+  },
+  "A_segment_parallelism": {
+    "candidates": [1, 2, 4, 8, 16],
+    "reps": 2,
+    "raw_cols": "idx,phase,candidate,rep,elapsed_ms,throughput_kbps,bytes,ok",
+    "summary": {
+      "1":  {"avg_kbps": 221417, "ok": "2/2", "note": "rep1=80213 rep2=362622 (rep 方差 4.5x)"},
+      "2":  {"avg_kbps": 457995, "ok": "2/2"},
+      "4":  {"avg_kbps": 489836, "ok": "2/2"},
+      "8":  {"avg_kbps": 347996, "ok": "2/2"},
+      "16": {"avg_kbps": 283311, "ok": "2/2"}
+    },
+    "verdict": "localhost 内存级: rep 方差 >> 候选差 (1 的 rep119x 于 rep2), 无候选复现增益≥10%; 保持 8 (DepotDownloader 锚 + 风险厌恶: 少连接抵单主机限流)",
+    "lock": "MaxChunkParallelism=8 (不变)"
+  },
+  "B_connections_per_host": {
+    "candidates": [2, 4, 8, 16],
+    "reps": 2,
+    "summary": {
+      "2":  {"avg_kbps": 321646, "ok": "2/2"},
+      "4":  {"avg_kbps": 330759, "ok": "2/2"},
+      "8":  {"avg_kbps": 320122, "ok": "2/2"},
+      "16": {"avg_kbps": 349188, "ok": "2/2"}
+    },
+    "verdict": "同 A: 无判别力; 锁 8 对齐 MaxChunkParallelism (连接复用=同池)",
+    "lock": "MaxConnectionsPerServer=8 (不变; 已有线默认)"
+  },
+  "C_overlap_bytes": {
+    "candidates": [16, 32, 64],
+    "reps": 2,
+    "summary": {
+      "16": {"avg_kbps": 268242, "ok": "2/2 全字节匹配"},
+      "32": {"avg_kbps": 269056, "ok": "2/2 全字节匹配"},
+      "64": {"avg_kbps": 283563, "ok": "2/2 全字节匹配"}
+    },
+    "verdict": "三档拼接点校验+全字节匹配全过; 能否更小→16 (带宽最省, 可靠性同档)",
+    "lock": "OverlapBytes=16 (旧 32→新 16)"
+  },
+  "D_chunk_timeout": {
+    "candidates_ms": [2000, 5000, 15000],
+    "reps": 2,
+    "summary": {
+      "2000":  {"ok": "0/2", "err": "Timeout (256KB/s 供应下 1MiB 段≈4.1s > 2s 拐点)"},
+      "5000":  {"ok": "2/2", "elapsed_avg_ms": 8154},
+      "15000": {"ok": "2/2", "elapsed_avg_ms": 8128}
+    },
+    "verdict": "2000=错误率 100% (失败 cliff); 5000/15000 均 0%; 15000 无增益→取 5000 (bezzad 锚+实测拐点之上)",
+    "lock": "ChunkTimeoutMs=5000 (不变)"
+  },
+  "E_metadata_concurrency_real_api": {
+    "candidates": [1, 2, 4],
+    "reps": 2,
+    "requests_per": 4,
+    "total_requests": 24,
+    "summary": {
+      "1": {"avg_ms": 445.75, "ok": "8/8", "err_rate": "0%"},
+      "2": {"avg_ms": 414.63, "ok": "8/8", "err_rate": "0%", "gain_vs_1": "7.0%"},
+      "4": {"avg_ms": 416.62, "ok": "8/8", "err_rate": "0%", "gain_vs_1": "6.6%"}
+    },
+    "verdict": "真 API (store.steampowered.com 经代理出口): 24/24 200; 最大增益 7.0% < 10% 阈值 → 不放大; 且 calibration_1 证据 (429=指纹+累计天花 ~117/天级) 压高并发风险 → 保持串行 1",
+    "lock": "元数据并发=1 (1.x 串行不变; MaxConcurrentDownloads 同向)"
+  },
+  "diff_old_new": {
+    "MaxChunkParallelism": {"old": 8, "new": 8, "basis": "Kestrel 无可复现增益+DepotDownloader 锚"},
+    "MaxConnectionsPerServer": {"old": 8, "new": 8, "basis": "同池对齐"},
+    "OverlapBytes": {"old": 32, "new": 16, "basis": "C sweep 三档全过→最小省带宽"},
+    "ChunkTimeoutMs": {"old": 5000, "new": 5000, "basis": "D sweep 2000=100% 错误率/5000=0%/15000 无增益"},
+    "metadata_concurrency": {"old": 1, "new": 1, "basis": "E 真API 增益 7.0%<10% 阈值"}
+  },
+  "production_bugs_fixed_in_session": [
+    "in-half 分裂可选中 in-flight 段=两 worker 重叠区交错写损坏 (SegmentPlanner 在途集合修复)",
+    "HTTP 段 fetch 恒带 32B 重叠前缀但 applyOverlap=false 时 dataOffset=0→错位污染 (写偏移恒跳前缀)",
+    "请求超时令牌仅作用于 header 阶段 (读流无超时=慢端点判别失真; CreateRequestScope 涵盖读流+Timeout 优雅失败)"
+  ],
+  "limitations": [
+    "localhost Kestrel 内存级: A/B/C 增益判据不可判别 (rep 方差 4.5x); 真 CDN 结论须 D5+ 用户体感回归复测",
+    "E 单次运行 24 请求 (指纹头+Accept-Language; 未触 429); 跨出口复测建议保留",
+    "E 增益 <10% 结论对单出口香港 IDC 有效; 换网络条件应复跑 (设计对照纪律)"
+  ]
+}

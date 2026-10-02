@@ -40,37 +40,46 @@ public sealed class SegmentPlanner
         }
     }
 
-    /// <summary>取下一段（无待做段=返回 null;会尝试分裂最大未完成段）。</summary>
+    /// <summary>取下一段（无待做段=返回 null;会尝试分裂最大未完成段——仅分裂**未在途**段）。</summary>
     public Segment? TryAcquire()
     {
         lock (_gate)
         {
-            if (_pending.TryDequeue(out var seg)) return seg;
-            // 分裂最大未完成段（in-half division)
+            if (_pending.TryDequeue(out var seg))
+            {
+                _inFlight.Add((seg.Start, seg.End));
+                return seg;
+            }
+            // 分裂最大未完成且未在途段（in-half division;在途段分裂=两 worker 写重叠区=内容交错损坏）
             if (_all.Count >= _maxSegments * 4) return null; // 收口防爆段
-            var candidate = _all.Where(s => !s.Done && s.Length > _minSegmentBytes * 2)
+            var candidate = _all.Where(s => !s.Done && !_inFlight.Contains((s.Start, s.End)) && s.Length > _minSegmentBytes * 2)
                 .OrderByDescending(s => s.Length).FirstOrDefault();
             if (candidate is null || candidate.Start == candidate.End) return null;
             var mid = candidate.Start + candidate.Length / 2;
             var left = candidate with { End = mid };
             var right = new Segment(mid, candidate.End);
             _all.Remove(candidate);
+            _inFlight.Remove((candidate.Start, candidate.End)); // 防御性
             _all.Add(left);
             _all.Add(right);
             _pending.Enqueue(right);
+            _inFlight.Add((left.Start, left.End));
             return left;
         }
     }
 
-    /// <summary>段完成登记（分裂收口与续存）。</summary>
+    /// <summary>段完成登记（移除在途标记+置 Done)。</summary>
     public void Complete(Segment segment)
     {
         lock (_gate)
         {
+            _inFlight.Remove((segment.Start, segment.End));
             var idx = _all.FindIndex(s => s.Start == segment.Start && s.End == segment.End);
             if (idx >= 0) _all[idx] = segment with { Done = true };
         }
     }
+
+    private readonly HashSet<(long start, long end)> _inFlight = new(); // 键元组规避 record Done 变更的 hash 漂移
 
     /// <summary>全部完成。</summary>
     public bool AllDone

@@ -63,7 +63,7 @@ public static class AppHost
         // D4.4 provider 链路由：SteamKit CDN 主→steamcmd 兜底（按错误类型路由）
         var steamCmd = new SteamCmdProvider(deployer, runner, bus, breaker);
         var cdnSession = new SteamKitSessionManager(timeoutSeconds: 10); // 沙箱短超时：CM 阻断→Network 快回退链
-        var cdnClient = new SteamKitCdnClient(cdnSession, timeoutSeconds: 10,
+        var cdnClient = new SteamKitCdnClient(cdnSession, timeoutSeconds: download.ChunkTimeoutMs / 1000, // D4.8 锁定：Options→chunk 超时
             chunkParallelism: download.MaxChunkParallelism);
         var cdnProvider = new SteamKitCdnProvider(cdnSession, cdnClient, bus, limiter: limiter);
         var provider = new DownloadProviderRouter(cdnProvider, steamCmd, bus);

@@ -13,7 +13,7 @@ public sealed class DownloadOptions
     [Range(1, 8)]
     public int MaxConcurrentDownloads { get; set; } = 1;
 
-    /// <summary>⚠️[参数待重标定] 分段并行度。DepotDownloader 默认 8。</summary>
+    /// <summary>⚠️[D4.8 已锁定=8] 分段并行度（DepotDownloader 默认锚；本地 Kestrel 无≥10% 可复现增益=风险厌恶保持）。</summary>
     [Range(1, 32)]
     public int MaxChunkParallelism { get; set; } = 8;
 
@@ -21,7 +21,7 @@ public sealed class DownloadOptions
     [Range(0, long.MaxValue)]
     public long MaxSpeedBytesPerSecond { get; set; } = 0;
 
-    /// <summary>⚠️[参数待重标定] 分段超时毫秒。bezzad 分段实现默认 5000。</summary>
+    /// <summary>⚠️[D4.8 已锁定=5000] 分段超时（慢端点错误率拐点：256KB/s 供应下 2000ms=100% Timeout,5000/15000 全过）。</summary>
     [Range(500, 120000)]
     public int ChunkTimeoutMs { get; set; } = 5000;
 

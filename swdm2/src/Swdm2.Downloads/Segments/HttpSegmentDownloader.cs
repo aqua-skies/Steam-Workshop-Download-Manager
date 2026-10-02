@@ -18,8 +18,8 @@ namespace Swdm2.Downloads.Segments;
 /// </summary>
 public sealed class HttpSegmentDownloader
 {
-    /// <summary>⚠️[参数待重标定] 重叠字节数（16-64 取中 32;D4.8 实测锁定）。</summary>
-    public const int OverlapBytes = 32;
+    /// <summary>⚠️[D4.8 已锁定=16] 重叠字节数（拼接点校验，D5;spec 16-64 区间；本地 Kestrel 实测 16/32/64 全过+全字节匹配→取最小省带宽）。</summary>
+    public const int OverlapBytes = 16;
 
     private readonly HttpClient _client;
     private readonly IResumeStore _store;
@@ -35,13 +35,20 @@ public sealed class HttpSegmentDownloader
     internal ISpeedLimiter? Limiter { get; set; }
 
     public HttpSegmentDownloader(HttpClient client, IResumeStore store, int? maxParallel = null,
-        ISpeedLimiter? limiter = null)
+        ISpeedLimiter? limiter = null, TimeSpan? requestTimeout = null)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _maxParallel = Math.Clamp(maxParallel ?? SegmentPlanner.DefaultMaxSegments, 1, 64);
         Limiter = limiter;
+        RequestTimeout = requestTimeout ?? TimeSpan.FromSeconds(30);
     }
+
+    /// <summary>⚠️[D4.8 标定] 段请求超时（慢端点错误率拐点测量用；默认 30s)。</summary>
+    public TimeSpan RequestTimeout { get; set; }
+
+    /// <summary>⚠️[D4.8 标定] 重叠字节（拼接点校验 D5;默认=OverlapBytes 常量 32;16-64 spec 区间实测锁定）。</summary>
+    public int Overlap { get; set; } = OverlapBytes;
 
     /// <summary>下载（分段或单流；progress=累计字节）。</summary>
     public async Task<Result<long, SteamError>> DownloadAsync(
@@ -136,6 +143,13 @@ public sealed class HttpSegmentDownloader
                 .ConfigureAwait(false);
             return Result<long, SteamError>.Fail(SteamError.Cancelled); // kill=续存已落盘，下次续传
         }
+        catch (OperationCanceledException)
+        {
+            // D4.8: 请求超时作用域触发（用户未取消）→Timeout 优雅失败而非异常逃逸
+            await PersistAsync(dest, request, total, planner, probe, Interlocked.Read(ref received))
+                .ConfigureAwait(false);
+            return Result<long, SteamError>.Fail(SteamError.Timeout);
+        }
 
         if (!planner.AllDone)
             return Result<long, SteamError>.Fail(SteamError.Network);
@@ -171,8 +185,20 @@ public sealed class HttpSegmentDownloader
         }
     }
 
-    private Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)
-        => SendFunc?.Invoke(this, req, ct) ?? _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)
+    {
+        if (SendFunc is not null) return await SendFunc(this, req, ct).ConfigureAwait(false);
+        return await _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>请求级超时作用域（D4.8:读流也纳入超时，否则慢端点超时只作用于 header 阶段=判别失真）。</summary>
+    internal CancellationTokenSource CreateRequestScope(CancellationToken ct)
+    {
+        var scope = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        scope.CancelAfter(RequestTimeout);
+        return scope;
+    }
 
     private static string? respETag(HttpResponseMessage r) => r.Headers.ETag?.Tag;
     private static string? respLastModified(HttpResponseMessage r)
@@ -192,10 +218,11 @@ public sealed class HttpSegmentDownloader
         HttpDownloadRequest request, RangeProbe probe, IProgress<long>? progress, CancellationToken ct)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, request.Url);
-        using var resp = await SendAsync(req, ct).ConfigureAwait(false);
+        using var reqScope = CreateRequestScope(ct); // D4.8: 超时含读流
+        using var resp = await SendAsync(req, reqScope.Token).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
             return Result<long, SteamError>.Fail(SteamError.Network);
-        await using var src = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        await using var src = await resp.Content.ReadAsStreamAsync(reqScope.Token).ConfigureAwait(false);
         await using var file = new FileStream(request.DestinationPath, FileMode.Create, FileAccess.Write,
             FileShare.None, bufferSize: 65536, useAsync: true);
         var buffer = new byte[65536];
@@ -219,20 +246,23 @@ public sealed class HttpSegmentDownloader
         ConcurrentDictionary<long, long> doneSet, CancellationToken ct)
     {
         // 重叠：起点回退 OverlapBytes（前段已写则比对）
-        var overlapStart = Math.Max(0, seg.Start - OverlapBytes);
+        var overlapStart = Math.Max(0, seg.Start - Overlap);
         var applyOverlap = overlapStart < seg.Start && RegionIsDone(doneSet, overlapStart, seg.Start);
 
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Range = new RangeHeaderValue(overlapStart, seg.End - 1);
-        using var resp = await SendAsync(req, ct).ConfigureAwait(false);
+        // D4.8: 超时作用域覆盖读流（慢端点判别力）
+        using var reqScope = CreateRequestScope(ct);
+        var reqToken = reqScope.Token;
+        using var resp = await SendAsync(req, reqToken).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
-        await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        await using var stream = await resp.Content.ReadAsStreamAsync(reqToken).ConfigureAwait(false);
 
         var buffer = new byte[seg.End - overlapStart];
         var offset = 0;
         int read;
         while (offset < buffer.Length
-               && (read = await stream.ReadAsync(buffer.AsMemory(offset), ct).ConfigureAwait(false)) > 0)
+               && (read = await stream.ReadAsync(buffer.AsMemory(offset), reqToken).ConfigureAwait(false)) > 0)
         {
             offset += read;
             // D4.7 限速双点之一：HTTP 读流点（令牌桶按实际读取字节消费）
@@ -241,14 +271,16 @@ public sealed class HttpSegmentDownloader
         if (offset != buffer.Length)
             throw new InvalidDataException($"段数据短读：{offset}/{buffer.Length}");
 
-        var dataOffset = applyOverlap ? OverlapBytes : 0;
+        // fetch 恒含 [overlapStart, seg.Start) 前缀（seg.Start>0 时 32B):写偏移须跳过前缀
+        // （D4.8 修复：applyOverlap=false 时 dataOffset=0 会把上一段尾部写进自己区=错位污染）
+        var dataOffset = seg.Start > overlapStart ? Overlap : 0;
         if (applyOverlap)
         {
             // 比对：重叠区字节必须等于已写区（续传起点校验，D5)
-            var written = await file.ReadAtAsync(overlapStart, OverlapBytes, ct).ConfigureAwait(false);
+            var written = await file.ReadAtAsync(overlapStart, Overlap, ct).ConfigureAwait(false);
             for (var i = 0; i < written.Length; i++)
             {
-                if (buffer[dataOffset - OverlapBytes + i] != written[i])
+                if (buffer[dataOffset - Overlap + i] != written[i])
                     throw new InvalidDataException($"拼接点校验失败 @{overlapStart}+{i}");
             }
         }

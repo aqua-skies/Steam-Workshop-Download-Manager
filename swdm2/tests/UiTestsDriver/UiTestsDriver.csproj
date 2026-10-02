@@ -14,4 +14,8 @@
     <ProjectReference Include="..\Swdm2.UiTests\Swdm2.UiTests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- D4.8: Kestrel fixture 基准测试需要 ASP.NET 运行时（传递） -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 </Project>
