@@ -1,0 +1,31 @@
+<Window x:Class="Swdm2.App.Views.SteamGuardDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Steam Guard 验证码" Height="220" Width="380"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        AutomationProperties.AutomationId="SteamGuardDialog"
+        ShowInTaskbar="False" FocusManager.FocusedElement="{Binding ElementName=CodeBoxInput}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,8"
+                   Text="Steam Guard：请输入发送到邮箱的验证码（5 位字符）。主窗口已阻塞，收码后继续登录。"/>
+        <TextBlock Grid.Row="1" x:Name="AccountLabel" Margin="0,0,0,8" FontWeight="Bold"/>
+        <TextBox Grid.Row="2" x:Name="CodeBoxInput" Height="32" FontSize="18"
+                 HorizontalContentAlignment="Center"
+                 AutomationProperties.AutomationId="SteamGuardDialog_CodeBox_Input"
+                 MaxLength="10"/>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="ConfirmButton" Content="确定" Width="80" Height="30" Margin="0,0,8,0"
+                    AutomationProperties.AutomationId="SteamGuardDialog_ConfirmButton"
+                    Click="ConfirmButton_Click"/>
+            <Button x:Name="CancelButton" Content="取消" Width="80" Height="30"
+                    AutomationProperties.AutomationId="SteamGuardDialog_CancelButton"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

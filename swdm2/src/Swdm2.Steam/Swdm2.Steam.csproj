@@ -4,6 +4,11 @@
     <ProjectReference Include="..\Swdm2.Core\Swdm2.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- SteamKit2 3.4.0（flatcontainer 2026-10-03 实查=最新稳定版；spec §2 NuGet 边界锁版本） -->
+    <PackageReference Include="SteamKit2" Version="3.4.0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
