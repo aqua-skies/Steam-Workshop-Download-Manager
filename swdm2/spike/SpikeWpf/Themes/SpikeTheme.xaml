@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 自建主题键（一律 swdm- 前缀防与 WPF-UI 键冲突；A3/A8 契约验证） -->
+    <Color x:Key="swdm-Accent1Color">#0b5bcb</Color>
+    <Color x:Key="swdm-Accent2Color">#1370f3</Color>
+    <Color x:Key="swdm-Accent4Color">#4890f5</Color>
+    <Color x:Key="swdm-AccentShadowColor">#4890f5</Color>
+
+    <SolidColorBrush x:Key="swdm-CardBackgroundBrush" Color="#F5FFFFFF" />
+    <SolidColorBrush x:Key="swdm-TextPrimaryBrush" Color="#23272E" />
+
+    <!-- PCL2 数值令牌（source: pcl2_xaml_patterns §7） -->
+    <CornerRadius x:Key="swdm-CardCornerRadius">5</CornerRadius>
+    <Duration x:Key="swdm-ColorDuration">0:0:0.09</Duration>
+
+</ResourceDictionary>

@@ -21,7 +21,7 @@
 |---|---|---|
 | 1 | .NET 8 SDK（8.0.425，本机 winget 装入） | LTS、WPF 成熟支持 |
 | 2 | 解决方案骨架 `swdm2/`：App(WPF net8.0-windows) / Core / Steam / Downloads(类库 net8.0) / UiTests(xunit net8.0-windows)，引用已接线、build 0 警告 0 错误 | 域边界即类库边界（域 owner 直映） |
-| 3 | UI 测试：**FlaUI 6.0.0（2026-08-13 发布，fallback 5.0.0）UIA3 + xUnit + Xunit.StaFact，进程外 `Application.Launch` 启被测 exe**；选择器一律 AutomationId；显式等待（Retry.While/Wait.Until，禁 Sleep）；Screen Object 模式；失败截图 FlaUI.Capturing | docs/research2/wpf_ui_testing.md + captain 换源复验（agent 标注的版本漏项已纠） |
+| 3 | UI 测试：**FlaUI 5.0.0（UIA3）+ xUnit + Xunit.StaFact，进程外 `Application.Launch` 启被测 exe**；选择器一律 AutomationId；显式等待（Retry.While/Wait.Until，禁 Sleep）；Screen Object 模式；失败截图 FlaUI.Capturing。**复验记录（2026-10-02）**：NuGet flatcontainer 权威接口经 7897 代理直查——flaui.core / flaui.uia3 / flaui.uia2 最新**均为 5.0.0**；此前"6.0.0 (2026-08-13)"系搜索片段误读（GitHub tag 非 NuGet 包），**撤回**；5.0.0 是 restore 唯一可达最新版 | docs/research2/wpf_ui_testing.md + captain flatcontainer 复验 |
 | 4 | 中文输入：ValuePattern Enter 为主 + Unicode 键事件/Ctrl+V 真实路径；**IME 拼音模拟不做** | 同上（与 1.x QTest CJK 限制同源，WPF 侧方案更优） |
 | 5 | 视觉校验：被测进程内 Windows.Media.Ocr（中文）+ 像素 diff 补盲区；截图读图（modlens 桥，本机已恢复）作二次校验 | 同上 + 2026-10-02 实测 |
 | 6 | CI：本机交互会话运行（FlaUI issue #168：托管 runner Session 0 无桌面） | 同上 |
