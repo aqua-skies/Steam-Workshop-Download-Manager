@@ -353,7 +353,7 @@ namespace Swdm2.App.Ui.Navigation
 | A5 | 三层异常捕获常驻；`e.Handled=true` 仅限可恢复异常（栈溢出/OOM 让它崩） | wpf_stack P7 |
 | A6 | MVVM 纯声明式：View 只做绑定/模板，ViewModel 不引用 `System.Windows.Controls`（除 `ICommand` 语义）；命令一律异步 + CancellationToken | wpf_stack §1.4（AI 生成可靠度） |
 | A7 | **AutomationId 命名规范**（从第一个控件执行）：<`视图`>_<_控件`>_<_语义`>（如 `SearchPage_SearchBox_Input`）；x:Name 自动成为 AutomationId 亦可；FlaUI 测试只按 AutomationId 找元素 | wpf_ui_testing §7.1（≈80% 鲁棒性） |
-| A8 | WPF-UI 锁版本 4.3.0；升级 = 全量回归门（456 开放 issue 的风险对冲）；主题真源 = 自建 Light/Dark/Accent 字典（不与 WPF-UI ApplicationThemeManager 并存，避免双主题状态）；WPF-UI 仅作窗口/控件基座 | 基线决策 9；pcl2 §8 弯路嫌疑标注（API 表面待 t4 spike 复验） |
+| A8 | WPF-UI 锁版本 4.3.0；升级 = 全量回归门（456 开放 issue 的风险对冲）；主题真源 = 自建 Light/Dark/Accent 字典（不与 WPF-UI ApplicationThemeManager 并存，避免双主题状态）；WPF-UI 仅作窗口/控件基座 | 基线决策 9；pcl2 §8 弯路嫌疑标注 → 已由 t4 spike 实证（附录 SP-1：2 处 API 弯路 + A8b 反射实测规则） |
 | A9 | 即时反馈：每个用户操作 ≤150ms 内有可见反馈（禁用态/进度条微动/动画起步）⚠️[参数待重标定：实测能否更短] | 1.x UI 教训（§4 教训 #9） |
 | A10 | 搜索联想**原地更新**数据源，不 clear() 重建；中英别名/归一化在 Core 层 | 1.x（§4 教训 #9） |
 | A11 | Steam Guard 收码弹窗用 `Dispatcher.Invoke` 切 UI 线程 ShowDialog + `TaskCompletionSource<string?>` 唤醒后台 await | SCA SteamAuth（§4 教训 #6） |
@@ -461,113 +461,125 @@ UI 收码框 ──► SteamCmdLogin(ReadOnlyMemory<char>) ──► ICredential
 
 ---
 
-## 6. 开发任务 DAG（阶段 0-7）
+## 6. 开发任务 DAG（终版 v2.3 · t5 讨论组定稿 + captain 认可）
 
-**规则**：每阶段 = 一次可交付迭代，交付时必须满足迭代四要素（全量回归 + 讨论组评审 + 版本号 + 变更记录）；阶段内任务并行/串行以依赖为准；**所有任务在 t5 讨论组终裁后才开放**（计划先行门）；阶段 0 为 t4 spike（骨架/环境准备，不算开发）。
-**任务 ID**：D<阶段>.<序号>；**owner** 域归属：A=arch-20（Core/Downloads/架构）、V=visual-20（App 自绘/主题）、Q=qa-20（UiTests/复测）、C=captain（集成/构建/交付）。
-**通用验证命令**（所有任务）：`dotnet build swdm2/Swdm2.sln -c Debug -warnaserror`（0 警告 0 错误，基线决策 2）+ `dotnet test swdm2/tests/Swdm2.UiTests`（若涉 UI）。
+> **变更日志（v1.0 → v2.0）**：
+> - **阶段 0 压缩**：D0.1（WPF-UI 试装页）/ D0.3（FlaUI 冒烟链）的验证内容已由 **t4 spike 5/5 实证覆盖**（附录 SP），仅保留 D0.2 骨架接线；
+> - **FlaUI 锁 5.0.0**（NuGet flatcontainer 三包实证最新；"6.0.0"系误读已撤回）；包清单按 t3 测试规格 §2.1；
+> - **A7 修正 / A8b** 入各验收判据（AutomationId 只设可靠载体；WPF-UI API 首用前反射实测）；
+> - **输入路径三规则**入 UiTests 契约（CJK→Enter；含空格/标点 ASCII→Ctrl+V；真实按键前先物理点击获焦点）；
+> - **重标定任务采用 t3 §5 可执行基准**（D2.6=B1+B2 退避/节流曲线；D4.8=B3 并发上限）。
+> - **v2.1（评审 patch · captain）**：①D6.3 未签名 SmartScreen 告知 = 首次运行内置 Hint 提示卡（用户可关闭且不再弹；留"取得代码签名证书即移除"活口；增量包不受体积约束，决策 10）；②**D7 循环条款**：终审（D7.3）产出修改项 → 回 D7.1 全量回归且**复测轮次归零重计**，直至"两轮干净复测 + 讨论组一致"同时成立才 D7.4（与 1.4.x 交付双条件一致）；③D3.7→D5.10 明确为**渐进式**（D3.7 先行下载主旅程冒烟，D5.10 扩为五主旅程）。
+> - **v2.2（评审 patch · visual-20）**：①D5.1/2/11 acceptance 精确化（指向 t2 §2.1-2.7 组件验收判据小节+§5 数值对照表 22 行+§4 六清单；D5.11 补 modlens 读图二次校验）；②**D5.12 并入 D5.10**（A9 即时反馈计时断言挂 P0 真实旅程，产出仍入 calibration_2.md）；③**D5.3 WM_NCHITTEST 降级为 fallback 条款**（chrome 走 WPF-UI FluentWindow+TitleBar+WindowChrome ResizeBorderThickness=8；标题栏皮肤渐变+图标钮自绘保留）；④**D5.4-5.9 每页追加页面级 1 条 FlaUI 冒烟**（Smoke 层 = t3 §4.2 矩阵 P0 子集，把 D5.10 首次全量风险前移消化，SP-2 先点击获焦点顺序契约早暴露）。
+> - **v2.3（评审 patch · qa-20）**：①D2.6/D4.8 acceptance 明确引用 t3 §5.5 输出格式（csv/md/json 三件+与旧值差异说明，arch 锁 Options 时有可核验落盘凭证）；②D4.8 inScope 补 `swdm2/tests/Swdm2.UiTests/Calibration/`（与 D2.6 口径统一）；③D4.1 acceptance 追加 Steam Guard 收码弹窗 FlaUI 断言（2FA 弹窗真实键盘输入验证码+模态阻塞断言，#23 场景不再悬空）；④D7.2/D6.4 **不合并**（D6.4=结构覆盖矩阵，D7.2=时间维度双轮稳定性=交付双条件的法定项），D7.2 第二轮直接复用 D6.4 矩阵执行表。t3 侧 M1/M5（输入三规则/A7 载体段/SP-3 双通道/§7.2 映射同步）qa-20 已自办 v1.1 补丁。
+>
+> **阶段 5 补充（P4）**：D5.4-D5.9 每页验收追加"页面级 1 条 FlaUI 冒烟通过"（冒烟内容=该页主交互，如联想命中/筛选生效/依赖渲染/队列入队/参数保存/代理切换）。
+
+**规则**：每阶段 = 一次可交付迭代，交付时必须满足迭代四要素（全量回归 + 讨论组评审 + 版本号 + 变更记录）；阶段内任务并行/串行以依赖为准；本节经 t5 讨论组终裁 + captain 认可后即**开发任务开放清单**（计划先行纪律的放行门）。
+**任务 ID**：D<阶段>.<序号>；**owner**：A=arch-20（Core/Downloads/架构）、V=visual-20（App 自绘/主题）、Q=qa-20（UiTests/复测）、C=captain（集成/构建/交付）。
+**通用验证命令**（所有任务）：`dotnet build swdm2/Swdm2.sln -c Debug -warnaserror`（0 警告 0 错误，基线决策 2）+ 涉 UI 任务追加 `dotnet test swdm2/tests/Swdm2.UiTests`（普通交互桌面）或驱动模式（本沙箱内，见 SP-3）。
 
 ---
 
-### 阶段 0 · 基座实证 spike（= t4，骨架/环境准备）
+### 阶段 0 · 骨架接线（t4 spike 已实证基础上的唯一收尾任务）
+
+> **已实证覆盖**（spike 冒烟 5/5，不重开任务）：D0.1 WPF-UI 4.3.0 试装页（FluentWindow/TitleBar/控件/自绘 Card + 主题三字典共存）；D0.3 FlaUI 5.0.0 进程外真实输入冒烟链（含截图/读图链路）。残留: 唯一接线任务。
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
-| D0.1 (A/V) | WPF-UI + MVVM 工具包试装 | 引入 WPF-UI 4.3.0、CommunityToolkit.Mvvm 8.4.x，一个 FluentWindow 空白页跑通 | build 绿；窗口含 AutomationId；WPF-UI API 表面（FluentWindow/TitleBar/NavigationView 命名）与 pcl2 §8 弯路嫌疑项核验记录 | `dotnet build swdm2/Swdm2.sln -warnaserror` | swdm2/src/Swdm2.App/*, swdm2/src/Swdm2.App/Swdm2.App.csproj |
-| D0.2 (A) | 骨架接线补齐 | Downloads→Steam ProjectReference；Empty 公共 API 占位骨架（接口 + xml doc，无实现） | build 绿；依赖图与 §0 一致 | `dotnet build swdm2/Swdm2.sln -warnaserror` | swdm2/src/Swdm2.Downloads/Swdm2.Downloads.csproj, 接口占位文件 |
-| D0.3 (Q) | FlaUI 5.0.0 冒烟链 | UiTests 引 FlaUI 5.0.0 + Xunit.StaFact；进程外启动空窗口 + AutomationId 断言 + 失败截图 | 冒烟测试绿；截图基础设施可见 | `dotnet test swdm2/tests/Swdm2.UiTests` | swdm2/tests/Swdm2.UiTests/* |
+| D0.2 (A/C) | 骨架接线补齐 | Downloads→Steam ProjectReference；产品 UiTests 引 t3 §2.1 包清单（FlaUI 5.0.0 + xunit + Xunit.StaFact）；App 侧空白窗口 + AutomationId（MainWindow）最小骨架 | build 0 警告 0 错误；UiTests 能 Application.Launch 产品 exe 并断言主窗口 | `dotnet build swdm2/Swdm2.sln -warnaserror` + UiTests 冒烟（SP-3 驱动模式或桌面 `dotnet test`） | swdm2/src/Swdm2.Downloads/Swdm2.Downloads.csproj, swdm2/tests/Swdm2.UiTests/*, swdm2/src/Swdm2.App/* |
 
 ---
 
-### 阶段 1 · Core 域契约（可交付：领域语言 + 配置/路径/凭据/缓存基础设施 + 单元测试）
+### 阶段 1 · Core 域契约（可交付：领域语言 + 配置/路径/凭据/缓存基础设施 + 单元测试；版本 0.1.0）
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
-| D1.1 (A) | 领域模型与结果模型 | record 领域类型（WorkshopItem/Game/AppId/PublishedFileId/UgcId/DownloadTask…）+ Result<T,TErr> + 错误枚举 | 类型不可变；UgcId 与 PublishedFileId 不互换（编译期）；单元测试覆盖 Result 组合 | `dotnet test`（Core 单测项目新建于 D1.0） | swdm2/src/Swdm2.Core/Domain/, Results/ |
+| D1.1 (A) | 领域模型与结果模型 | record 领域类型（WorkshopItem/Game/AppId/PublishedFileId/UgcId/DownloadTask…）+ Result<T,TErr> + 错误枚举 | 类型不可变；UgcId 与 PublishedFileId 不互换（编译期）；单测覆盖 | `dotnet test`（Core 单测） | swdm2/src/Swdm2.Core/Domain/, Results/ |
 | D1.2 (A) | 路径服务 | IPathService：便携/安装双模式；WorkshopContent 布局；暂存区；日志目录 | 便携=exe 同级、安装=%APPDATA%；路径绝对化；切换模式测试绿 | `dotnet test` | swdm2/src/Swdm2.Core/Paths/ |
 | D1.3 (A) | 配置与选项骨架 | appsettings.json + SteamOptions/DownloadOptions/PathOptions；IOptionsMonitor 订阅 | 强类型绑定；热更新回调触发测试绿 | `dotnet test` | swdm2/src/Swdm2.Core/Options/, swdm2/src/Swdm2.App/appsettings.json |
-| D1.4 (A) | 凭据存储（DPAPI） | ICredentialStore：ProtectedData.CurrentUser；删除/读取/不存在分支 | 明文不落盘（二进制检查）；密文只有 DPAPI blob；日志不含明文 | `dotnet test` | swdm2/src/Swdm2.Core/Credentials/ |
-| D1.5 (A) | 日志契约与脱敏 sink | Serilog 接桥 + 脱敏 wrapping sink（账号/密码/验证码替换 ***）；结构化字段约定 | 注入敏感串 → 日志输出无明文（断言） | `dotnet test` | swdm2/src/Swdm2.Core/Logging/ |
-| D1.6 (A) | 缓存抽象 | IAsyncCache（single-flight + 深拷贝出口） | 命中后修改返回对象不影响缓存（深拷贝断言） | `dotnet test` | swdm2/src/Swdm2.Core/Caching/ |
-| D1.7 (C) | 阶段 1 交付门 | 全量回归 + 讨论组评审 + 版本号 0.1.0 + 变更记录 | 四要素齐（全量测试绿、评审纪要、CHANGELOG） | `dotnet test swdm2/Swdm2.sln` | docs/ |
+| D1.4 (A) | 凭据存储（DPAPI） | ICredentialStore：ProtectedData.CurrentUser；删除/读取/不存在分支 | 明文不落盘；日志不含明文（脱敏 sink D1.5 联合断言） | `dotnet test` | swdm2/src/Swdm2.Core/Credentials/ |
+| D1.5 (A) | 日志契约与脱敏 sink | Serilog 接桥 + 脱敏 wrapping sink（账号/密码/验证码→***） | 注入敏感串→日志无明文 | `dotnet test` | swdm2/src/Swdm2.Core/Logging/, swdm2/src/Swdm2.App/ |
+| D1.6 (A) | 缓存抽象 | IAsyncCache（single-flight + 深拷贝出口） | 命中后修改返回对象不影响缓存（1.x api_cache 学费断言） | `dotnet test` | swdm2/src/Swdm2.Core/Caching/ |
+| D1.7 (C) | 阶段 1 交付门 | 全量回归 + 讨论组评审 + 版本 0.1.0 + 变更记录 | 四要素齐 | `dotnet test swdm2/Swdm2.sln` | docs/， CHANGELOG |
 
 ---
 
-### 阶段 2 · Steam 域：探测/Web API/社区回退（可交付：元数据查询 + 状态栏真实可达性）
+### 阶段 2 · Steam 域：探测/Web API/社区回退（可交付：元数据查询 + 状态栏真实可达性；版本 0.2.0）
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
-| D2.1 (A) | HttpClient 工厂与代理显式接管 | ProxyMode 三态注入 SocketsHttpHandler；指纹头四件套默认；MaxConnectionsPerServer 参数化 | 切换 ProxyMode 行为变化可测；请求头断言（抓 HttpMessageHandler 记录头） | `dotnet test` | swdm2/src/Swdm2.Steam/Web/ |
-| D2.2 (A) | 端点可达性探测 | IEndpointProbe：api/store/community 三端点轻探；IConnectivityState 状态 + 事件 | 探测结果三态（Direct/ViaProxy/Blocked/Unreachable）；状态变更事件触发 | `dotnet test` + 手工验证（本机 fake-IP + 直连两组） | swdm2/src/Swdm2.Steam/Connectivity/ |
-| D2.3 (A) | Web API 客户端 | GetPublishedFileDetails（含 batch）/ GetCollectionDetails / storesearch | 真实在线 id 3808352517 集成测试：result:1 + title/file_size 非空（可 -skip 无网）；失败映射 SteamError | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Steam/Web/ |
-| D2.4 (A) | 节流器与熔断器 | IThrottler（端点差异化间隔 + 全程锁）+ ICircuitBreaker（连续失败/连接级/冷却/半开） | 并发请求间隔符合配置；熔断开态短路抛 CircuitOpen；半开一次成功重置 | `dotnet test`（用假钟测间隔与冷却） | swdm2/src/Swdm2.Steam/Resilience/ |
-| D2.5 (A) | 社区页面回退（HtmlAgilityPack/AngleSharp） | Browse 列表 + 详情富化；仅 Community 可达时调用 | 离线 fixture 解析正确；不可达时不调用（S4 断言）；缓存命中深拷贝 | `dotnet test` | swdm2/src/Swdm2.Steam/Community/ |
-| D2.6 (A/Q) | ⚠️退避/节流重标定基准任务（首次） | 双网络环境（fake-IP 代理 + 直连家庭宽带）实测：429 退避下限、详情页最小安全间隔、api 间隔；问"能否更短" | 基准报告写入 swdm2/docs/calibration_1.md；Options 默认值按实测锁定或标注继续待定 | 手工 + `dotnet test --filter Category=Calibration` | swdm2/docs/ |
-| D2.7 (C) | 阶段 2 交付门 | 同 D1.7 | 四要素齐（版本 0.2.0） | 全量 | docs/ |
+| D2.1 (A) | HttpClient 工厂与代理显式接管 | ProxyMode 三态注入 SocketsHttpHandler；指纹头四件套默认；MaxConnectionsPerServer 参数化 | 切换 ProxyMode 行为变化可测；请求头断言 | `dotnet test` | swdm2/src/Swdm2.Steam/Web/ |
+| D2.2 (A) | 端点可达性探测 | IEndpointProbe：api/store/community 三端点轻探 + IConnectivityState 事件 | 探测三态+事件触发；双网络环境（fake-IP/直连）各记录一组 | `dotnet test` + 手工矩阵 | swdm2/src/Swdm2.Steam/Connectivity/ |
+| D2.3 (A) | Web API 客户端 | GetPublishedFileDetails（含 batch）/ GetCollectionDetails / storesearch | 真实在线 id 3808352517 集成测试 result:1+字段非空（可 -skip 无网）；失败映射 SteamError | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Steam/Web/ |
+| D2.4 (A) | 节流器与熔断器 | IThrottler（差异化间隔+全程锁）+ ICircuitBreaker（连续失败/连接级/冷却/半开） | 并发间隔符合配置；熔断开态抛 CircuitOpen；半开重置 | `dotnet test`（假钟） | swdm2/src/Swdm2.Steam/Resilience/ |
+| D2.5 (A) | 社区页面回退 | Browse 列表 + 详情富化（仅 Community 可达时调用） | 离线 fixture 解析正确；不可达不调用（S4）；缓存命中深拷贝 | `dotnet test` | swdm2/src/Swdm2.Steam/Community/ |
+| D2.6 (A/Q) | ⚠️重标定 B1+B2（t3 §5.1/§5.2 可执行骨架，输出按 t3 §5.5 格式 csv/md/json+旧值差异） | B1 429 退避曲线（候选 5-90s，三段法继承 1.x 脚本，档间冷却 120s，n≥3）；B2 端点最小安全间隔（裁决 1.x 详情 3s vs 6s 分歧，候选 0.5-8s×20 请求）；先问"能否更短/能否更小" | 基准报告 swdm2/docs/calibration_1.md（t3 §5.5 输出格式：csv/md/json 三件+与旧值差异说明）；Options 默认值按实测锁定或标注继续待定 | `dotnet test --filter Category=Calibration`（裸 HttpClient） | swdm2/docs/, swdm2/tests/（公共基准） |
+| D2.7 (C) | 阶段 2 交付门 | 四要素（版本 0.2.0） | 同上 | 全量 | docs/， CHANGELOG |
 
 ---
 
-### 阶段 3 · Downloads 域骨架 + steamcmd provider（可交付：真实下载一个匿名可用 mod，端到端）
+### 阶段 3 · Downloads 域骨架 + steamcmd provider（可交付：真实下载一个匿名可用 mod，端到端；版本 0.3.0）
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
-| D3.1 (A) | 状态机与队列 | DownloadTask 状态机（转移表断言）+ IDownloadQueue + Channel 单消费者 worker + 调度器级并发 | 非法转移抛异常可测；入队自动进队列；并发槽由配置控制；Snapshot 只读 | `dotnet test` | swdm2/src/Swdm2.Downloads/Queue/ |
-| D3.2 (A) | 事件总线与进度聚合 | IDownloadBus + EMA/平均速度/ETA 聚合 + UI 节流刷新 | 高频进度回调不击穿 UI 节流（计数断言）；事件负载不可变 | `dotnet test` | swdm2/src/Swdm2.Downloads/Events/ |
-| D3.3 (A) | steamcmd 部署 | ISteamCmdDeployer：zip 下载 + 解压 + exe 校验 + 断点续下 | 重复执行幂等；损坏 zip 重下 | `dotnet test`（离线 fixture + 真实下载可选） | swdm2/src/Swdm2.Steam/SteamCmd/ |
-| D3.4 (A) | steamcmd runner | 批拼命令 + 正则解析（1.x 正则表）+ 成功三元判定 + Sweep 校验 + 失败删空目录 + stdin 关闭 + 三段式收尾 + 看门狗 + 输出脱敏 | 真实下载匿名 mod（sub 17906 内 app）成功且产物递归非空；0 字节假成功被三元判定拒绝；kill 后无僵尸进程 | `dotnet test --filter Category=Online` + 被测产物目录断言 | swdm2/src/Swdm2.Steam/SteamCmd/ |
-| D3.5 (A) | SteamCmdProvider 接入链 | IDownloadProvider 实现：占进程级信号量；进度=stdout 行 + 磁盘增长估算；分段数 N/A 诚实降级 | 队列驱动下载真实 mod 成功；暂停/取消杀进程干净；限速为调度层 | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Downloads/Providers/ |
-| D3.6 (A) | 串行化与句柄纪律 | 进程级 SemaphoreSlim + 局部变量保存进程句柄 | 并发两任务请求 steamcmd → 第二个等待（不覆盖句柄、不 NRE） | `dotnet test`（双任务 + 时序断言） | swdm2/src/Swdm2.Steam/SteamCmd/ |
-| D3.7 (Q) | UI 冒烟：下载主旅程 | FlaUI：入队（真实输入）→ 等待完成 → 断言状态与产物计数 | FlaUI 绿；失败截图落盘 | `dotnet test --filter Category=FlaUI` | swdm2/tests/Swdm2.UiTests/ |
-| D3.8 (C) | 阶段 3 交付门 | 四要素（版本 0.3.0） | 同上 | 全量 | docs/ |
+| D3.1 (A) | 状态机与队列 | DownloadTask 状态机（转移表断言）+ IDownloadQueue + Channel 单消费者 worker + 调度器级并发 | 非法转移抛异常可测；入队自动进队列；并发槽配置控制 | `dotnet test` | swdm2/src/Swdm2.Downloads/Queue/ |
+| D3.2 (A) | 事件总线与进度聚合 | IDownloadEventBus + EMA/平均速度/ETA + UI 节流刷新 | 高频回调不击穿节流；事件负载不可变 | `dotnet test` | swdm2/src/Swdm2.Downloads/Events/ |
+| D3.3 (A) | steamcmd 部署 | ISteamCmdDeployer：zip 下载+解压+exe 校验 | 幂等；损坏 zip 重下 | `dotnet test`（离线 fixture） | swdm2/src/Swdm2.Steam/SteamCmd/ |
+| D3.4 (A) | steamcmd runner | 批拼命令+1.x 正则表+成功三元判定+Sweep 校验+失败删空目录+stdin 关闭+三段式收尾+看门狗+输出脱敏 | 真实下载匿名 mod（sub 17906 内 app）成功且产物递归非空；0 字节假成功被拒；kill 后无僵尸进程 | `dotnet test --filter Category=Online` + 产物目录断言 | swdm2/src/Swdm2.Steam/SteamCmd/ |
+| D3.5 (A) | SteamCmdProvider 接入链 | IDownloadProvider 实现：进程级信号量；进度=stdout 行+磁盘增长估算；分段数 N/A 诚实降级 | 队列驱动下载真实 mod 成功；暂停/取消杀进程干净 | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Downloads/Providers/ |
+| D3.6 (A) | 串行化与句柄纪律 | 进程级 SemaphoreSlim + 局部变量保存进程句柄 | 并发两任务请求 steamcmd→第二个等待（不覆盖句柄、不 NRE） | `dotnet test`（双任务时序断言） | swdm2/src/Swdm2.Steam/SteamCmd/ |
+| D3.7 (Q) | UiTests P0 冒烟：下载主旅程 | FlaUI 真实输入：入队→等待完成→断言状态与产物计数（弹窗 #255 路径） | FlaUI 绿；失败截图+读图校验 | UiTests（SP-3 驱动/桌面两通道） | swdm2/tests/Swdm2.UiTests/ |
+| D3.8 (C) | 阶段 3 交付门 | 四要素（版本 0.3.0） | 同上 | 全量 | docs/， CHANGELOG |
 
 ---
 
-### 阶段 4 · SteamKit CDN 主 provider + 分段续传 + 限速（可交付：真并行 IDM 体感）
+### 阶段 4 · SteamKit CDN 主 provider + 分段续传 + 限速（可交付：真并行 IDM 体感；版本 0.4.0）
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
-| D4.1 (A) | SteamKit2 会话 | ISteamSessionManager：匿名登录 + 账号登录 + 2FA 回调链路（App 弹窗收码） | 匿名会话建立；401 场景映射 AuthRequired | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Steam/Cdn/ |
+| D4.1 (A) | SteamKit2 会话 | ISteamSessionManager：匿名/账号登录 + 2FA 回调链路（App 弹窗收码，A11） | 匿名会话建立；401 映射 AuthRequired；**Steam Guard 收码弹窗 FlaUI 断言**（2FA 弹窗真实键盘输入验证码+模态阻塞断言，#23 场景） | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Steam/Cdn/ |
 | D4.2 (A) | manifest 解析与 isUgc 路径 | ResolveUgcManifestAsync（pubfile→PICS→manifest） | 真实 pubfile 解析出文件/chunk 列表；-pubfile/-ugc 区别在 UI 提示文案 | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Steam/Cdn/ |
-| D4.3 (A) | chunk 并行下载 + SHA 校验 | DownloadChunksAsync + 并发上限注入 + chunk SHA 强校验 | 并行度按 Options 真实生效；故意损坏 chunk → InvalidChecksum 并重下 | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Steam/Cdn/, swdm2/src/Swdm2.Downloads/Providers/ |
-| D4.4 (A) | SteamKitCdnProvider + 链回退 | provider 链路由：SteamKit 主 → steamcmd 兜底（按错误类型） | 模拟 SteamKit 失败 → 自动回退 steamcmd 成功；UI 提示 provider 已切换 | `dotnet test`（注入故障 provider） | swdm2/src/Swdm2.Downloads/Providers/ |
-| D4.5 (A) | HTTP 直链分段 provider | in-half division 动态分段 + Range 探测 + 200-not-206 回退单流 + 重叠字节比对 + `.download` 尾部元数据续传 + 来源页参数持久化 | 本地测试服务器（Kestrel）分段下载绿；kill 后续传成功且拼接点校验过；服务器不支持 Range 时回退单流 | `dotnet test`（本地 Kestrel fixture） | swdm2/src/Swdm2.Downloads/Segments/, Providers/ |
-| D4.6 (A) | 磁盘 IO：偏移直写 + 稀疏占位 | ISparseFileAllocator（FSCTL_SET_SPARSE + 容量检查降级 + 不可逆警告） | 偏移写入无拼接；不支持稀疏的卷（exFAT 模拟）降级 SetLength；稀疏标记只用于下载期文件 | `dotnet test` | swdm2/src/Swdm2.Downloads/Disk/ |
-| D4.7 (A) | 限速器 | 令牌桶（chunk 调度 + HTTP 双点） | 限速后实测带宽 ≤ 配置 ×(1+10%)（本地 fixture 计时断言） | `dotnet test` | swdm2/src/Swdm2.Downloads/Limiter/ |
-| D4.8 (A/Q) | ⚠️并发/超时重标定 | 实测 MaxChunkParallelism（起点 8，问"能否更大/更小"）、ChunkTimeoutMs（起点 5s）、OverlapBytes、MaxConnectionsPerServer；双网络环境 | 基准报告 calibration_2.md；默认值锁定 | 手工 + `dotnet test --filter Category=Calibration` | swdm2/docs/ |
-| D4.9 (Q) | UI 冒烟：分段体感 | FlaUI 断言下载行：分段数、速度、ETA 真实刷新；暂停/继续按钮态 | FlaUI 绿（真实点击） | `dotnet test --filter Category=FlaUI` | swdm2/tests/Swdm2.UiTests/ |
-| D4.10 (C) | 阶段 4 交付门 | 四要素（版本 0.4.0） | 同上 | 全量 | docs/ |
+| D4.3 (A) | chunk 并行下载 + SHA 校验 | DownloadChunksAsync + 并发上限注入 + chunk SHA 强校验 | 并行度按 Options 真实生效；损坏 chunk→InvalidChecksum 重下 | `dotnet test --filter Category=Online` | swdm2/src/Swdm2.Steam/Cdn/, swdm2/src/Swdm2.Downloads/Providers/ |
+| D4.4 (A) | SteamKitCdnProvider + 链回退 | provider 链路由：SteamKit 主→steamcmd 兜底（按错误类型路由） | 注入故障 provider→自动回退 steamcmd 成功；UI 提示 provider 已切换 | `dotnet test`（注入故障） | swdm2/src/Swdm2.Downloads/Providers/ |
+| D4.5 (A) | HTTP 直链分段 provider | in-half division 动态分段 + Range 探测 + 200-not-206 回退单流 + 重叠字节比对 + `.download` 尾部元数据续传 + 来源页参数持久化 | 本地 Kestrel fixture 分段下载绿；kill 后续传成功且拼接点校验过；不支持 Range 时回退 | `dotnet test`（本地 Kestrel fixture） | swdm2/src/Swdm2.Downloads/Segments/, Providers/ |
+| D4.6 (A) | 磁盘 IO：偏移直写 + 稀疏占位 | ISparseFileAllocator（FSCTL_SET_SPARSE+容量检查降级+不可逆警告） | 偏移写入无拼接；exFAT 降级 SetLength；稀疏只用于下载期文件 | `dotnet test` | swdm2/src/Swdm2.Downloads/Disk/ |
+| D4.7 (A) | 限速器 | 令牌桶（chunk 调度+HTTP 双点） | 限速后实测带宽≤配置×(1+10%) | `dotnet test` | swdm2/src/Swdm2.Downloads/Limiter/ |
+| D4.8 (A/Q) | ⚠️重标定 B3（t3 §5.3） | 并发上限：元数据并发对真 API；分段并发强制本地 Kestrel fixture（禁公网）；增益≥10% 最大档为默认，错误率<2% 门槛；先问"能否更大/能否更小" | 基准报告 calibration_2.md（t3 §5.5 输出格式）；MaxChunkParallelism/ChunkTimeoutMs/OverlapBytes/MaxConnectionsPerServer 锁定 | `dotnet test --filter Category=Calibration` | swdm2/docs/, swdm2/tests/Swdm2.UiTests/Calibration/ |
+| D4.9 (Q) | UiTests：分段体感断言 | 下载行分段数/速度/ETA 真实刷新；暂停/继续按钮态（状态机驱动） | FlaUI 真实点击绿 | UiTests | swdm2/tests/Swdm2.UiTests/ |
+| D4.10 (C) | 阶段 4 交付门 | 四要素（版本 0.4.0） | 同上 | 全量 | docs/， CHANGELOG |
 
 ---
 
-### 阶段 5 · App UI 主体：PCL2 视觉 + IDM 下载体感（可交付：完整可用的主界面）
+### 阶段 5 · App UI 主体：PCL2 视觉 + IDM 下载体感（可交付：完整可用的主界面；版本 0.5.0）
 
-> 视觉细节以 t2 视觉规格为准（数值令牌、动画时长、主题键）；本阶段任务按架构侧契约拆分，视觉验收对 t2。
+> 视觉数值/动画/令牌以 t2 `visual_system_2.0.md` 为准（行号级出处 + ⚠️[参数待重标定] 标记，D5.x 视觉验收联测锁定）；AutomationId 载体遵守 A7 修正（SP-2 可靠载体表）。
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
-| D5.1 (V) | 主题系统 | Light/Dark/Accent/Common 四字典 + 换字典切换 + DynamicResource 全覆盖 | 切换无闪烁；换 Accent.xaml 即换皮；动画绑定用 Color 资源 | `dotnet test --filter Category=FlaUI`（主题切换截图对比） | swdm2/src/Swdm2.App/Ui/Themes/ |
-| D5.2 (V) | 自绘控件层 | SwdmCard（三层 + 90ms 四路 + 阴影 0.07→0.4 + 高度 150ms）、Hint、ModListItem、SmoothScrollViewer、AniHelper（命名轨道） | 视觉对 t2 验收；名单轨道同键先停旧；Ocr/像素 diff 校验关键表现 | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/Ui/Controls/ |
-| D5.3 (V) | 页面导航 | PageBase + 容器替换 + 返回栈 + stagger 25ms 进入/70ms 退出 | 导航/PageStack 语义测试 + 视觉对 t2 | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/Ui/Pages/, Navigation/ |
-| D5.4 (V) | 游戏选择页 | 联想搜索（原地更新 + 中英别名归一化）+ 即时反馈 ≤150ms | FlaUI：输入"饥荒"/"Don't Starve"双语命中同一游戏；联想原地更新（不闪烁） | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/Ui/Pages/, ViewModels/ |
-| D5.5 (V) | 工坊浏览页 | 分页/标签/排序/搜索/作者筛选 + 虚拟化路线 A | 千项列表滚动流畅（帧计数）；FlaUI 滚动/筛选主旅程绿 | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/Ui/Pages/ |
-| D5.6 (V) | mod 详情页 | 依赖/冲突/评论展示（Web API + 社区回退渲染） | 依赖列表来自 API；社区字段缺失时降级显示（诚实） | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/Ui/Pages/ |
-| D5.7 (V/A) | 下载页（IDM 体感） | 行级：文件名/大小/状态/ETA/速度/分段数/Q 列；按钮态随选中项动态启用；三档通知强度；类别树=游戏→目录 | 真实字段全部来自事件总线（ steamcmd 场景分段数=N/A 诚实显示）；按钮态=状态机驱动 | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/Ui/Pages/Download/ |
-| D5.8 (V) | 设置页 | 目录/账号（DPAPI 记住密码）/引擎参数（Options 全暴露 + 校验） | 参数变更热生效；密码不回显明文 | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/Ui/Pages/ |
-| D5.9 (A) | 状态栏：端点可达性 | IConnectivityState → 状态栏（直连/系统代理/自定义代理 + 三端点状态）；失败引导配代理 | 探测结果如实显示；切换代理即时更新 | `dotnet test --filter Category=FlaUI` | swdm2/src/Swdm2.App/ |
-| D5.10 (Q/V) | 五条主旅程冒烟套件 | 启动→搜索→详情→下载→库 全量 FlaUI（真实输入 + 弹窗 #255 路径 + 截图） | 全绿 | `dotnet test --filter Category=FlaUI` | swdm2/tests/Swdm2.UiTests/ |
-| D5.11 (C) | 阶段 5 交付门 | 四要素（版本 0.5.0）+ t2 视觉验收闭环 | 同上 | 全量 | docs/ |
+| D5.1 (V) | 主题系统 | Light/Dark/Accent/Common 四字典 + 单点合并（A3）+ swdm- 前缀 + Color/Brush 双资源律 | 切换"无闪烁"按 t2 §4 清单 6 可操作定义（切换前后截图除令牌映射外无变化 + 帧采样门）；换 Accent.xaml 即换皮；动画绑 Color 资源 | UiTests 截图断言（t2 §4 像素六清单） | swdm2/src/Swdm2.App/Ui/Themes/ |
+| D5.2 (V) | 自绘控件层 | SwdmCard（三层+90ms 四路+阴影 0.07→0.4+150ms 高度+250ms 箭头+200ms 退出）/Hint/ModListItem/SmoothScrollViewer/AniHelper（命名轨道） | t2 §2.1-2.7 各组件**验收判据**小节逐条 + §5 数值对照表 22 行；A8b：WPF-UI API 用前反射实测 | 像素断言六清单（t2 §4）+ 组件验收判据 | swdm2/src/Swdm2.App/Ui/Controls/ |
+| D5.3 (V) | 窗口 chrome 与导航 | chrome 走 WPF-UI FluentWindow+TitleBar + WindowChrome ResizeBorderThickness=8 覆盖缩放；**WM_NCHITTEST 降级为 fallback 条款**（若弃 WPF-UI TitleBar 时启用；标题栏皮肤渐变+图标钮始终自绘）；PageBase+容器替换+返回栈（110→30ms + stagger 25ms） | snap/DWM 阴影保留；返回栈语义测试；t2 §2.4 验收（条件化片段） | UiTests | swdm2/src/Swdm2.App/Ui/Pages/, Navigation/, Chrome/ |
+| D5.4 (V) | 游戏选择页 | 联想搜索（原地更新+中英别名归一化）+即时反馈 | FlaUI 输入"饥荒"/"Don't Starve"双语命中；联想原地更新 | UiTests | swdm2/src/Swdm2.App/Ui/Pages/, ViewModels/ |
+| D5.5 (V) | 工坊浏览页 | 分页/标签/排序/搜索/作者筛选 + 虚拟化路线 A（VSP Recycling+Pixel）+惯性滚轮 | 千项列表滚动流畅（帧计数）；A2 六不变量断言 | UiTests | swdm2/src/Swdm2.App/Ui/Pages/ |
+| D5.6 (V) | mod 详情页 | 依赖/冲突/评论展示（Web API+社区回退渲染） | 依赖来自 API；社区字段缺失诚实降级显示 | UiTests | swdm2/src/Swdm2.App/Ui/Pages/ |
+| D5.7 (V/A) | 下载页（IDM 体感） | 行级：文件名/大小/状态/ETA/速度/分段数/Q 列；按钮态随选中项；三档通知强度；类别树=游戏→目录 | 字段全部来自事件总线（steamcmd 场景分段数 N/A 诚实）；按钮态=状态机驱动 | UiTests | swdm2/src/Swdm2.App/Ui/Pages/Download/ |
+| D5.8 (V) | 设置页 | 目录/账号（DPAPI 记住密码）/引擎参数（Options 全暴露+校验） | 参数变更热生效；密码不回显 | UiTests | swdm2/src/Swdm2.App/Ui/Pages/ |
+| D5.9 (A) | 状态栏：端点可达性 | IConnectivityState→状态栏（直连/系统代理/自定义代理+三端点状态）；失败引导配代理 | 探测结果如实显示；切代理即时更新 | UiTests | swdm2/src/Swdm2.App/ |
+| D5.10 (Q/V) | P0 冒烟 5 条主旅程（t3 §4.1）+ ⚠️即时反馈重标定（并入） | 启动→搜索→详情→下载→库 全量 FlaUI 真实输入（#255 弹窗路径+截图+OCR/像素校验）；A9 阈值 ≤150ms 实测=**计时断言挂 P0 真实旅程**（真实旅程比合成基准更贴用户体感），问"能否更短" | 全绿（输入三规则落实）；计时基准报告合入 calibration_2.md | UiTests（两通道）+ 计时断言 | swdm2/tests/Swdm2.UiTests/, swdm2/docs/ |
+| D5.11 (V/C) | 视觉终检 + 交付门 | t2 §4 像素断言六清单（结构周期/令牌存在性/残留色 0/双主题/阴影抬升/无闪烁）逐项执行 + **modlens 读图二次校验**（SP-3 链路已实证）；四要素（版本 0.5.0） | 六清单+回归全绿；CHANGELOG | UiTests + 截图读图（含 modlens） | docs/ |
 
 ---
 
-### 阶段 6 · 库管理 / 更新检查 / 打包发布（可交付：功能对等 1.x + 可安装更新）
+### 阶段 6 · 库管理 / 更新检查 / 打包发布（可交付：功能对等 1.x + 可安装更新；版本 0.6.0）
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
 | D6.1 (A) | mod 库管理 | 分类/导入导出/库扫描（原子认领 D10）；steamcmd 更新策略：时间戳 zip 备份后清除再下载（解决"不删已删文件"） | 备份/清除可回滚；库扫描不认领未完成任务产物 | `dotnet test` | swdm2/src/Swdm2.Downloads/Library（或 Core） |
-| D6.2 (A) | mod 更新检查 | manifest/时间戳对比；标红 + 询问入队（弹窗真实阻塞，A12） | FlaUI：弹窗弹出时标红态在弹窗内捕获断言（1.x 桩函数教训的 C# 正解） | `dotnet test --filter Category=FlaUI` | 同上 + App |
-| D6.3 (C) | Velopack 集成 | vpk pack + GitHub Releases；版本号同源（C4）；签名策略记录（未签名 SmartScreen 告知文案） | 打包→安装→自动更新（~2s 无 UAC 重启）流程走通 | 手工 + `vpk pack` | swdm2/src/Swdm2.App/, installer 脚本 |
-| D6.4 (Q) | 全平台复测矩阵 | 双网络环境（fake-IP/直连）× 匿名/账号 × 下载 provider 两路 全组合回归 | 矩阵结果记录；异常组合归档为已知限制 | 矩阵执行表 | docs/ |
-| D6.5 (C) | 阶段 6 交付门 | 四要素（版本 0.6.0） | 同上 | 全量 | docs/ |
+| D6.2 (A) | mod 更新检查 | manifest/时间戳对比；标红+询问入队（弹窗真实阻塞，A12） | FlaUI：弹窗打开时标红态在弹窗内读取断言（1.x 桩函数学费的 C# 正解） | UiTests | 同上 + App |
+| D6.3 (C) | Velopack 集成 | vpk pack + GitHub Releases；版本号同源（C4）；**未签名 SmartScreen 告知 = 首次运行内置 Hint 提示卡**（用户可关闭且不再弹；留"取得代码签名证书即移除"活口；增量包大小不受体积约束，决策 10） | 打包→安装→自动更新（~2s 无 UAC 重启）流程走通；首次启动提示卡出现一次并可关闭 | 手工 + `vpk pack` | swdm2/src/Swdm2.App/, installer 脚本 |
+| D6.4 (Q) | 复测矩阵 | 双网络环境（fake-IP/直连）×匿名/账号×两 provider 全组合回归 | 矩阵结果记录；异常组合归档为已知限制 | 矩阵执行表 | docs/ |
+| D6.5 (C) | 阶段 6 交付门 | 四要素（版本 0.6.0） | 同上 | 全量 | docs/， CHANGELOG |
 
 ---
 
@@ -575,24 +587,27 @@ UI 收码框 ──► SteamCmdLogin(ReadOnlyMemory<char>) ──► ICredential
 
 | 任务 | subject | objective | acceptance | 验证命令 | inScope |
 |---|---|---|---|---|---|
-| D7.1 (Q) | 全量回归 | 所有功能 + 功能间关联交互（FlaUI 主旅程 + 单元 + 集成 + 双网络矩阵） | 全绿 | `dotnet test swdm2/Swdm2.sln`（全类别） | 全仓 |
-| D7.2 (Q) | 双轮复测 | bug 测试员连续两轮复测无异常 | 两轮报告 | 复测表 | docs/ |
+| D7.1 (Q) | 全量回归 | 所有功能+功能间关联交互（P0 主旅程+单元+集成+复测矩阵） | 全绿 | `dotnet test swdm2/Swdm2.sln`（全类别） | 全仓 |
+| D7.2 (Q) | 双轮复测 | bug 复测员连续两轮复测无异常（第二轮直接复用 D6.4 矩阵执行表，不重设计） | 两轮报告 | 复测表 | docs/ |
 | D7.3 (C) | 讨论组终审 | 删减/改进/添加评审（三原则：精简/用户体感/基本功能） | 一致通过纪要 | 评审会 | docs/ |
-| D7.4 (C) | 发布 | 版本号 2.0.0 + 变更记录 + Release + 安装包 | 交付条件双满足（讨论组一致 + 双轮复测无异常） | `vpk pack` + GitHub Release | 全仓 |
+| D7.4 (C) | 发布 | 版本号 2.0.0+变更记录+Release+安装包 | 交付双条件（讨论组一致+双轮复测无异常） | `vpk pack` + GitHub Release | 全仓 |
 
-**DAG 依赖图（关键路径）**：
+**DAG 依赖图（关键路径 · v2.0，spike 已覆盖 D0.1/D0.3）**：
 ```
-D0.1 ─► D0.2 ─► D1.1..D1.6 ─► D1.7
-D1.* ─► D2.1 ─► D2.2 ─► D2.3 ─► D2.7     （D2.4/D2.5/D2.6 并行）
-D1.* ─► D3.1 ─► D3.2 ─► D3.5 ─► D3.8     （D3.3/D3.4 可提前，D3.5 依赖 D3.4）
-D3.5 ─► D4.1 ─► D4.2 ─► D4.3 ─► D4.4 ─► D4.10   （D4.5/D4.6/D4.7 并行，D4.4 依赖 D3.5 的 SteamCmdProvider）
-D5.1/D5.2/D5.3 ─► D5.4..D5.9 ─► D5.10 ─► D5.11  （D5.* 依赖 D2/D3 提供的服务契约，视觉先行可重叠）
-D5.11 ─► D6.1..D6.4 ─► D6.5 ─► D7.1 ─► D7.4
-横切：D2.6/D4.8/D5.x 视觉标定 = 重标定任务（经验复验纪律）
+[t4 spike ✅ 已实证] ──► D0.2 ──► D1.1..D1.6 ──► D1.7
+D1.* ──► D2.1 ──► D2.2 ──► D2.3 ──► D2.7                  （D2.4/D2.5 并行；D2.6=B1+B2 重标定）
+D1.* ──► D3.1 ──► D3.2 ──► D3.5 ──► D3.8                  （D3.3/D3.4 可提前，D3.5 依赖 D3.4；D3.7 依赖 D3.5）
+D3.5 ──► D4.1 ──► D4.2 ──► D4.3 ──► D4.4 ──► D4.10        （D4.5/D4.6/D4.7 并行；D4.8=B3 重标定；D4.4 依赖 D3.5）
+D5.1/D5.2/D5.3 ──► D5.4..D5.9（每页含 1 条 Smoke）──► D5.10 ──► D5.11（D5.* 依赖 D2/D3 服务契约）
+D5.11 ──► D6.1..D6.4 ──► D6.5 ──► D7.1 ──► D7.2 ──► D7.4
+横切：D2.6/D4.8 = 重标定任务（经验复验纪律，t3 §5 基准）；D5.10（并入 A9 计时）= 即时反馈重标定
 ```
 
 ---
 
+### 放行门（计划先行纪律的落地）
+
+本 DAG 终版经 **t5 讨论组评审**（arch-20/visual-20/qa-20/captain 四方，三原则：精简/以用户体感为中心/保证基本功能正常运行）出具评审记录 `docs/process/review_2.0_plan.md`（含投票），**captain 认可后**即开放 D0-D7 开发任务。评审中提出的删减/改进以 patch 方式回写本节并标注版本（v2.1…）。
 ## 7. 纪律显式遵守（对用户四条硬纪律的落实）
 
 1. **计划先行纪律**：本文档 = 开发前置门的一部分（架构契约/任务拆分/验收判据/验证方式四要素齐全）；t5 讨论组终裁 + captain 认可前，D1-D7 全部任务不开放；阶段 0 = t4 spike（骨架/环境准备豁免）。
@@ -610,11 +625,11 @@ D5.11 ─► D6.1..D6.4 ─► D6.5 ─► D7.1 ─► D7.4
   - 裁决：**列表用虚拟化路线 A**（pcl2_xaml_patterns §4.3 提交项），超出基线当前未裁决项；裁决依据见 §4 末段（数据量 + FlaUI 可测性 + 维护成本）。
   - 裁决：**主题真源 = 自建字典**、WPF-UI 仅作控件基座（避免双主题状态），超出基线决策 9 的"底座"表述，与 pcl2 §8 的并存警告一致。
   - 补充：Downloads→Steam 引用补线（骨架现状差异，§0 末）。
-- **弯路嫌疑（可能因网络不稳误读）**：WPF-UI 4.3.0 的 API 表面（FluentWindow/TitleBar/NavigationView 命名）取自 README 与稳定版惯例，未逐版核验 → **D0.1 spike 强制复验 API 名称并记录**（换源复验：NuGet README + samples 目录）。Web API 元数据主源结论经 captain 换源复验（真实 id 3808352517），采信。
+- **弯路嫌疑（可能因网络不稳误读）**：WPF-UI 4.3.0 的 API 表面（FluentWindow/TitleBar/NavigationView 命名）取自 README 与稳定版惯例，未逐版核验 → **已由 t4 spike 复验并记录**（附录 SP-1：SymbolRegular 无 Regular 后缀、ui:Card 无 Header；实测手段=反射/包 XML 文档；A8b 契约化）。Web API 元数据主源结论经 captain 换源复验（真实 id 3808352517），采信。
 - **采信/搁置/复验的决定**：
   - 采信：五份报告标注了出处的一手结论（34 次 429 实测、IDM 官方 FAQ、SteamKit/DepotDownloader 源码、PCL2 源码行号级数值、SCA 源码）。
   - 搁置：Nether/GGNetwork 第三方 provider（2.0 首版官方链路为主，符合精简原则）；PCL2 HSL 主题编辑器与镐子加载动画关键帧（低优先级债务）。
-  - 复验中：D0.1（WPF-UI API）、D2.6/D4.8（参数重标定）、t3（测试规格的退避基准）。
+  - 已复验完成：D0.1/D0.3（t4 spike 5/5，附录 SP）；复验中：D2.6/D4.8（参数重标定，t3 §5 基准）+ D5.10 并入的 A9 即时反馈计时。
   - 参数分歧：1.x 节流口径不一（详情 3s vs 6s）→ 不采信任一旧值，D2.6 实测裁决（经验复验纪律的具体应用）。
 
 ---

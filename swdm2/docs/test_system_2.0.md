@@ -1,8 +1,14 @@
 # SWDM 2.0 测试体系规格（真实输入 + 参数重标定）
 
-> 版次：v1.0 · 2026-10-02 · 维护：qa-20（UiTests / 复测域 owner）
-> 依据：`docs/research2/wpf_ui_testing.md`（451 行，FlaUI 方案研究）、`swdm2/docs/architecture_2.0.md`（§3.5 UiTests 契约 / §4 学费清单 / §6 DAG）、1.x 既有基准脚本 `tests/_bench_steam_rate.ps1`（Steam 限流基准的三段法原型）
-> **文档地位：开发前置门（计划先行纪律）**——本文档与 t1 架构规格、t2 视觉规格并列，经 captain 核对（与 `wpf_ui_testing.md` 结论一致性 + 重标定方案可执行性）+ t5 讨论组终裁后，才允许开放 D0-D7 开发任务。研究、骨架与环境准备（含 t4 spike、D0.3 FlaUI 冒烟链）不算开发。
+> 版次：v1.1 · 2026-10-02 · 维护：qa-20（UiTests / 复测域 owner）
+> 依据：`docs/research2/wpf_ui_testing.md`（451 行，FlaUI 方案研究）、`swdm2/docs/architecture_2.0.md`（§3.5 UiTests 契约 / §4 学费清单 / §6 DAG v2.0 + 附录 SP spike 实证）、1.x 既有基准脚本 `tests/_bench_steam_rate.ps1`（Steam 限流基准的三段法原型）
+> **v1.0 → v1.1 变更（落实 t4 spike SP-2/SP-5 落账清单）**：
+> - **输入路径三规则**（SP-2 实测）：CJK→`Enter()`；含空格/标点的 ASCII 词→剪贴板真实 `Ctrl+V`（`Enter()` 会吞空格/撇号，实测 `"Don't Starve"`→`"Don'tStarve"`）；**注入按键前必须先物理点击使窗口/控件获得焦点**（程序化 `Focus()`/`SetForeground()` 不可靠，Windows 前台锁定）。
+> - **载体规则（A7 修正）**：AutomationId 只设在可靠载体（Window / 内容控件 / UserControl / WPF-UI 模板部件固定 id）；**禁止**锚定 UIA 提升型容器（`ui:TitleBar`/`ui:Card`/`Grid`/`ContentControl`，id 被"吞"）（SP-2 实证 8/9 可达）。
+> - **无 ClickablePoint 兜底**：自绘卡片内容 Button 实测无 ClickablePoint → 退到包围矩形中心点击（SP-2 实证），InputSimulator 裸 SendInput 作第二兜底。
+> - **SP-3 双通道**：本机 DSH 沙箱内 `dotnet test` testhost 崩溃 → 沙箱内用控制台驱动模式（`dotnet run` 反射执行同一批 `[WpfFact]`）；产品回归在普通交互桌面用 `dotnet test`（§6.2）。
+> - §7.2 映射表同步 DAG v2.0（D0.3→D0.2 spike 收编；补 D5.11/D5.12）。
+> **文档地位：开发前置门（计划先行纪律）**——本文档与 t1 架构规格、t2 视觉规格并列，经 captain 核对（与 `wpf_ui_testing.md` 结论一致性 + 重标定方案可执行性）+ t5 讨论组终裁后，才允许开放 D0-D7 开发任务。研究、骨架与环境准备（含 t4 spike）不算开发。
 
 ---
 
@@ -242,6 +248,7 @@ swdm2/TestArtifacts/
 ### 3.2 保留 id 清单（App 侧契约，与 t2 视觉规格对齐）
 
 > 本表是 **App 与 UiTests 的接口契约**：visual-20 实现 XAML 时逐条落实；qa-20 写 Screen Object 时逐条引用。新增控件必须先扩本表再写代码。
+> **载体合规（A7 修正 / SP-2 实证，强制）**：AutomationId 只设在**可靠载体**上 = Window / 内容控件（Button·TextBox·ListBox·CheckBox·ComboBox·TextBlock）/ 自绘 UserControl / WPF-UI 模板部件固定 id（如 `TitleBarMinimizeButton/MaximizeButton/CloseButton`）。**禁止**把测试锚点压在 UIA 提升型容器上：`ui:TitleBar`、`ui:Card`、`Grid`、`ContentControl`——这些容器自身不在 UIA 树中，XAML 上设的 AutomationId 会被"吞"（SP-2 实测：8/9 期望元素可达，唯一缺失即此类容器）。下表所有 id 均落在可靠载体上。
 
 | 视图 | AutomationId | 控件 | 说明 |
 |---|---|---|---|
@@ -285,13 +292,13 @@ swdm2/TestArtifacts/
 
 - 列表容器 id = `<视图>_<列表>_Items`；**项模板根元素**给 `<容器>_Item`（所有行复用同一 id），行内控件 = `<容器>_Item_<控件>`。行级定位走 `list.Items[i]` 再向下找——**禁止**按行索引拼 id（数据增删即崩）。
 - 虚拟化采用架构裁决的**路线 A**（VSP Recycling + `ScrollUnit="Pixel"`）：虚拟化回收项仍完整暴露 UIA 树，对 FlaUI 友好；**这也是放弃 PCL2 惰性实例化（路线 B）的裁决依据之一**（架构 §4 末段）。
-- 翻页/滚动断言用按钮 + `PageNumberText`；滚轮场景用真实 `Mouse.Click` 中键或 wheel 前置 `Focus()`（wpf_ui_testing 未覆盖 wheel 注入细节 → §9 待复验项）。
+- 翻页/滚动断言用按钮 + `PageNumberText`；滚轮场景先物理点击列表区域获焦再注入 wheel（wpf_ui_testing 未覆盖 wheel 注入细节 → §9 待复验项）。
 
 ### 3.5 鲁棒性检查清单（每条 UI 测试 PR 自检）
 
 1. 所有断言元素均按 §3.2 保留 id 定位？是。
 2. 全程无 `Thread.Sleep`？是。
-3. 输入前 `Focus()` 目标控件；窗口前置（`Focus()`/`SetForeground()`）？是（T3）。
+3. 键盘注入前先**物理点击**目标控件获焦（SP-2 顺序契约，程序化 Focus/SetForeground 不可靠）？是（Q3）。
 4. 失败路径有截图 + 日志归档？是。
 5. 新增可交互元素有 id 并已扩 §3.2 表？是（T1）。
 
@@ -306,10 +313,14 @@ swdm2/TestArtifacts/
 | 中文进 TextBox（主） | `box.Enter("饥荒")` | ValuePattern 语义级设值，WPF TextBox 原生支持；先断言 `box.Text == "饥荒"` 确认值真进控件 |
 | 中文进 TextBox（真键盘备选 A） | `Keyboard.TypeText("饥荒")` | `KEYEVENTF_UNICODE` → `WM_CHAR`，不经 IME，真实输入消息流 |
 | 中文进 TextBox（真键盘备选 B） | `ClipboardHelper.SetText("饥荒"); Keyboard.Type(VK_CONTROL, VK_V)` | 真实击键 + 剪贴板，兼顾真实性与中文可靠性 |
-| **回车触发类操作** | `Keyboard.Type(VirtualKeyShort.RETURN)` | **强制真实键盘事件**（搜索/确认/默认按钮），禁止命令直调 |
-| 鼠标点击（默认） | `Mouse.MoveTo(el.ClickablePoint); Mouse.Click(MouseButtonType.Left)` | 真实光标 + 真实事件（#323 证据：会夺物理鼠标焦点 → 本机运行时 CI 机器不得同时有人用） |
+| **回车触发类操作** | `Keyboard.Type(VirtualKeyShort.RETURN)` | **强制真实键盘事件**（搜索/确认/默认按钮），禁止命令直调；**按键前必须先物理点击使窗口/控件获得焦点**（SP-2 实证：程序化 `Focus()`/`SetForeground()` 不可靠，Windows 前台锁定） |
+| 中文/纯 CJK 文本 | `box.Enter("饥荒")`（ValuePattern） | **CJK 主路径**（SP-2 实测完美，断言值真进控件） |
+| 含空格/标点的 ASCII 文本 | 剪贴板 + 真实 `Ctrl+V`；或换纯字母词 | **SP-2 实证 `Enter()` 吞 ASCII 空格/撇号**（`"Don't Starve"`→`"Don'tStarve"`）；游戏名等含标点场景必须 Ctrl+V 路径 |
+| 鼠标点击（默认） | `Mouse.MoveTo(el.ClickablePoint); Mouse.Click(MouseButtonType.Left)` | 真实光标 + 真实事件（#323 证据：会夺物理鼠标焦点 → 本机运行时 CI 机器不得同时有人用）；**同时是"获焦点"的标准手段**（上条） |
 | 语义级 Invoke（仅只读场景） | `el.AsButton().Invoke()` | 仅用于**断言只读触发**的场景；用户旅程主路径必须物理点击（测"遮挡/命中区域"类用户侧 bug） |
-| 无 ClickablePoint 兜底 | InputSimulator 裸 `SendInput` 到 `element.PointToScreen()` 坐标 | T4；被遮挡/虚拟化离屏时使用（比 InvokePattern 更真实） |
+| 无 ClickablePoint 兜底 | ① 退到包围矩形中心点击（`el.BoundingRectangle.Center()`，SP-2 实测自绘卡片内容 Button 走此路）；② InputSimulator 裸 `SendInput` 到 `element.PointToScreen()` 坐标 | T4；被遮挡/虚拟化离屏/自绘卡片按钮时使用（比 InvokePattern 更真实） |
+
+> **输入顺序契约（SP-2，强制）**：任何键盘注入（Enter/Ctrl+V/VK_RETURN/Unicode）之前，**先真实点击目标控件或其容器使窗口/控件获得焦点**；禁止依赖程序化 `box.Focus()` / `win.Focus()` / `SetForeground()` 作为唯一获焦手段（spike 实测真实回车在未获焦时不触发 TextBox 的 PreviewKeyDown 处理器）。
 
 ### 4.1 冒烟主旅程（P0，D5.10 交付，5 条）
 
@@ -325,9 +336,9 @@ swdm2/TestArtifacts/
 
 | # | 1.x 场景（1.x 模块） | 2.0 视图 / 控件 | 真实输入路径 | 断言点 | 不变量 | P / 任务 |
 |---|---|---|---|---|---|---|
-| 1 | 启动与主窗口（`main_window.py`） | `MainShell` | `Application.Launch` | 主窗口 15s 内出现；标题含版本号；状态栏连通文本可见 | T3 | P0 / D0.3 |
-| 2 | 游戏搜索（`main_window.py` 搜索框） | `GameSelectPage_SearchBox_Input` + `_SearchButton_Action` | `Focus()` → `Enter("饥荒")` → 断言文本 → `Mouse.MoveTo` 搜索按钮 + `Mouse.Click` | 结果列表出现且 `Items.Count > 0`；首项名称含"饥荒"（或双语等价命中） | A10 | P0 / D5.4 |
-| 3 | 搜索联想（1.x 联想重做 bug） | `GameSelectPage_SuggestionList_Items` | 键入前缀 "don"（真实 Unicode 键注入）→ 停 300ms | 联想列表原地更新（`Items` 引用不变、内容变化），无重建闪烁；中英别名命中同一游戏 | A10（原地更新） | P0 / D5.4 |
+| 1 | 启动与主窗口（`main_window.py`） | `MainShell` | `Application.Launch` | 主窗口 15s 内出现；标题含版本号；状态栏连通文本可见 | T3 | P0 / D0.2（spike 已冒烟覆盖，产品接线回归） |
+| 2 | 游戏搜索（`main_window.py` 搜索框） | `GameSelectPage_SearchBox_Input` + `_SearchButton_Action` | 物理点击 SearchBox 获焦 → `Enter("饥荒")`（CJK 主路径）→ 断言文本 → `Mouse.MoveTo` 搜索按钮 + `Mouse.Click` | 结果列表出现且 `Items.Count > 0`；首项名称含"饥荒"（或双语等价命中） | A10 | P0 / D5.4 |
+| 3 | 搜索联想（1.x 联想重做 bug） | `GameSelectPage_SuggestionList_Items` | 物理点击获焦 → 键入前缀 "don"（纯字母，Unicode 键注入；含空格/标点词用 Ctrl+V）→ 停 300ms | 联想列表原地更新（`Items` 引用不变、内容变化），无重建闪烁；中英别名命中同一游戏 | A10（原地更新） | P0 / D5.4 |
 | 4 | 回车确认（1.x 回车去重 bug） | 同上 | 真实 `Keyboard.Type(VK_RETURN)` | 回车触发搜索且**不重复触发**（一次请求一个结果集）；联想列表在选中后收敛 | A9 即时反馈 | P0 / D5.4 |
 | 5 | 翻页（`workshop_tab.py` 分页） | `WorkshopBrowsePage_PageNextButton` / `_PagePrevButton` / `_PageNumberText` | 真实点击下一页 → 等结果 → 上一页 | 页号文本随点击递增/递减；列表内容变化（首项名称变化）；翻页期间按钮禁用态出现 | A9 | P1 / D5.5 |
 | 6 | 筛选勾选（`tag_bar.py` 标签筛选） | `WorkshopBrowsePage_Filter_<标签>_CheckBox` / `_SelectAllCheckBox` | 真实点击复选框 | 列表按筛选收敛（`Items.Count` 变化）；全选 → 行级 CheckBox 全部勾选态 | 无 | P1 / D5.5 |
@@ -370,14 +381,15 @@ public sealed class GameSelectTests : IClassFixture<SwdmAppFixture>
     public void Search_饥荒_回车_命中同一游戏()
     {
         var win = _f.WaitForMainWindow();
-        win.Focus();                                   // T3：窗口前置
         var box = win.FindFirstDescendant(cf => cf.ByAutomationId("GameSelectPage_SearchBox_Input")).AsTextBox();
         Assert.NotNull(box);
-        box.Focus();
-        box.Enter("饥荒");                             // 主路径：ValuePattern
+        // SP-2 顺序契约：先物理点击获焦点，再注入按键（程序化 Focus/SetForeground 不可靠）
+        Mouse.MoveTo(box.ClickablePoint);
+        Mouse.Click(MouseButtonType.Left);
+        box.Enter("饥荒");                             // CJK 主路径：ValuePattern
         Assert.Equal("饥荒", box.Text);                // 值真进控件
 
-        Keyboard.Type(VirtualKeyShort.RETURN);         // 强制真实回车，禁止命令直调
+        Keyboard.Type(VirtualKeyShort.RETURN);         // 强制真实回车，禁止命令直调（焦点已在 box 上）
 
         var list = RetryHelper.WaitForNonEmptyList(win, "GameSelectPage_SuggestionList_Items");
         Assert.Contains(list.Items, i => (i.Name ?? string.Empty).Contains("饥荒"));
@@ -388,15 +400,16 @@ public sealed class GameSelectTests : IClassFixture<SwdmAppFixture>
     {
         var win = _f.WaitForMainWindow();
         var box = win.FindFirstDescendant(cf => cf.ByAutomationId("GameSelectPage_SearchBox_Input")).AsTextBox();
-        box.Focus();
-        Keyboard.TypeText("don");                      // 真实 Unicode 键注入（不经 IME）
+        Mouse.MoveTo(box.ClickablePoint);              // SP-2：先物理点击获焦点
+        Mouse.Click(MouseButtonType.Left);
+        Keyboard.TypeText("don");                      // 纯字母 Unicode 键注入（不经 IME）；含空格/标点词改 Ctrl+V
         var list = RetryHelper.WaitForList(win, "GameSelectPage_SuggestionList_Items");
         var firstNames = list.Items.Select(i => i.Name).ToList();
         Assert.NotEmpty(firstNames);
         Assert.Contains(firstNames, n => n.Contains("Don't Starve", StringComparison.OrdinalIgnoreCase));
         // 原地更新断言：联想出现期间再输入一个字符，列表对象引用不变
         var handleBefore = list.Properties.NativeWindowHandle;
-        Keyboard.TypeText("'");
+        Keyboard.TypeText("n");
         Assert.Equal(handleBefore, list.Properties.NativeWindowHandle);
     }
 }
@@ -625,6 +638,7 @@ FlaUI issue #168：CI（TeamCity / GitHub Actions 托管 runner / Azure DevOps �
 
 - 一律在**本机交互会话**运行（用户登录的桌面会话，非 Session 0）。
 - 测试期间机器不得同时有人操作物理鼠标（#323 夺焦点）。
+- **SP-3 双通道（本机 DSH 沙箱例外）**：本机 harness 沙箱内 `dotnet test` 的 testhost 启动即崩（`SetParentProcessExitCallback` → `Win32Exception(5)` 跨进程句柄拒；Test SDK 17.8/17.13、x64/AnyCPU 同崩），spike 期间改用**控制台驱动模式**（`dotnet run` 反射执行同一批 `[WpfFact]`，真实输入链路完全一致，输出落盘 md）。规则：**产品回归用桌面 `dotnet test`（t3 契约）**，沙箱内临时回归用驱动模式——两通道断言同源，切换不改测试代码。
 
 ### 6.3 自托管 runner（D6/D7 发布前落地，不在本轮范围）
 
@@ -645,8 +659,8 @@ FlaUI issue #168：CI（TeamCity / GitHub Actions 托管 runner / Azure DevOps �
 |---|---|---|
 | Q1 | 被测元素必须有 AutomationId（§3.2 保留表）；新增可交互元素无 id = 任务不通过 | 架构 T1 / wpf_ui_testing §7.1 |
 | Q2 | 弹窗按 #255 真实点击；**禁止打桩替换弹窗实现**；弹窗打开期间的 UI 状态必须在点掉之前读取 | 架构 T2 / A12 / 1.x 桩函数学费 |
-| Q3 | 窗口前置 + 控件 Focus 后再输入；窗口几何显式固定 | 架构 T3 |
-| Q4 | 跨进程真实点击注意 #323（夺物理鼠标焦点）；无 ClickablePoint 时 InputSimulator 裸 SendInput 到 `PointToScreen()` 坐标 | 架构 T4 / wpf_ui_testing §1.4 |
+| Q3 | 窗口/控件**先物理点击获焦点**再注入按键（程序化 `Focus()`/`SetForeground()` 不可靠，SP-2 实证）；窗口几何显式固定 | 架构 T3 + SP-2 顺序契约 |
+| Q4 | 跨进程真实点击注意 #323（夺物理鼠标焦点）；无 ClickablePoint 时先退包围矩形中心点击（SP-2 实证自绘卡片按钮），再 InputSimulator 裸 SendInput 到 `PointToScreen()` 坐标 | 架构 T4 / wpf_ui_testing §1.4 / SP-2 |
 | Q5 | UI 层只测真实用户旅程与交互接缝；纯逻辑归 Core 单测；不重复断言（倒金字塔） | 架构 T5 |
 | Q6 | 每次迭代完成后 FlaUI 冒烟套件**全量回归**（含新增功能与功能间关联交互） | 架构 T6 / 迭代四要素 |
 | Q7 | 等待一律 `Retry.While`/`Wait.Until` 显式超时；禁止 `Thread.Sleep` | wpf_ui_testing §3.1 |
@@ -662,15 +676,17 @@ FlaUI issue #168：CI（TeamCity / GitHub Actions 托管 runner / Azure DevOps �
 
 | DAG 任务 | 主责 | 本规格交付物 | 验证命令 |
 |---|---|---|---|
-| D0.3 | qa-20 | FlaUI 5.0.0 冒烟链：包 restore 实证 + 启动空窗口 + AutomationId 断言 + 失败截图 | `dotnet test swdm2/tests/Swdm2.UiTests --filter Category=FlaUI&Category=Smoke` |
+| D0.2 | arch-20/captain | 骨架接线：产品 UiTests 引 t3 §2.1 包清单（FlaUI 5.0.0）+ App 空白窗口 AutomationId（spike 已冒烟覆盖，本任务回归到产品工程） | `dotnet build -warnaserror` + UiTests 冒烟（SP-3 驱动/桌面两通道） |
 | D3.7 | qa-20 | 下载主旅程（#10-#14 真实输入路径） | `--filter Category=FlaUI` |
 | D4.9 | qa-20 | 分段体感（#15：分段数/速度/ETA/按钮态） | `--filter Category=FlaUI` |
-| D5.10 | qa-20/V | P0 五条主旅程全量（§4.1） | `--filter Category=FlaUI&Category=Smoke` |
+| D5.10 | qa-20/V | P0 五条主旅程全量（§4.1，输入三规则落实） | `--filter Category=FlaUI&Category=Smoke` |
+| D5.11 | V/qa-20 | 视觉终检：t2 §4 像素断言六清单（与 t2 视觉规格联测） | UiTests + 截图读图 |
+| D5.12 | qa-20 | 即时反馈重标定：A9 ≤150ms 按键→可见反馈延迟计时断言（若 t5 合并入 D5.10，则随 P0 冒烟真实旅程计时） | UiTests 计时断言 |
 | D6.2 | qa-20 | 更新检查弹窗（#18，#255 路径 + 标红态） | `--filter Category=FlaUI` |
 | D6.4 | qa-20 | 复测矩阵：双网络（fake-IP/直连）× 匿名/账号 × 双 provider 全组合 | 矩阵执行表（docs） |
-| D2.6 / D4.8 | arch-20/qa-20 | 基准 B1/B2、B3 报告 + Options 锁定 | `--filter Category=Calibration` |
+| D2.6 / D4.8 | arch-20/qa-20 | 基准 B1/B2、B3 报告（t3 §5.5 输出格式）+ Options 锁定 | `--filter Category=Calibration` |
 | D7.1 | qa-20 | 全量回归（全部 P0/P1/P2 + 单元 + 集成 + 双网络矩阵） | `dotnet test swdm2/Swdm2.sln` |
-| D7.2 | qa-20 | bug 测试员连续两轮复测无异常 | 复测表 |
+| D7.2 | qa-20 | bug 测试员连续两轮复测无异常（第二轮直接复用 D6.4 矩阵执行表，不重设计） | 复测表 |
 
 ### 7.3 迭代四要素落实
 
