@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using Swdm2.Core.Results;
+using Swdm2.Downloads.Disk;
 
 namespace Swdm2.Downloads.Segments;
 
@@ -24,6 +25,9 @@ public sealed class HttpSegmentDownloader
 
     /// <summary>测试/诊断 seam（生产=null=真链）。</summary>
     internal Func<HttpSegmentDownloader, HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>? SendFunc { get; set; }
+
+    /// <summary>稀疏分配器 seam（生产=null=默认 SparseFileAllocator;注入假=模拟 exFAT 降级）。</summary>
+    internal ISparseFileAllocator? Allocator { get; set; }
 
     public HttpSegmentDownloader(HttpClient client, IResumeStore store, int? maxParallel = null)
     {
@@ -68,9 +72,11 @@ public sealed class HttpSegmentDownloader
             else doneSegments = null;
         }
 
-        await using var file = new FileStream(dest, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None,
-            bufferSize: 65536, useAsync: true);
-        file.SetLength(total);
+        // D4.6 磁盘域：稀疏占位（NTFS）+偏移直写器（exFAT 降级由分配器返回 Method 标注）
+        // isResume=文件已存在（部分下载/续传=下载期文件复用，D8 不可逆护栏放行）
+        var allocation = await (Allocator ?? new SparseFileAllocator()).AllocateForDownloadAsync(
+            dest, total, isResume: File.Exists(dest), ct).ConfigureAwait(false);
+        await using var writer = new OffsetFileWriter(dest, total);
 
         var planner = new SegmentPlanner(total, _maxParallel);
         var doneSet = new ConcurrentDictionary<long, long>(); // start→end 已完成
@@ -103,7 +109,7 @@ public sealed class HttpSegmentDownloader
                         seg = planner.TryAcquire(); // in-half 分裂
                         if (seg is null) return; // 收口/全完成
                     }
-                    await DownloadSegmentAsync(file, request.Url, seg, doneSet, ct).ConfigureAwait(false);
+                    await DownloadSegmentAsync(writer, request.Url, seg, doneSet, ct).ConfigureAwait(false);
                     planner.Complete(seg);
                     doneSet[seg.Start] = seg.End;
                     Interlocked.Add(ref received, seg.Length);
@@ -127,7 +133,7 @@ public sealed class HttpSegmentDownloader
         if (!planner.AllDone)
             return Result<long, SteamError>.Fail(SteamError.Network);
 
-        await file.FlushAsync(ct).ConfigureAwait(false);
+        await writer.CompleteAsync(ct).ConfigureAwait(false);
         _store.Delete(dest);
         return Result<long, SteamError>.Ok(total);
     }
@@ -200,7 +206,7 @@ public sealed class HttpSegmentDownloader
 
     /// <summary>单段下载+重叠字节比对（续传起点校验，D5)+偏移直写。</summary>
     private async Task DownloadSegmentAsync(
-        FileStream file, string url, Segment seg,
+        IOffsetFileWriter file, string url, Segment seg,
         ConcurrentDictionary<long, long> doneSet, CancellationToken ct)
     {
         // 重叠：起点回退 OverlapBytes（前段已写则比对）
@@ -228,18 +234,16 @@ public sealed class HttpSegmentDownloader
         if (applyOverlap)
         {
             // 比对：重叠区字节必须等于已写区（续传起点校验，D5)
-            var written = new byte[OverlapBytes];
-            file.Seek(overlapStart, SeekOrigin.Begin);
-            await file.ReadAsync(written.AsMemory(0, OverlapBytes), ct).ConfigureAwait(false);
-            for (var i = 0; i < OverlapBytes; i++)
+            var written = await file.ReadAtAsync(overlapStart, OverlapBytes, ct).ConfigureAwait(false);
+            for (var i = 0; i < written.Length; i++)
             {
                 if (buffer[dataOffset - OverlapBytes + i] != written[i])
                     throw new InvalidDataException($"拼接点校验失败 @{overlapStart}+{i}");
             }
         }
 
-        file.Seek(seg.Start, SeekOrigin.Begin);
-        await file.WriteAsync(buffer.AsMemory(dataOffset, (int)(seg.End - seg.Start)), ct).ConfigureAwait(false);
+        await file.WriteAtAsync(seg.Start, buffer.AsMemory(dataOffset, (int)(seg.End - seg.Start)), ct)
+            .ConfigureAwait(false);
     }
 
     private static bool RegionIsDone(ConcurrentDictionary<long, long> doneSet, long from, long to)

@@ -12,4 +12,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+<ItemGroup>
+    <InternalsVisibleTo Include="Swdm2.Downloads.Tests" />
+  </ItemGroup>
 </Project>
