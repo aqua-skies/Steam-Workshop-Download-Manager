@@ -240,7 +240,7 @@ public sealed class SteamKitCdnClient : ISteamCdnClient
     internal Func<uint, byte[]?, string?, ManifestChunk, Server?, CancellationToken, Task<byte[]?>>? DownloadChunkFunc;
 
     private async Task<byte[]?> RealDownloadChunkAsync(
-        uint depotId, byte[] depotKey, string? cdnAuth, ManifestChunk chunk, Server? server, CancellationToken ct)
+        uint depotId, byte[]? depotKey, string? cdnAuth, ManifestChunk chunk, Server? server, CancellationToken ct)
     {
         var (client, manager) = EnsureSession();
         var server_ = server ?? await ResolveServerOnceAsync(client, manager, ct).ConfigureAwait(false);

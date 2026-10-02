@@ -80,6 +80,7 @@ public sealed class DownloadProviderRouterTests
     [InlineData(SteamError.AuthRequired)]
     [InlineData(SteamError.Blocked)]
     [InlineData(SteamError.InvalidChecksum)]
+    [InlineData(SteamError.RateLimited)]
     public async Task Failing_Primary_Routes_To_SteamCmd_Fallback(SteamError error)
     {
         var primary = new StubProvider(error);
@@ -117,7 +118,6 @@ public sealed class DownloadProviderRouterTests
     [InlineData(SteamError.Cancelled)]
     [InlineData(SteamError.InvalidConfiguration)]
     [InlineData(SteamError.NotFound)]
-    [InlineData(SteamError.RateLimited)]
     public async Task NonRouteable_Errors_Fail_Fast_Without_Fallback(SteamError error)
     {
         var primary = new StubProvider(error);

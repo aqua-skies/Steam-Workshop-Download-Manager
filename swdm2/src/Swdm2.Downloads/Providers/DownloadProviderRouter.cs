@@ -18,7 +18,7 @@ namespace Swdm2.Downloads.Providers;
 /// </summary>
 public sealed class DownloadProviderRouter : IDownloadProvider
 {
-    /// <summary>回退到 steamcmd 的错误类型表（spec D2:会话级失败→回退 steamcmd;Blocked/NeedAccount→直切账号路径）。</summary>
+    /// <summary>回退到 steamcmd 的错误类型表（spec D2：会话级失败→回退 steamcmd;Blocked/NeedAccount→直切账号路径）。</summary>
     private static readonly HashSet<SteamError> RouteToFallback = new()
     {
         SteamError.Network,
@@ -28,6 +28,9 @@ public sealed class DownloadProviderRouter : IDownloadProvider
         SteamError.CircuitOpen,
         SteamError.InvalidChecksum,
         SteamError.CorruptAsset,
+        // 实测增补：SteamKit CM 匿名登录可被节流（沙箱/共享出口观测到 RateLimited);
+        // steamcmd 进程登录不经 CM=不同路径，spec D2「会话级失败→回退」语义。
+        SteamError.RateLimited,
     };
 
     private readonly IDownloadProvider _primary;

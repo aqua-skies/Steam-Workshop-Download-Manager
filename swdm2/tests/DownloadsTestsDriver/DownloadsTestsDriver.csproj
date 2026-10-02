@@ -14,4 +14,9 @@
     <ProjectReference Include="..\Swdm2.Downloads.Tests\Swdm2.Downloads.Tests.csproj" />
   </ItemGroup>
 
+  <!-- D4.5: Kestrel fixture 测试需要 ASP.NET 运行时（测试项目 FrameworkReference 的传递需求） -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>
