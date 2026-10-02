@@ -13,7 +13,7 @@ public sealed class RegexRedactionPolicyTests
 
     [Theory]
     [InlineData("password=P@ssw0rd-饥荒-Don't", "password=***")]
-    [InlineData("密码: hunter2", "密码:***")] // 查看文档：冒号两侧空格归一后保留前缀
+    [InlineData("密码: hunter2", "密码: ***")] // 保留匹配到的原分隔符（含冒号后空格），与下方 JSON 引号形态一致
     [InlineData("\"token\": \"abc.def.ghi\"", "\"token\": \"***\"")]
     [InlineData("user password=secret123 ok", "user password=*** ok")]
     [InlineData("code=987654", "code=***")]
