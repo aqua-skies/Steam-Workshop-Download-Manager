@@ -282,4 +282,67 @@ public sealed class DownloadStateMachineTests
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new DownloadScheduler(queue, (e, ct) => Task.FromResult(true), maxConcurrent: 0));
     }
+
+    /// <summary>验收判据：Paused→ResumeAsync→Downloading→Completed(t26 UI 按钮点亮前提）。</summary>
+    [Fact]
+    public async Task Resume_Paused_Task_Reruns_To_Completed()
+    {
+        await using var queue = new DownloadQueue();
+        var calls = 0;
+        async Task<bool> Executor(DownloadTaskEntry e, CancellationToken ct)
+        {
+            var n = Interlocked.Increment(ref calls);
+            if (n == 1)
+            {
+                e.TransitionTo(DownloadState.Paused); // provider 暂停语义（执行内外部暂停）
+                return false; // 暂停≠失败：scheduler 因 state==Paused 保留（不覆盖 Failed)
+            }
+            return true; // 恢复后完成
+        }
+
+        await using var scheduler = new DownloadScheduler(queue, Executor, maxConcurrent: 1);
+        var entry = await queue.EnqueueAsync(NewTask(7));
+
+        Assert.True(SpinWaitFor(() => calls >= 1, TimeSpan.FromSeconds(5)));
+        Assert.True(SpinWaitFor(() => entry.State == DownloadState.Paused, TimeSpan.FromSeconds(2))); // 暂停保留
+
+        Assert.True(await scheduler.ResumeAsync(entry.Task.Id).ConfigureAwait(false));
+        Assert.True(SpinWaitFor(() => entry.State == DownloadState.Completed, TimeSpan.FromSeconds(5)));
+        Assert.Equal(2, calls); // 恢复=重新执行一次
+    }
+
+    /// <summary>Resume 非暂停态（如排队中的 Queued）拒绝。</summary>
+    [Fact]
+    public async Task Resume_Rejects_Non_Paused_State()
+    {
+        await using var queue = new DownloadQueue();
+        var gate = new TaskCompletionSource();
+        await using var scheduler = new DownloadScheduler(queue, async (e, ct) =>
+        {
+            await gate.Task.WaitAsync(TimeSpan.FromSeconds(5), ct);
+            return true;
+        }, maxConcurrent: 1);
+
+        var running = await queue.EnqueueAsync(NewTask(1));
+        var queuedOne = await queue.EnqueueAsync(NewTask(2)); // 排队等槽
+        await Task.Delay(200);
+        Assert.Equal(DownloadState.Downloading, running.State); // 占槽
+        Assert.False(await scheduler.ResumeAsync(queuedOne.Task.Id).ConfigureAwait(false)); // Queued 不可 resume
+        Assert.Equal(DownloadState.Queued, queuedOne.State);
+
+        gate.SetResult();
+        await Task.Delay(300);
+        Assert.Equal(DownloadState.Completed, queuedOne.State);
+    }
+
+    private static bool SpinWaitFor(Func<bool> predicate, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (predicate()) return true;
+            Thread.Sleep(15);
+        }
+        return predicate();
+    }
 }

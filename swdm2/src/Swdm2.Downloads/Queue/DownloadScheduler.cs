@@ -65,6 +65,25 @@ public sealed class DownloadScheduler : IAsyncDisposable
         return true;
     }
 
+    /// <summary>
+    /// 恢复暂停任务（Paused→Downloading;t3 §3.2 状态表已有边 UI 按钮点亮前提）。
+    /// 重新取槽执行（不重排队列；RunEntryAsync 检测到 Downloading 态跳过启动转移）。
+    /// </summary>
+    public async ValueTask<bool> ResumeAsync(DownloadTaskId id, CancellationToken ct = default)
+    {
+        var entry = _queue.GetEntry(id);
+        if (entry is null || !entry.CanTransitionTo(DownloadState.Downloading)) return false;
+        await _slots.WaitAsync(ct).ConfigureAwait(false);
+        if (DownloadStateMachine.IsTerminal(entry.State))
+        {
+            _slots.Release(); // 取槽期间被取消/完成
+            return false;
+        }
+        entry.TransitionTo(DownloadState.Downloading); // Paused→Downloading
+        _ = RunEntryAsync(entry, _cts.Token);
+        return true;
+    }
+
     public async Task RunAsync(CancellationToken ct)
     {
         try
@@ -93,22 +112,24 @@ public sealed class DownloadScheduler : IAsyncDisposable
         Interlocked.Increment(ref _activeCount);
         try
         {
-            entry.TransitionTo(DownloadState.Downloading); // Preparing→Downloading（provider 启动）
+            // 启动转移：正常路径 Preparing→Downloading;Resume 路径已是 Downloading（跳过，防非法转移抛异常）
+            if (entry.State == DownloadState.Preparing)
+                entry.TransitionTo(DownloadState.Downloading);
             try
             {
                 var success = await _executor(entry, ct).ConfigureAwait(false);
-                // 终态竞争防御：执行期间用户取消已切 Cancelled 则不再覆盖
-                if (!DownloadStateMachine.IsTerminal(entry.State))
+                // 执行后转移：仅当仍在 Downloading（用户外部暂停/取消已切 Paused/Cancelled/终态则保留，防覆盖）
+                if (entry.State == DownloadState.Downloading)
                     entry.TransitionTo(success ? DownloadState.Completed : DownloadState.Failed);
             }
             catch (OperationCanceledException)
             {
-                if (!DownloadStateMachine.IsTerminal(entry.State))
+                if (entry.State == DownloadState.Downloading)
                     entry.TransitionTo(DownloadState.Cancelled);
             }
             catch (Exception)
             {
-                if (!DownloadStateMachine.IsTerminal(entry.State))
+                if (entry.State == DownloadState.Downloading)
                     entry.TransitionTo(DownloadState.Failed);
             }
         }
