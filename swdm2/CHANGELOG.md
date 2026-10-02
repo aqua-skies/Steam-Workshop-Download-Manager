@@ -7,7 +7,26 @@
 
 ---
 
-## [0.3.0] · 2026-10-03 · 阶段 3:下载域全链（D3.8 交付门）
+## [0.4.0] · 2026-10-03 · 阶段 4:下载核心域（D4.10 交付门）
+
+**四要素**:全量回归**318/0 两连绿**（增量+clean 双口径 build 0-0 warnaserror+CoreTestsDriver 72/0+SteamTestsDriver 148/0+DownloadsTestsDriver 81/0+UiTestsDriver 17/0,SP-3 沙箱驱动，TEMP/TMP 双重定向）+ 讨论组评审 \docs/process/review_2.0_0.4.0.md\（三原则）+ 版本 0.3.0→0.4.0（\Directory.Build.props\）+ 本变更记录。
+
+### 新增（SteamKit2 CDN 主链 + HTTP 分段 + 磁盘 + 限速 + 链回退）
+
+- **D4.1 SteamKit2 会话**（t30,b82784d）:匿名/账号登录+2FA 回调契约（ISteamGuardPrompter;App 收码弹窗 A11 模态）；EResult→SteamError 映射；收码重试上限 2（防刷码）。SteamKit2 3.4.0(flatcontainer 实查）。
+- **D4.2 manifest 解析与 isUgc 路径**（t31,5eb89ca）:pubfile→CM UnifiedMessages→PICS 选 workshop depot→GetDepotDecryptionKey→GetManifestRequestCode→CDN 下载 manifest（CR 对照 DepotDownloader);-pubfile/-ugc 双路径+直链分支；七层注入 seam（离线逐层故障断言）。
+- **D4.3 chunk 并行下载+SHA/Adler 校验**（t32,8f959a5）:并行注入（默认 8,C7)+Channel 单读者；长度+Adler32 双断言+SteamKit 内部 SHA;损坏重下（MaxChunkRetries=2)耗尽→InvalidChecksum;无 depot key→AuthRequired。
+- **D4.4 SteamKitCdnProvider+链回退**（t33,7359d15）:DownloadProviderRouter 主 SteamKit→兜底 steamcmd 按错误类型路由（回退 8 类含 RateLimited/不回退 4 类）；切换=总线消息+CurrentProviderFor 查询（UI 契约 D5 消费）；ProcessSlotAcquirer hook 转发。
+- **D4.5 HTTP 直链分段 provider**（t34,fe0ed9b）:IDM in-half 分段+段中点分裂指派空闲 worker;Range 探测（206 分段/200 单流回退）+16B 重叠字节比对（拼接点校验，标定后 32→16);每段原子续存+.download 元数据（ETag/LastModified+总长校验，已完成段不重下）。
+- **D4.6 磁盘 IO 偏移直写+稀疏占位**（t35,7d2331d）:FSCTL_SET_SPARSE+SetLength;不可逆护栏（既有内容文件拒绝=稀疏只用于下载期文件）+续传显式放行；exFAT/FAT32→SetLength 降级（VolumeCapabilityProbe);OffsetFileWriter 偏移直写无拼接（锁内 Seek+Write 串行化并发段）。
+- **D4.7 限速器（令牌桶）**（t36,219139c）:0=不限速默认+突发 0.1s 量；余额记账（负账=借用）大请求单次精确等待；双点消费（HTTP 读流+chunk 调度）+UpdateRate 热改即生效。实测带宽≤配置×1.1(HTTP 40.1KB/s@80KB/s、chunk 61.1KB/s@60KB/s)。修复初版部分取票串行等待的二次方超时死循环。
+- **D4.8 ⚠️重标定 B3**（t37,7f1c5cc）:五 sweep 实测（A/B/C 本地 Kestrel+E 真 API):MaxChunkParallelism=8 锁（rep 方差 4.5x 无增益）/MaxConnectionsPerServer=8 锁/OverlapBytes 32→16/ChunkTimeoutMs=5000 锁（2000=100%Timeout)/元数据并发 1 锁（增益 7.0%<10%)。三件套 \docs/calibration_2.{md,csv,json}\（109 行）。标定暴露三真 bug 已修：①in-half 分裂选 in-flight 段重叠写损坏 ②HTTP 段写偏移错位 ③超时仅 header 阶段判别失真。
+- **D4.9 UiTests 分段体感断言**（t38,92c0e57）:\#15 字段刷新+按钮态+#14 弹窗路径 FlaUI 断言 Layer 1 过（键盘输入层 ENV-DOWNGRADE 桌面复跑）。
+
+### 验证
+clean+warnaserror **0-0**;全量 **318/0**(Downloads 81+Steam 148+Ui 17+Core 72)两连绿双口径。Kestrel 本地 fixture 验收（禁公网）：分段绿/kill 续传/Range 回退/偏移直写乱序/exFAT 降级。环境容忍门保留不阻门：真 CDN 复测留 D5(localhost 判别力局限诚实声明）+Online CM 沙箱阻断+UI 桌面复跑（ENV 标注齐）。
+
+
 
 **四要素**:全量回归**237/0 两连绿**（增量+clean 双口径 build 0-0+CoreTestsDriver 72/0+SteamTestsDriver 103/0+DownloadsTestsDriver 53/0+UiTestsDriver 9/0,SP-3 沙箱驱动，TEMP/TMP 双重定向）+ 讨论组评审 \docs/process/review_2.0_0.3.0.md\（三原则）+ 版本 0.2.0→0.3.0（\Directory.Build.props\）+ 本变更记录。
 
