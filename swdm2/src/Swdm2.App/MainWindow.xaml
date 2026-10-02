@@ -1,11 +1,13 @@
-﻿<Window x:Class="Swdm2.App.MainWindow"
+<Window x:Class="Swdm2.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Swdm2.App"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="SWDM 2.0" Height="600" Width="900"
+        WindowStartupLocation="CenterScreen"
+        AutomationProperties.AutomationId="MainWindow">
     <Grid>
 
     </Grid>

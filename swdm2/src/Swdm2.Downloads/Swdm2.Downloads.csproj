@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Swdm2.Core\Swdm2.Core.csproj" />
+    <!-- D0.2: provider 链消费 Steam 域（steamcmd 封装 / SteamKit CDN 客户端） -->
+    <ProjectReference Include="..\Swdm2.Steam\Swdm2.Steam.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

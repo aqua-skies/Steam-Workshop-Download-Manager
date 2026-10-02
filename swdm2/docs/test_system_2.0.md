@@ -1,7 +1,11 @@
 # SWDM 2.0 测试体系规格（真实输入 + 参数重标定）
 
-> 版次：v1.1 · 2026-10-02 · 维护：qa-20（UiTests / 复测域 owner）
+> 版次：v1.2 · 2026-10-02 · 维护：qa-20（UiTests / 复测域 owner）
 > 依据：`docs/research2/wpf_ui_testing.md`（451 行，FlaUI 方案研究）、`swdm2/docs/architecture_2.0.md`（§3.5 UiTests 契约 / §4 学费清单 / §6 DAG v2.0 + 附录 SP spike 实证）、1.x 既有基准脚本 `tests/_bench_steam_rate.ps1`（Steam 限流基准的三段法原型）
+> **v1.1 → v1.2 变更（bug 归属制回写 · arch-20 通报 + qa-20 本地核验）**：
+> - **`Xunit.StaFact` 版本修正：1.2.1 在 NuGet 上不存在**（版本尾 1.1.11 → 2.0.44 → 2.1.7 → 3.0.13 → 4.x beta；本地 NuGet 缓存核验仅 1.1.11 / 2.1.7）。**采用 2.1.7**，经 **D0.2 三段实证**（restore + 全解决方案 `dotnet build` 0 警告 0 错误；进程外冒烟跑通：`Application.Launch(Swdm2.App.exe)` → UIA3 定位 `AutomationId=MainWindow` → 断言通过 + 窗口截图 216.1 KB，SP-3 驱动模式）。
+> - **特性命名空间实证**：2.1.7 的 `WpfFactAttribute`/`StaFactAttribute` 仍位于命名空间 **`Xunit`**（同 1.1.11）；**`using Xunit.StaFact;` 是错的**——产品冒烟测试 `swdm2/tests/Swdm2.UiTests/Tests/Smoke/AppLaunchSmokeTests.cs` 以 `using Xunit;` + `[WpfFact]` 落地。
+> - xunit 备注：D0.2 已直接落 **xunit 2.9.0**（原"D0.3 顺带升级"表述废止）。
 > **v1.0 → v1.1 变更（落实 t4 spike SP-2/SP-5 落账清单）**：
 > - **输入路径三规则**（SP-2 实测）：CJK→`Enter()`；含空格/标点的 ASCII 词→剪贴板真实 `Ctrl+V`（`Enter()` 会吞空格/撇号，实测 `"Don't Starve"`→`"Don'tStarve"`）；**注入按键前必须先物理点击使窗口/控件获得焦点**（程序化 `Focus()`/`SetForeground()` 不可靠，Windows 前台锁定）。
 > - **载体规则（A7 修正）**：AutomationId 只设在可靠载体（Window / 内容控件 / UserControl / WPF-UI 模板部件固定 id）；**禁止**锚定 UIA 提升型容器（`ui:TitleBar`/`ui:Card`/`Grid`/`ContentControl`，id 被"吞"）（SP-2 实证 8/9 可达）。
