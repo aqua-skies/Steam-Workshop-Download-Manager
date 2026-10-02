@@ -49,6 +49,11 @@ public sealed class DpapiCredentialStore : ICredentialStore, IDisposable
             // C2：包装为不含明文的异常（密码原文绝不出现在消息/InnerException 中）
             throw new CredentialStoreException("凭据解密失败（文件损坏或由其他用户/机器生成）。", ex);
         }
+        catch (FormatException ex)
+        {
+            // 密文 Base64 损坏（同 C2 包装，无明文泄漏）
+            throw new CredentialStoreException("凭据文件格式损坏（非合法密文）。", ex);
+        }
     }
 
     public async Task SetPasswordAsync(string account, ReadOnlyMemory<char> password, CancellationToken ct = default)

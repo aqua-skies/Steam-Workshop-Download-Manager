@@ -39,7 +39,14 @@ public sealed class AppLaunchSmokeTests
     }
 
     /// <summary>swdm2/src/Swdm2.App/bin/Debug/net8.0-windows/Swdm2.App.exe（相对测试输出目录）。</summary>
-    private static string ResolveAppExe() => Path.GetFullPath(Path.Combine(
-        AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-        "src", "Swdm2.App", "bin", "Debug", "net8.0-windows", "Swdm2.App.exe"));
+    /// <remarks>SP-3 驱动模式下环境变量 SWDM2_APP_EXE 可覆盖（t3 §2.4 UiTestSettings 约定）。</remarks>
+    private static string ResolveAppExe()
+    {
+        var overridden = Environment.GetEnvironmentVariable("SWDM2_APP_EXE");
+        if (!string.IsNullOrEmpty(overridden) && File.Exists(overridden))
+            return overridden;
+        return Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "Swdm2.App", "bin", "Debug", "net8.0-windows", "Swdm2.App.exe"));
+    }
 }
