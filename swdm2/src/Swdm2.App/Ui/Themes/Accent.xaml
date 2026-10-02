@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      Accent.xaml — 中性阴影色族（t2 §1.2 实现裁决行 82：本文件只放不随主题变的
+      中性阴影资源；accent 色族键在 Light/Dark 两文件各定义一次，避免主题切换时残留）。
+      「换 accent 即换皮」扩展位：未来主题包在此追加 accent 色族覆盖时，
+      ThemeService 会以最后合并者胜出（App.xaml 合并顺序 = Common → Accent → 主题）。
+    -->
+    <!-- 弹层/菜单中性阴影（PCL2 DropShadowEffect 0.4/4/2，Application.xaml:487）⚠️[参数待重标定] -->
+    <Color x:Key="swdm-NeutralShadowColor">#66000000</Color>  <!-- 40% 黑 -->
+    <SolidColorBrush x:Key="swdm-NeutralShadowBrush" Color="{StaticResource swdm-NeutralShadowColor}"/>
+</ResourceDictionary>

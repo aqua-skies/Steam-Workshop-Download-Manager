@@ -7,9 +7,10 @@
         Title="SWDM 2.0" Height="600" Width="900"
         WindowStartupLocation="CenterScreen"
         AutomationProperties.AutomationId="MainShell">
-    <!-- D3.5b minimum testable shell. Skin-level (title bar, sidebar, themes) deferred to D5.
-         MainShell id = t3 section 3.2 reservation table (start assertion anchor). -->
-    <Grid>
+    <!-- D5.1 主题应用层（皮肤签名组件 SwdmCard 留 t41/D5.2）。
+         MainShell id = t3 §3.2 保留表（启动断言锚点）。
+         颜色一律 DynamicResource swdm-*（t2 §1.4 不变量③：切换即时生效无闪烁）。 -->
+    <Grid Background="{DynamicResource swdm-SurfaceCanvasBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -17,9 +18,12 @@
         <StackPanel Orientation="Horizontal" Margin="10,8">
             <Button AutomationProperties.AutomationId="MainShell_Nav_ModDetailButton"
                     Content="Mod detail (sample)" Padding="12,5" Margin="0,0,8,0"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"
                     Command="{Binding NavigateModDetailCommand}"/>
             <Button AutomationProperties.AutomationId="MainShell_Nav_DownloadsButton"
                     Content="Downloads" Padding="12,5"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                     Command="{Binding NavigateDownloadsCommand}"/>
         </StackPanel>
         <ContentControl Grid.Row="1" Margin="10" Content="{Binding CurrentPageView}"/>

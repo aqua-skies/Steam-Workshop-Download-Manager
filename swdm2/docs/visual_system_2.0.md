@@ -1,6 +1,7 @@
 # SWDM 2.0 视觉实现规格（Visual System Specification）
 
-> 版次：v1.1 · 2026-10-02 · 维护：visual-20（视觉/UI 域 owner）
+> 版次：v1.2 · 2026-10-03 · 维护：visual-20（视觉/UI 域 owner）
+> **v1.2 变更（D5.1 WCAG 实算回写）**:dark accent.500 `#7C5CFF`→`#7655F8`（白字实算 4.35<4.5 基线，深化后 4.79;spec 原声明 4.6 与实算不符，按经验复验/设计对照纪律修正）；light link.default `#1F7EB8`→`#1A72A8`（实算 4.47→5.23）。实现同步：`Ui/Themes/Dark.xaml`（Accent500+StrokeFocus+AccentShadow)+`Light.xaml`（LinkDefault)+断言测试。
 > **v1.1 变更（A7 同步回写，review_2.0_plan.md P1 自办项）**：① §2 通用条款补 AutomationId 载体限制（可靠载体=Window/内容控件/UserControl/WPF-UI 模板部件固定 id；**禁** Grid/ContentControl/Border 及库提升型容器承载测试锚点——SP-2 实证）；② §2.1 SwdmCard 根声明改 UserControl（pcl2 §1.2 可粘贴片段的 `Grid` 根仅作布局参考，Grid 为 UIA 提升型容器、id 被吞，自绘 UserControl id 完全暴露 type=Custom）；③ §2.2 Hint 根 `Border` → UserControl（Border 无 AutomationPeer）；④ §2.4 标题栏片段条件化（仅不用 WPF-UI TitleBar 时落地；走 TitleBar 按钮用模板部件固定 id）。**视觉数值未动**（90ms/150ms/0.07→0.4 等与 §5 对照表口径不变）。
 > 依据：`docs/research2/pcl2_xaml_patterns.md`（可粘贴 XAML + §7 数值速查总表）、`docs/design/visual_language_study.md`（§7 PCL2 数值速查）、`docs/design/design_tokens.md`（令牌定义）、`swdm2/docs/design_baseline_2.0.md`（9 条锁定决策）、`swdm2/docs/architecture_2.0.md`（不变量 A1-A12 + 两项裁决）
 > **文档地位：开发前置门（计划先行纪律）**——本文档（视觉）+ t1 架构规格 + t3 测试规格经 captain 认可、t5 讨论组终裁后，才允许开放开发任务（写产品代码）。研究、骨架与环境准备（含 t4 spike）不算开发。
@@ -76,7 +77,7 @@ swdm2/src/Swdm2.App/Ui/Themes/
 | surface.card_hover | `#F7F8FA` | surface.input | `#FFFFFF` |
 | surface.raised | `#FFFFFF` | surface.selected | `#E7E0FB` |
 | stroke.hairline / stroke.card | `#DDE1E6` / `#E3E6EB` | stroke.input / stroke.hover | `#C8CCD2` / `#B6BCC5` |
-| text.primary / secondary / tertiary | `#23272E` / `#5A6169` / `#8A919A` | link.default / hover | `#1F7EB8` / `#1463A0` |
+| text.primary / secondary / tertiary | `#23272E` / `#5A6169` / `#8A919A` | link.default / hover | `#1A72A8` *(v1.2 回写)* / `#1463A0` |
 | success / danger / warning | `#2F9E6B` / `#D63C3C` / `#C77E00` | | |
 
 **强调色族（Accent.xaml）**——dark 与 light 分列于各自主题文件内或 Accent 内分 `x:Key` 区分（实现取后者：`swdm-Accent400Color` 等键在 Light/Dark 两文件各定义一次，Accent.xaml 只放中性阴影色，避免主题切换时 accent 色残留）：
@@ -84,7 +85,7 @@ swdm2/src/Swdm2.App/Ui/Themes/
 | 令牌 | dark | light |
 |---|---|---|
 | accent.400（悬停） | `#8F74FF` | `#7D5CFF` |
-| accent.500（主强调，品牌延续 1.x 蓝紫） | `#7C5CFF` | `#6D4AFF` |
+| accent.500（主强调，品牌延续 1.x 蓝紫） | `#7655F8` *(v1.2：`#7C5CFF` 实算 4.35 深化，见版本注)* | `#6D4AFF` |
 | accent.600（按下） | `#6A48F0` | `#5B3CE0` |
 | 阴影色 `swdm-AccentShadowColor` | = accent.500（阴影用品牌色而非黑色，PCL2 签名） | = accent.500 |
 

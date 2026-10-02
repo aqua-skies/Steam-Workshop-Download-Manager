@@ -1,0 +1,71 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      Light.xaml — 亮色主题字典（t2 §1.2 浅色表，同键名同结构仅值不同：PCL2「白卡」路线）。
+      无障碍基线（t2 §1.2）：正文 ≥4.5:1，大字（≥15px 600）与图标 ≥3.1。
+      链接深化至 ≥4.5:1（#66C0F4 白底仅 2.4:1 不可用）。
+    -->
+
+    <!-- ===== surface ===== -->
+    <Color x:Key="swdm-SurfaceCanvasColor">#F2F3F6</Color>
+    <SolidColorBrush x:Key="swdm-SurfaceCanvasBrush" Color="{StaticResource swdm-SurfaceCanvasColor}"/>
+    <Color x:Key="swdm-SurfaceCardColor">#FFFFFF</Color>
+    <SolidColorBrush x:Key="swdm-SurfaceCardBrush" Color="{StaticResource swdm-SurfaceCardColor}"/>
+    <Color x:Key="swdm-SurfaceCardHoverColor">#F7F8FA</Color>
+    <SolidColorBrush x:Key="swdm-SurfaceCardHoverBrush" Color="{StaticResource swdm-SurfaceCardHoverColor}"/>
+    <Color x:Key="swdm-SurfaceInputColor">#FFFFFF</Color>
+    <SolidColorBrush x:Key="swdm-SurfaceInputBrush" Color="{StaticResource swdm-SurfaceInputColor}"/>
+    <Color x:Key="swdm-SurfaceRaisedColor">#FFFFFF</Color>
+    <SolidColorBrush x:Key="swdm-SurfaceRaisedBrush" Color="{StaticResource swdm-SurfaceRaisedColor}"/>
+    <Color x:Key="swdm-SurfaceSelectedColor">#E7E0FB</Color>
+    <SolidColorBrush x:Key="swdm-SurfaceSelectedBrush" Color="{StaticResource swdm-SurfaceSelectedColor}"/>
+
+    <!-- ===== stroke ===== -->
+    <Color x:Key="swdm-StrokeHairlineColor">#DDE1E6</Color>
+    <SolidColorBrush x:Key="swdm-StrokeHairlineBrush" Color="{StaticResource swdm-StrokeHairlineColor}"/>
+    <Color x:Key="swdm-StrokeCardColor">#E3E6EB</Color>
+    <SolidColorBrush x:Key="swdm-StrokeCardBrush" Color="{StaticResource swdm-StrokeCardColor}"/>
+    <Color x:Key="swdm-StrokeInputColor">#C8CCD2</Color>
+    <SolidColorBrush x:Key="swdm-StrokeInputBrush" Color="{StaticResource swdm-StrokeInputColor}"/>
+    <Color x:Key="swdm-StrokeHoverColor">#B6BCC5</Color>
+    <SolidColorBrush x:Key="swdm-StrokeHoverBrush" Color="{StaticResource swdm-StrokeHoverColor}"/>
+    <Color x:Key="swdm-StrokeFocusColor">#6D4AFF</Color>  <!-- = accent.500 -->
+    <SolidColorBrush x:Key="swdm-StrokeFocusBrush" Color="{StaticResource swdm-StrokeFocusColor}"/>
+
+    <!-- ===== text ===== -->
+    <Color x:Key="swdm-TextPrimaryColor">#23272E</Color>
+    <SolidColorBrush x:Key="swdm-TextPrimaryBrush" Color="{StaticResource swdm-TextPrimaryColor}"/>
+    <Color x:Key="swdm-TextSecondaryColor">#5A6169</Color>
+    <SolidColorBrush x:Key="swdm-TextSecondaryBrush" Color="{StaticResource swdm-TextSecondaryColor}"/>
+    <Color x:Key="swdm-TextTertiaryColor">#8A919A</Color>
+    <SolidColorBrush x:Key="swdm-TextTertiaryBrush" Color="{StaticResource swdm-TextTertiaryColor}"/>
+    <Color x:Key="swdm-TextDisabledColor">#A1A8B1</Color>
+    <SolidColorBrush x:Key="swdm-TextDisabledBrush" Color="{StaticResource swdm-TextDisabledColor}"/>
+    <Color x:Key="swdm-TextOnAccentColor">#FFFFFF</Color>
+    <SolidColorBrush x:Key="swdm-TextOnAccentBrush" Color="{StaticResource swdm-TextOnAccentColor}"/>
+
+    <!-- ===== link =====
+         WCAG 实算标定（t2 v1.2 回写）：#1F7EB8 白底实算 4.47 < 4.5，深化 #1A72A8 = 5.23。 -->
+    <Color x:Key="swdm-LinkDefaultColor">#1A72A8</Color>
+    <SolidColorBrush x:Key="swdm-LinkDefaultBrush" Color="{StaticResource swdm-LinkDefaultColor}"/>
+    <Color x:Key="swdm-LinkHoverColor">#1463A0</Color>
+    <SolidColorBrush x:Key="swdm-LinkHoverBrush" Color="{StaticResource swdm-LinkHoverColor}"/>
+
+    <!-- ===== 语义色 ===== -->
+    <Color x:Key="swdm-Success500Color">#2F9E6B</Color>
+    <SolidColorBrush x:Key="swdm-Success500Brush" Color="{StaticResource swdm-Success500Color}"/>
+    <Color x:Key="swdm-Danger500Color">#D63C3C</Color>
+    <SolidColorBrush x:Key="swdm-Danger500Brush" Color="{StaticResource swdm-Danger500Color}"/>
+    <Color x:Key="swdm-Warning500Color">#C77E00</Color>
+    <SolidColorBrush x:Key="swdm-Warning500Brush" Color="{StaticResource swdm-Warning500Color}"/>
+
+    <!-- ===== accent 色族 ===== -->
+    <Color x:Key="swdm-Accent400Color">#7D5CFF</Color>
+    <SolidColorBrush x:Key="swdm-Accent400Brush" Color="{StaticResource swdm-Accent400Color}"/>
+    <Color x:Key="swdm-Accent500Color">#6D4AFF</Color>
+    <SolidColorBrush x:Key="swdm-Accent500Brush" Color="{StaticResource swdm-Accent500Color}"/>
+    <Color x:Key="swdm-Accent600Color">#5B3CE0</Color>
+    <SolidColorBrush x:Key="swdm-Accent600Brush" Color="{StaticResource swdm-Accent600Color}"/>
+    <Color x:Key="swdm-AccentShadowColor">#6D4AFF</Color>
+    <SolidColorBrush x:Key="swdm-AccentShadowBrush" Color="{StaticResource swdm-AccentShadowColor}"/>
+</ResourceDictionary>

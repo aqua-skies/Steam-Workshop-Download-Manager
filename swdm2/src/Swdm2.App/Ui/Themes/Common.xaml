@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!--
+      Common.xaml — 不随主题变的视觉参数（t2 §1.1：几何 radius/spacing、字体、动画时长/曲线、阴影标量）。
+      全部动画/阴影/几何数值为 PCL2 源码实测起点值（visual_system_2.0.md §5 对照表），
+      ⚠️[参数待重标定] 一律按经验复验纪律在 D5.x 视觉标定任务实测后锁定。
+      单一事实源约束（t2 §1.5）：本目录外不得出现硬编码颜色；动画/几何标量仅允许本文件出现。
+      （sys=System.Runtime：.NET 8 无 mscorlib 映射）
+    -->
+
+    <!-- ===== 几何（t2 §5：PCL2 实测） ===== -->
+    <sys:Double x:Key="swdm-RadiusXs">3</sys:Double>
+    <sys:Double x:Key="swdm-RadiusSm">5</sys:Double>
+    <sys:Double x:Key="swdm-RadiusMd">6</sys:Double>
+    <sys:Double x:Key="swdm-RadiusLg">6</sys:Double>
+    <sys:Double x:Key="swdm-CardCollapsedHeight">40</sys:Double>
+    <sys:Double x:Key="swdm-ListItemHeight">42</sys:Double>
+    <sys:Double x:Key="swdm-TitleBarHeight">48</sys:Double>
+    <sys:Double x:Key="swdm-IconButtonSize">28</sys:Double>
+
+    <!-- ===== 字体（PCL2 谱系收窄一档，t2 §5） ===== -->
+    <sys:Double x:Key="swdm-TextTitleMd">14</sys:Double>
+    <sys:Double x:Key="swdm-TextTitleSm">13</sys:Double>
+    <sys:Double x:Key="swdm-TextBody">12</sys:Double>
+    <sys:Double x:Key="swdm-TextCaption">11</sys:Double>
+
+    <!-- ===== 动画（t2 §2.1/§5：PCL2 实测时长+曲线）⚠️[参数待重标定] ===== -->
+    <Duration x:Key="swdm-MotionColor">0:0:0.09</Duration>          <!-- 90ms linear：悬停颜色/阴影 α（皮肤感第一签名） -->
+    <Duration x:Key="swdm-MotionFast">0:0:0.15</Duration>          <!-- 150ms QuinticEase EaseOut：高度动画 -->
+    <Duration x:Key="swdm-MotionSlow">0:0:0.25</Duration>          <!-- 250ms QuinticEase EaseOut：箭头旋转 -->
+    <Duration x:Key="swdm-MotionBase">0:0:0.2</Duration>           <!-- 200ms：退出动画 scale −0.08 + opacity −1 -->
+    <Duration x:Key="swdm-MotionButtonIn">0:0:0.1</Duration>       <!-- 100ms：按钮进入 -->
+    <Duration x:Key="swdm-MotionButtonOut">0:0:0.2</Duration>      <!-- 200ms：按钮离开 -->
+    <Duration x:Key="swdm-MotionSmoothScroll">0:0:0.3</Duration>   <!-- 300ms QuinticEase（⚠️近似，t2 §6） -->
+    <Duration x:Key="swdm-MotionPageOut">0:0:0.11</Duration>       <!-- 110ms 页面退出 → 替换 → 30ms 进入 -->
+    <Duration x:Key="swdm-MotionPageIn">0:0:0.03</Duration>
+    <QuinticEase x:Key="swdm-EaseOutExtraStrong" EasingMode="EaseOut"/>  <!-- ≡ AniEaseOutFluent(ExtraStrong)=1-(1-t)^5 -->
+    <!-- 颜色动画用 linear：不设 EasingFunction 即线性（Duration 引 swdm-MotionColor） -->
+
+    <!-- ===== 阴影标量（t2 §2.1 阴影双路线 / §2.7 菜单阴影）⚠️[参数待重标定] ===== -->
+    <!-- 卡片阴影 α：0.07 → 0.4（≈5.7 倍，PCL2 MyCard.vb:67/176 实测） -->
+    <sys:Double x:Key="swdm-ShadowOpacityIdle">0.07</sys:Double>
+    <sys:Double x:Key="swdm-ShadowOpacityHover">0.4</sys:Double>
+    <sys:Double x:Key="swdm-ShadowBlurRadius">3</sys:Double>
+    <sys:Double x:Key="swdm-ShadowOpacityMenu">0.4</sys:Double>
+    <Thickness x:Key="swdm-CardShadowMargin">-3,-3,-3,-4</Thickness>  <!-- 底部多 1px 模拟自然光 -->
+</ResourceDictionary>
