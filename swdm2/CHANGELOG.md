@@ -7,6 +7,33 @@
 
 ---
 
+## [0.3.0] · 2026-10-03 · 阶段 3:下载域全链（D3.8 交付门）
+
+**四要素**:全量回归**237/0 两连绿**（增量+clean 双口径 build 0-0+CoreTestsDriver 72/0+SteamTestsDriver 103/0+DownloadsTestsDriver 53/0+UiTestsDriver 9/0,SP-3 沙箱驱动，TEMP/TMP 双重定向）+ 讨论组评审 \docs/process/review_2.0_0.3.0.md\（三原则）+ 版本 0.2.0→0.3.0（\Directory.Build.props\）+ 本变更记录。
+
+### 新增（下载域全链 + steamcmd + App 最小可测 UI）
+- **D3.1 状态机与队列**（t21,696773c):\Downloads/Queue\ — DownloadStateMachine 七态枚举（Pending/Queued/Preparing/Downloading/Paused/Cancelled/Failed/Completed,Preparing 对齐 t3 §3.2 序列）+转移表（Failed→Queued 重试）锁内拏 InvalidOperationException;DownloadTaskEntry 不可变快照+线程安全状态；DownloadQueue Channel 单消费者 FIFO（入队自动 Pending→Queued;id 注册表幂等+RequeueAsync);DownloadScheduler 并发槽默认 2(C7 同 D2.6 法）+终态竞争双检+CancelQueued/RetryAsync。**补完（1afa33f)**:ResumeAsync(Paused→Downloading)+执行后转移守卫（仅 Downloading 态，外部暂停不覆盖）。
+- **D3.2 事件总线与进度聚合**（t22,09fb329):\Downloads/Events\ — ProgressSnapshot 不可变 record 六字段（速度/ETA/分段数/字节数/状态/消息，visual-20 UI 断言契约）+防御性拷贝；ProgressTracker EMA(alpha=0.4 ⚠️C7)+ETA 诚实降级 null;DownloadEventBus 每任务独立节流窗（ProgressThrottleMs=100 ⚠️C7 可配置）+窗内 latest-pending+Timer 刷新=尾帧不丢/不积压+订阅者异常隔离。
+- **D3.3 steamcmd 部署器**（t23,db86584,qa-20):zip 下载+解压+探针校验（banner 版本串+退出码 {0,7})+指纹基线自记录（Valve 不发布权威签名）；非 ASCII 路径门控（实测 Fatal exit=-2)。
+- **D3.4 steamcmd runner**（t24,621f6b2,qa-20):1.x 正则移植+成功三元（Success 正则+Sweep 产物非空+退出码 ∈{0,7})+失败清目录（原子性）+三段式看门狗（输出/磁盘停滞终止+取消杀全树）+输出脱敏+M2 进度偏差<10%。
+- **D3.5 SteamCmdProvider 接入链**（t25,fe40fdd):ExecuteAsync 签式与 scheduler 执行器完全对齐（\DownloadScheduler(queue, provider.ExecuteAsync)\ 即装配）；前置门链=路由门（链回退 D4.4)/可达门（内容层与元数据层 403/429 独立）/熔断门（S4 同源 bucket steamcmd-download)/部署门/非 ASCII 门；进度=stdout 磁盘增长估算→总线（分段恒 null 诚实 N/A);偏差 ±15% 超阈降级 ETA null;自撤销不覆盖 Paused/Cancelled 尾帧；PauseAsync/CancelAsync 杀进程干净（无半成品原子性）。
+- **D3.6 串行化与句柄纪律**（t27,56798c3,qa-20):进程级信号量（provider ProcessSlotAcquirer 接入点接入）+M4 超时映射+句柄纪律。
+- **D3.5b App 最小可测 UI**（t26,526f9df,visual-20):AppHost 装配真链（scheduler+provider+bus 原样接入）+t3 §3.2 保留表全套 A7 id+完成弹窗自绘 #255。
+- **D3.7 UiTests P0 主旅程**（t28,c927d74,visual-20):#10 鼠标点击入队→行→显式状态机等待+#10b 键盘 Enter 版+#13 取消终态沉淀；RealClick 物理鼠标无 InvokePattern=t3 真实输入合规；全黑 capture 环境探测器=沙箱 ENV-DOWNGRADE 明确标注，#14 完成弹窗+产物计数桌面通道复跑。
+
+### 验证
+
+| 口径 | 结果 |
+|---|---|
+| 增量 build + 四驱动（轮 1） | 237/0 |
+| clean build + 四驱动（轮 2） | 237/0 |
+| bug 测试员连续两轮复测 | ✅ 两轮均无异常 |
+
+### 已知保留项（⚠️C7 待重标定，不阻门）
+- 并发槽=2/EMA alpha=0.4/ProgressThrottleMs=100ms/偏差阈值 ±15%:同 D2.6 方法学标注，待 D4/D5 真实负载实测重标定。
+- 在线 end-to-end 真实 mod 下载（D3.3/D3.4/D3.5 Online 场景）+D3.7 #14 完成弹窗桌面复跑：沙箱环境约束（中文路径+headless 桌面），已 ENV 标注，桌面通道复跑清单见各任务交付记录。
+
+
 ## [0.2.0] · 2026-10-02 · 阶段 2：Steam 域基础设施（D2.7 交付门）
 
 **四要素**：全量回归 155/0（build 0-0+SteamTestsDriver 78/0+CoreTestsDriver 72/0+UiTestsDriver 5/0，SP-3 沙箱驱动，TEMP+TMP 双重重定向）· 讨论组评审 `docs/process/review_2.0_0.2.0.md`（三原则，arch-20/qa-20/visual-20 投票）· 版本 0.2.0（`Directory.Build.props`）· 本变更记录。
