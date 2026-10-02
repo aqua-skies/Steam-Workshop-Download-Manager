@@ -8,7 +8,7 @@
 
 ## 0. 一句话架构
 
-**SWDM 2.0 = .NET 8 (net8.0 / net8.0-windows) 五项目分层 + CommunityToolkit.Mvvm + WPF-UI 4.3.0 底座 + 自绘 PCL2 签名层 + MSDI/Serilog/Options + Generic Host 后台下载队列 + 双下载 provider（SteamKit2 CDN chunk 并行为主、steamcmd 封装兜底）+ Web API 元数据主源 + FlaUI 6.0.0 真实输入 UI 测试 + Velopack/GitHub Releases 分发。**
+**SWDM 2.0 = .NET 8 (net8.0 / net8.0-windows) 五项目分层 + CommunityToolkit.Mvvm + WPF-UI 4.3.0 底座 + 自绘 PCL2 签名层 + MSDI/Serilog/Options + Generic Host 后台下载队列 + 双下载 provider（SteamKit2 CDN chunk 并行为主、steamcmd 封装兜底）+ Web API 元数据主源 + FlaUI 5.0.0 真实输入 UI 测试 + Velopack/GitHub Releases 分发。**
 
 分层依赖链（单向、无环）：
 
@@ -21,7 +21,7 @@ Swdm2.UiTests  ──► Swdm2.App ──► Swdm2.Downloads ──► Swdm2.Ste
 - `Swdm2.Steam`：Web API 客户端（主源）+ 社区页面回退 + 端点可达性探测 + 429/403 对策 + steamcmd 进程封装 + SteamKit2 CDN 客户端（net8.0）
 - `Swdm2.Downloads`：双 provider 链 + 队列 / 状态机 / 分段续传 / 限速 / 事件总线（net8.0，引用 Steam）
 - `Swdm2.App`：WPF MVVM（CommunityToolkit.Mvvm + WPF-UI 底座 + 自绘 Card + Generic Host 后台队列 + MSDI/Serilog/Options）（net8.0-windows）
-- `Swdm2.UiTests`：FlaUI 6.0.0 UIA3 + xUnit + Xunit.StaFact，进程外启动被测 exe（net8.0-windows）
+- `Swdm2.UiTests`：FlaUI 5.0.0 UIA3 + xUnit + Xunit.StaFact，进程外启动被测 exe（net8.0-windows）
 
 > **骨架现状与差异**：当前 `swdm2/` 骨架五项目已 build 绿，引用为 App→{Core,Steam,Downloads}、Steam→Core、Downloads→Core、UiTests→{Core,App}。**本规格要求补一条 Downloads→Steam 引用**（下载 provider 链需消费 Steam 域的 steamcmd 封装与 SteamKit CDN 客户端），属骨架接线，列入 D0.2 任务。
 
@@ -33,7 +33,7 @@ Swdm2.UiTests  ──► Swdm2.App ──► Swdm2.Downloads ──► Swdm2.Ste
 |---|---|---|
 | 1 | .NET 8 SDK（8.0.425） | 全项目 TFM：Core/Steam/Downloads = net8.0；App/UiTests = net8.0-windows；`< RollForward>` 不启用（锁 SDK 小版本，避免滑向 net10 行为差异） |
 | 2 | 五项目骨架，域边界即类库边界 | §2-§6 模块契约；域 owner 直映：arch-20=Core/Downloads/架构稳定性、visual-20=App 自绘层与主题、qa-20=UiTests 与复测、captain=集成/构建/交付 |
-| 3 | FlaUI 6.0.0（fallback 5.0.0）UIA3 + xUnit + StaFact，进程外 `Application.Launch`，AutomationId 选择器，显式等待，Screen Object，失败截图 | §3.5 UiTests 契约 + §7 DAG 各阶段验证命令；AutomationId 命名规范 `<视图>_<控件>_<语义>` 写入 App 契约（§3.4） |
+| 3 | FlaUI 5.0.0UIA3 + xUnit + StaFact，进程外 `Application.Launch`，AutomationId 选择器，显式等待，Screen Object，失败截图 | §3.5 UiTests 契约 + §7 DAG 各阶段验证命令；AutomationId 命名规范 `<视图>_<控件>_<语义>` 写入 App 契约（§3.4） |
 | 4 | 中文输入 ValuePattern Enter 为主 + Unicode 键事件/Ctrl+V；IME 拼音不做 | UiTests 输入三路径表（§3.5）；被测控件必须支持 ValuePattern（WPF TextBox 原生支持） |
 | 5 | 视觉校验：被测进程内 Windows.Media.Ocr（中文）+ 像素 diff 补盲区；modlens 二次校验 | UiTests 视觉断言分层（§3.5）；静态区域像素 diff + 动态区域感知哈希容差 |
 | 6 | CI：本机交互会话运行（FlaUI #168 Session 0 无桌面） | 验证命令一律本机 `dotnet test`（交互会话）；CI 方案 = 自托管 runner + 自动登录（D6.x，发布前落地） |
@@ -361,13 +361,13 @@ namespace Swdm2.App.Ui.Navigation
 
 ---
 
-### 3.5 Swdm2.UiTests（FlaUI 6.0.0 真实输入 UI 测试）
+### 3.5 Swdm2.UiTests（FlaUI 5.0.0 真实输入 UI 测试）
 
 **职责**：模拟真实用户鼠标点击与键盘输入的端到端验证。**不打桩、不直调 ViewModel、不经 API 层**（用户测试纪律）。
 
 #### 3.5.1 技术契约
 
-- FlaUI 6.0.0（fallback 5.0.0）+ UIA3 + xUnit + `Xunit.StaFact`（`WpfFact`）。
+- FlaUI 5.0.0+ UIA3 + xUnit + `Xunit.StaFact`（`WpfFact`）。
 - **进程外** `Application.Launch(被测 exe, "--test-mode")`：与用户双击 exe 完全一致（独立进程/Dispatcher/启动路径）。
 - 选择器：**一律 AutomationId**；禁止显示文本、坐标、层级索引、ClassName。
 - 等待：`Retry.While` / `Wait.Until` 显式超时；**禁止 `Thread.Sleep`**。
@@ -475,7 +475,7 @@ UI 收码框 ──► SteamCmdLogin(ReadOnlyMemory<char>) ──► ICredential
 |---|---|---|---|---|---|
 | D0.1 (A/V) | WPF-UI + MVVM 工具包试装 | 引入 WPF-UI 4.3.0、CommunityToolkit.Mvvm 8.4.x，一个 FluentWindow 空白页跑通 | build 绿；窗口含 AutomationId；WPF-UI API 表面（FluentWindow/TitleBar/NavigationView 命名）与 pcl2 §8 弯路嫌疑项核验记录 | `dotnet build swdm2/Swdm2.sln -warnaserror` | swdm2/src/Swdm2.App/*, swdm2/src/Swdm2.App/Swdm2.App.csproj |
 | D0.2 (A) | 骨架接线补齐 | Downloads→Steam ProjectReference；Empty 公共 API 占位骨架（接口 + xml doc，无实现） | build 绿；依赖图与 §0 一致 | `dotnet build swdm2/Swdm2.sln -warnaserror` | swdm2/src/Swdm2.Downloads/Swdm2.Downloads.csproj, 接口占位文件 |
-| D0.3 (Q) | FlaUI 6.0.0 冒烟链 | UiTests 引 FlaUI 6.0.0 + Xunit.StaFact；进程外启动空窗口 + AutomationId 断言 + 失败截图 | 冒烟测试绿；截图基础设施可见 | `dotnet test swdm2/tests/Swdm2.UiTests` | swdm2/tests/Swdm2.UiTests/* |
+| D0.3 (Q) | FlaUI 5.0.0 冒烟链 | UiTests 引 FlaUI 5.0.0 + Xunit.StaFact；进程外启动空窗口 + AutomationId 断言 + 失败截图 | 冒烟测试绿；截图基础设施可见 | `dotnet test swdm2/tests/Swdm2.UiTests` | swdm2/tests/Swdm2.UiTests/* |
 
 ---
 
@@ -597,7 +597,7 @@ D5.11 ─► D6.1..D6.4 ─► D6.5 ─► D7.1 ─► D7.4
 
 1. **计划先行纪律**：本文档 = 开发前置门的一部分（架构契约/任务拆分/验收判据/验证方式四要素齐全）；t5 讨论组终裁 + captain 认可前，D1-D7 全部任务不开放；阶段 0 = t4 spike（骨架/环境准备豁免）。
 2. **经验复验纪律**：§4 学费清单所有参数类条目标 ⚠️[参数待重标定]；DAG 显式排入重标定任务 D2.6（退避/节流）、D4.8（并发/超时/重叠字节）、D5.x 视觉标定（对接 t2/t3）；每处先问"能否缩短/能否更小"再实测采纳；参数集中走 Options，禁止硬编码，实测后锁定默认值并更新本规格。
-3. **真实输入测试要求**：UiTests 契约（§3.5）= FlaUI 6.0.0 真实鼠标/键盘事件进程外驱动，AutomationId 选择器，显式等待，弹窗真实点击（#255 路径，禁打桩）；测试分层（单元=纯逻辑 / 集成=真实子系统 / UI=真实用户旅程）；CI 本机交互会话（#168）。
+3. **真实输入测试要求**：UiTests 契约（§3.5）= FlaUI 5.0.0 真实鼠标/键盘事件进程外驱动，AutomationId 选择器，显式等待，弹窗真实点击（#255 路径，禁打桩）；测试分层（单元=纯逻辑 / 集成=真实子系统 / UI=真实用户旅程）；CI 本机交互会话（#168）。
 4. **迭代四要素**：每阶段交付门（D1.7/D2.7/…/D6.5/D7.4）强制：全量回归（含新增与关联交互）、讨论组评审（精简/用户体感/基本功能三原则）、版本号升级 + 可追溯变更记录、最终交付双条件（讨论组一致 + bug 复测员连续两轮无异常）。
 5. **设计对照纪律**（基线 §五）：本规格每条结论对照基线 9 条决策（§1 表）；与基线冲突或超出的发现（列表路线 A 裁决、WPF-UI 主题真源二选一）已标注依据与复验状态（§8）；网络不稳导致的空结果一律不采信为"不可行"。
 
@@ -634,3 +634,62 @@ D5.11 ─► D6.1..D6.4 ─► D6.5 ─► D7.1 ─► D7.4
 ---
 
 > **门禁状态**：本文档 + t2 视觉规格 + t3 测试规格提交 captain；captain 对照基线 9 条核验一致性 → t5 讨论组终裁后开放 D0-D7 开发任务。
+
+---
+
+# 附录 SP · t4 基座实证 spike 补丁（2026-10-02，arch-20）
+
+> 代码与证据：`swdm2/spike/SpikeWpf/`（被测试装页：WPF-UI 4.3.0 + 自绘 Card）+ `swdm2/spike/SpikeFlaUiTests/`（FlaUI 5.0.0 真实输入冒烟）+ `swdm2/spike/*/bin/.../spike_result.md`（5/5 PASS）+ `TestArtifacts/spike_tree.txt`（UIA 树 dump）+ `TestArtifacts/spike_screen_full.png`（读图链路证据）。spike 不进产品路径，结论补丁进本文。
+
+## SP-1 · WPF-UI 4.3.0 在 net8.0-windows 可用性（Q1）✅ 有条件可用
+
+- **包还原**：直连 api.nuget.org 200（2.1s）；`WPF-UI 4.3.0` restore 成功（冷启 42.8s），lib/net8.0-windows7.0，`Wpf.Ui.dll` 6.3MB；`xmlns="http://schemas.lepo.co/wpfui/2022/xaml"`（DLL 二进制扫描确认）。
+- **初始化/主题**：`ui:ThemesDictionary Theme="Light"` + `ui:ControlsDictionary` + 自建 `swdm-` 前缀 ResourceDictionary 三者共存加载成功，build **0 警告 0 错误**，运行时 FluentWindow + TitleBar + Mica 背景正常（Windows 子系统）。
+- **API 表面弯路（pcl2 §8 弯路嫌疑实锤）2 处**：
+  1. `SymbolRegular` 枚举**无 Regular 后缀**：`"Apps24Regular"` 非法 → `XamlParseException → FormatException` **启动即崩溃**。正名 `Apps24`（反射 dump 9235 个枚举名佐证；4.3.0 包内同源核验 + captain main 分支源码核验）。⇒ 引擎规则：图标名一律以 `typeof(SymbolRegular).GetEnumNames()` 实测为准。
+  2. `ui:Card` **无 `Header` 属性**（pcl2 §6.1 表假定存在；实际只有 `Footer`/`HasFooter`）⇒ 卡片标题自绘（本就是 PCL2 路线）。
+- **结论 Q1**：可用，但 API 表面随版本漂移 → 契约 A8「锁版本 4.3.0 + 升级必过全量回归」不变，并**追加条目 A8b**：所有 WPF-UI API 名称首次使用前以反射/包内 XML 文档实测（图标/控件枚举类）。
+
+## SP-2 · FlaUI 5.0.0 UIA3 可达性（Q2）✅ 高，有结构例外
+
+实测 8/9 期望元素可达（唯一"缺失"为 Grid/ContentControl 容器本身——见下）：
+
+| 元素类型 | 可达性 | 备注 |
+|---|---|---|
+| Window（AutomationId=MainWindow） | ✅ | 窗口级 id 完全暴露 |
+| ui:Button / ui:TextBox(Edit) / ui:ListView(List) | ✅ | id + Name + ControlType 全 |
+| 自绘 UserControl（SwdmCard） | ✅ type=Custom | **id 完全暴露，内容控件可达** |
+| 自绘卡片内容 Button（SpikeCardButton） | ⚠️ | **无 ClickablePoint**（NoClickablePointException）→ 退到包围矩形中心点击（wpf_ui_testing §1.4 教训实证） |
+| ui:TitleBar / ui:Card / Grid / ContentControl | ❌ | **UIA 树提升（hoisting）**：容器自身不在树中，其内容直接挂在窗口下；XAML 上设的 AutomationId 被"吞" |
+
+- **契约 A7 修正（强制）**：AutomationId 只设在**可靠载体**上 = Window / 内容控件（Button·TextBox·ListBox·UserControl）/ WPF-UI 模板部件固定 id（如 `TitleBarMinimizeButton/MaximizeButton/CloseButton`）。**禁止**把测试锚点压在 `ui:TitleBar`、`ui:Card`、`Grid`、`ContentControl` 等 UIA 提升型容器上。
+- **输入路径实测**：
+  - ValuePattern `Enter("饥荒")` CJK 完美（断言值真进控件）✅
+  - `Enter()` 对 ASCII **空格/撇号会被吞**（实测 `"Don't Starve"` → `"Don'tStarve"`）⇒ t3 输入规则补丁：CJK 走 Enter；含空格/标点的 ASCII 词走**剪贴板 Ctrl+V 真实路径**或用纯字母词。
+  - 真实回车 `Keyboard.Press/Release(RETURN)` 能触发 TextBox 的 PreviewKeyDown 处理器（真实键盘事件生效），但需要先行**真实点击使窗口/控件获得焦点**（程序化 `Focus()`/`SetForeground()` 不可靠——Windows 前台锁定）⇒ 测试顺序契约：先物理点击 → 再注入按键。
+
+## SP-3 · 截图 + 读图链路（Q3）✅ 完全可用
+
+- `Capture.Element(list)` 138.7KB + `Capture.MainScreen()` 1443KB PNG 落盘成功；`read_image`（modlens 桥）**完整转写中文 UI**（搜索框 CaveStory、列表项、卡片文案、弹窗正文与"确定"按钮全可读；仅截断处标注 uncertain）。
+- ⇒ 记忆中"读图工具本机全不可用"已**被 spike 推翻**（标 superseded）：视觉 bug 仲裁链（UIA 断言 → 截图 → OCR/像素 diff）对 WPF 进程成立，基线决策 5 落实。
+- **xUnit 运行器基础设施发现（重要，输入 t3 执行方案）**：本机 harness 沙箱内 **`dotnet test` 的 testhost 启动即崩**（`SetParentProcessExitCallback` → `Win32Exception(5)` 拒绝跨进程句柄；Microsoft.NET.Test.Sdk 17.8/17.13 同崩，x64/AnyCPU 同崩）。spike 期间改用**控制台驱动反射执行同一批 [WpfFact] 方法**（`dotnet run`，真实输入链路完全一致；UseWPF=true 的 Exe 无控制台 → 输出落盘 `spike_result.md`）。⇒ 产品回归在普通交互桌面环境用 `dotnet test`（t3 契约不变），CI 环境需自托管 runner + 交互会话（基线决策 6）；本沙箱内临时回归用驱动模式。
+
+## SP-4 · 裁决：混合策略（Q4）——WPF-UI 基座 + 签名级自绘（不全量基座、不全自建）
+
+**与 t1 §3.4 裁决一致并双重加固**：
+1. **窗口 chrome / 基础控件 = WPF-UI 4.3.0**（FluentWindow/TitleBar/Button/TextBox/ListView……实测可用且 UIA 友好）。
+2. **签名级观感 = 自绘 UserControl**（SwdmCard/Hint/ListItem）：PCL2 三层结构 + 90ms 阴影动画实测渲染且 **UIA 天然暴露 id（Custom）**——比 WPF-UI Card 更可测（Card 不可达 + 无 Header）。
+3. **依据的实证增量**：WPF-UI 的结构性控件（TitleBar/Card）API 和 UIA 表面都有版本漂移/提升现象 → 把"脸面 + 可测性敏感"的控件自绘，恰好自绘控件的 UIA 表现反而更可靠——**自绘不只为了脸，也为了测试纪律**。
+4. 这与基线决策 9（WPF-UI 底座 + 自绘 Card）与 pcl2 §6 结论（模块 1/2/3/5 免写，4/6/7/8/9/10 自绘）完全对齐，spike 提供了实测支撑与 A7/A8 契约修正。
+
+## SP-5 · 落账清单
+
+- A7 修正（§3.4）：AutomationId 可靠载体表 + 顺序契约（先点击获得焦点再注入按键）→ 见 SP-2。
+- A8 追加 A8b：WPF-UI API 名首次使用前反射实测（图标/枚举优先）。
+- A9 不变（即时反馈阈值实测）；t2/t3 视觉与测试规格按本附录更新输入路径与载体规则。
+- 基线决策 3 已由 captain 改 FlaUI 5.0.0（NuGet flatcontainer 三包实证：6.0.0 不存在）——本文 FlaUI 引用已同步全量改 5.0.0。
+- D0.1/D0.3（阶段 0 spike 任务）实际已由 t4 完成其验证内容：WPF-UI 试装页面 + FlaUI 冒烟链 + 截图链路 + 结论回写。t5 DAG 定稿时阶段 0 可压缩为接线任务（D0.2 补 Downloads→Steam 引用 + 产品 UiTests 引入 FlaUI 5.0.0 包）。
+
+---
+
+> **门禁状态（更新）**：t1 规格（含本 spike 补丁）+ t2 视觉规格 + t3 测试规格 → captain 核验 → t5 讨论组终裁后开放 D0-D7。

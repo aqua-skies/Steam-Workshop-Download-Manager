@@ -37,6 +37,16 @@ public partial class MainWindow : FluentWindow
             System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
     }
 
+    /// <summary>搜索框回车：真实键盘事件触发搜索（测试按 VK_RETURN 注入，非命令直调）。</summary>
+    private void SpikeSearchBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Return)
+        {
+            AddResult();
+            e.Handled = true;
+        }
+    }
+
     private void AddResult()
     {
         var keyword = string.IsNullOrEmpty(SpikeSearchBox.Text) ? "(空)" : SpikeSearchBox.Text;

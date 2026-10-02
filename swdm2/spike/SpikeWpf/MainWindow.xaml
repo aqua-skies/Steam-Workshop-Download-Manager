@@ -34,6 +34,7 @@
             <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,12">
                 <ui:TextBox x:Name="SpikeSearchBox" Width="300" Margin="0,0,8,0"
                             PlaceholderText="搜索 mod（中文输入测试）"
+                            PreviewKeyDown="SpikeSearchBox_PreviewKeyDown"
                             AutomationProperties.AutomationId="SpikeSearchBox" />
                 <ui:Button x:Name="SpikeSearchButton" Content="搜索"
                            Appearance="Primary" Click="SpikeSearchButton_Click"
@@ -52,11 +53,12 @@
 
             <!-- ===== 右列：WPF-UI Card + 自绘 Card 各一 ===== -->
             <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Top">
-                <ui:Card x:Name="SpikeWpfUiCard" Padding="0" Margin="0,0,0,14"
-                         AutomationProperties.AutomationId="SpikeWpfUiCard">
+                <!-- WPF-UI 的 Card 不暴露 XAML 设定的 AutomationId → 外层 ContentControl 承载 id（spike 实证，契约 A7 修正） -->
+                <ContentControl AutomationProperties.AutomationId="SpikeWpfUiCardHost">
+                <ui:Card x:Name="SpikeWpfUiCard" Padding="0" Margin="0,0,0,14">
                     <StackPanel Margin="16,12,16,12">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <ui:SymbolIcon Symbol="Apps24Regular" Margin="0,0,8,0" />
+                            <ui:SymbolIcon Symbol="Apps24" Margin="0,0,8,0" />
                             <TextBlock Text="WPF-UI Card（基座控件）" FontWeight="SemiBold" />
                         </StackPanel>
                         <TextBlock Text="基座库自带卡片：圆角 + 阴影 + 内容区。" TextWrapping="Wrap" />
@@ -65,6 +67,7 @@
                                    AutomationProperties.AutomationId="SpikeWpfCardButton" />
                     </StackPanel>
                 </ui:Card>
+                </ContentControl>
 
                 <spike:SwdmCard x:Name="SpikeSelfCard"
                                 AutomationProperties.AutomationId="SpikeSelfCard"
