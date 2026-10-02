@@ -44,4 +44,13 @@ public sealed class SteamOptions
     /// <summary>⚠️[参数待重标定] 熔断冷却毫秒（半开重试前）。起点 60000（1.x 经验值）。</summary>
     [Range(1000, 600000)]
     public int CircuitCooldownMs { get; set; } = 60000;
+
+    /// <summary>
+    /// ⚠️[参数待重标定] Steam 元数据客户端每服务器最大连接数（D2.1 HttpClient 工厂注入 SocketsHttpHandler）。
+    /// 元数据请求经节流器串行化（D2.4），无高并发需求——起点 2 而非开源下载器常见的 8-16（先问"能否更小"）。
+    /// 与 DownloadOptions.MaxConnectionsPerServer（下载分片并发，D4.8 标定）不同语义。
+    /// D2.6/B2 标定任务覆盖。
+    /// </summary>
+    [Range(1, 64)]
+    public int MaxConnectionsPerServer { get; set; } = 2;
 }

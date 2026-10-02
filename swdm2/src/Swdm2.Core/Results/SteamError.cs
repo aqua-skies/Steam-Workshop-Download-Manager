@@ -35,4 +35,7 @@ public enum SteamError
 
     /// <summary>响应解析失败（结构变更/HTML 改版）。</summary>
     Deserialization,
+
+    /// <summary>配置无效（D2.1 起：自定义代理 URL 缺失/格式非法、Options 数值越界等启动期可校验错误）。</summary>
+    InvalidConfiguration,
 }

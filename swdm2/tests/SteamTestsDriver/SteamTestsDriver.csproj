@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- SP-3 驱动模式（x86/x64 testhost 沙箱崩溃的替代路径），同款反射执行 Swdm2.Steam.Tests -->
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Swdm2.Steam.Tests.Driver</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Swdm2.Steam.Tests\Swdm2.Steam.Tests.csproj" />
+  </ItemGroup>
+
+</Project>
