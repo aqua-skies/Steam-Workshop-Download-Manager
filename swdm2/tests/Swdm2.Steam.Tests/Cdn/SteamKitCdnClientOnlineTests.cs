@@ -24,9 +24,10 @@ public sealed class SteamKitCdnClientOnlineTests
         var login = await session.LoginAsync(new SteamSessionLogin(null, null, null));
         if (!login.IsOk)
         {
-            // 环境容忍门：仅容忍网络阻断类错误
+            // 环境容忍门：网络阻断/CM 匿名登录节流（RateLimited=环境条件，非实现缺陷）
             Assert.True(
-                login.Error is SteamError.Network or SteamError.Timeout or SteamError.AuthRequired or SteamError.Blocked,
+                login.Error is SteamError.Network or SteamError.Timeout or SteamError.AuthRequired
+                                 or SteamError.Blocked or SteamError.RateLimited,
                 $"Online 匿名登录失败={login.Error}——非预期错误类（环境阻断应为 Network/Timeout)");
             Console.WriteLine($"[ONLINE-RESULT-FAIL] {login.Error} — 环境阻断，非实现缺陷（换网络条件复验）");
             return;

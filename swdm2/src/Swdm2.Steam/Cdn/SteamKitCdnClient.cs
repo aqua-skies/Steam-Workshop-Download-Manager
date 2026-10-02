@@ -3,6 +3,8 @@ using SteamKit2.CDN;
 using SteamKit2.Internal;
 using Swdm2.Core.Domain;
 using Swdm2.Core.Results;
+using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 
 namespace Swdm2.Steam.Cdn;
 
@@ -23,8 +25,15 @@ public sealed class SteamKitCdnClient : ISteamCdnClient
     /// <summary>⚠️[参数待重标定] CDN 步骤超时（秒）。</summary>
     public const int DefaultTimeoutSeconds = 60; // 1.x 无同栈经验值，先保守（C7 方法学）
 
+    /// <summary>⚠️[参数待重标定] chunk 并行度（对齐 DepotDownloader -max-downloads=8;Options/MAX 32)。</summary>
+    public const int DefaultChunkParallelism = 8;
+
+    /// <summary>⚠️[参数待重标定] 单 chunk 损坏重下上限（防无限重试刷 CDN)。</summary>
+    public const int MaxChunkRetries = 2;
+
     private readonly SteamKitSessionManager _session;
     private readonly int _timeoutSeconds;
+    private readonly int _chunkParallelism;
 
     // 测试 seam（生产=null=真链）
     internal Func<ulong, uint, CancellationToken, Task<PubFileSummary?>>? DetailsFunc;
@@ -35,10 +44,11 @@ public sealed class SteamKitCdnClient : ISteamCdnClient
     internal Func<uint, ulong, ulong, byte[]?, string?, Server?, CancellationToken, Task<DepotManifest?>>? DownloadManifestFunc;
     internal Func<uint, CancellationToken, Task<Server?>>? ServerFunc;
 
-    public SteamKitCdnClient(SteamKitSessionManager session, int? timeoutSeconds = null)
+    public SteamKitCdnClient(SteamKitSessionManager session, int? timeoutSeconds = null, int? chunkParallelism = null)
     {
         _session = session;
         _timeoutSeconds = timeoutSeconds ?? DefaultTimeoutSeconds;
+        _chunkParallelism = Math.Clamp(chunkParallelism ?? DefaultChunkParallelism, 1, 32);
     }
 
     public async Task<Result<ManifestHandle, SteamError>> ResolveUgcManifestAsync(
@@ -108,7 +118,154 @@ public sealed class SteamKitCdnClient : ISteamCdnClient
         if (manifest is null)
             return Result<ManifestHandle, SteamError>.Fail(SteamError.Network);
 
-        return Result<ManifestHandle, SteamError>.Ok(MapManifest(manifest, appId, depotId, manifestId, null));
+        return Result<ManifestHandle, SteamError>.Ok(MapManifest(manifest, appId, depotId, manifestId, null)
+            with { DepotKey = depotKey, CdnAuthToken = cdnAuth });
+    }
+
+    /// <summary>
+    /// D4.3 chunk 并行下载+校验+损坏重下。
+    /// 并行=Parallel.ForEachAsync(MaxDegreeOfParallelism=注入值）真实生效；
+    /// 校验=长度+Adler32 双断言（+SteamKit 内部 chunk SHA);损坏→InvalidChecksum 重下（MaxChunkRetries);
+    /// 单 chunk 重试耗尽→该项 Fail(InvalidChecksum)，枚举继续（其余 chunk 不受影响）。
+    /// </summary>
+    public async IAsyncEnumerable<Result<ChunkResult, SteamError>> DownloadChunksAsync(
+        ManifestHandle manifest, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+
+        if (manifest.DepotKey is null || manifest.DepotKey.Length == 0)
+        {
+            yield return Result<ChunkResult, SteamError>.Fail(SteamError.AuthRequired);
+            yield break;
+        }
+
+        if (manifest.IsDirectLink)
+        {
+            yield return Result<ChunkResult, SteamError>.Fail(SteamError.InvalidConfiguration); // 直链不经 chunk
+            yield break;
+        }
+
+        var pairs = manifest.Files
+            .Where(f => f.Chunks.Count > 0)
+            .SelectMany(f => f.Chunks.Select(c => (file: f, chunk: c))).ToList();
+        if (pairs.Count == 0) yield break;
+
+        // CDN 服务器（单次调用级缓存，chunk 共用；seam 可注入）
+        var server = await (ServerFunc ?? RealSelectServerAsync)(manifest.AppId, ct).ConfigureAwait(false);
+
+        var channel = Channel.CreateUnbounded<Result<ChunkResult, SteamError>>(
+            new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+
+        var writer = channel.Writer;
+        var parallelOpts = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = _chunkParallelism,
+            CancellationToken = ct
+        };
+
+        var producer = Task.Run(async () =>
+        {
+            try
+            {
+                await Parallel.ForEachAsync(pairs, parallelOpts, async (pair, token) =>
+                {
+                    var result = await DownloadOneChunkWithRetriesAsync(manifest, pair.file.FileName, pair.chunk, server, token)
+                        .ConfigureAwait(false);
+                    await writer.WriteAsync(result, token).ConfigureAwait(false);
+                }).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { /* 枚举取消=正常收尾 */ }
+            catch (Exception ex)
+            {
+                await writer.WriteAsync(
+                    Result<ChunkResult, SteamError>.Fail(MapChunkException(ex)), CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                writer.Complete();
+            }
+        }, ct);
+
+        await foreach (var item in channel.Reader.ReadAllAsync(ct).ConfigureAwait(false))
+            yield return item;
+
+        await producer.ConfigureAwait(false);
+    }
+
+    /// <summary>单 chunk 下载（含损坏重下）：校验失败/返回空→重试，耗尽=InvalidChecksum。</summary>
+    private async Task<Result<ChunkResult, SteamError>> DownloadOneChunkWithRetriesAsync(
+        ManifestHandle manifest, string fileName, ManifestChunk chunk, Server? server, CancellationToken ct)
+    {
+        Exception? lastError = null;
+        for (var attempt = 0; attempt <= MaxChunkRetries; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                var data = await (DownloadChunkFunc ?? RealDownloadChunkAsync)(
+                    manifest.DepotId, manifest.DepotKey!, manifest.CdnAuthToken, chunk, server, ct)
+                    .ConfigureAwait(false);
+                if (data is null || data.Length == 0)
+                    throw new InvalidDataException("chunk 数据为空");
+                if (!VerifyChunk(chunk, data))
+                    throw new InvalidDataException($"校验失败：len={data.Length} exp={chunk.UncompressedLength}");
+                return Result<ChunkResult, SteamError>.Ok(new ChunkResult(
+                    fileName, chunk.ChunkIdHex, chunk.Offset, chunk.UncompressedLength, data));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { lastError = ex; } // 损坏/网络错→重下
+        }
+        return Result<ChunkResult, SteamError>.Fail(
+            lastError is InvalidDataException ? SteamError.InvalidChecksum : MapChunkException(lastError));
+    }
+
+    /// <summary>chunk 校验=长度+Adler32(CR 对照 DepotChunk.AdlerHash,返回 uint)。</summary>
+    internal static bool VerifyChunk(ManifestChunk chunk, byte[] data)
+    {
+        if (data.Length != chunk.UncompressedLength) return false;
+        return DepotChunk.AdlerHash(data) == chunk.Checksum;
+    }
+
+    internal static SteamError MapChunkException(Exception? ex)
+        => ex switch
+        {
+            InvalidDataException => SteamError.InvalidChecksum,
+            TimeoutException => SteamError.Timeout,
+            OperationCanceledException => SteamError.Timeout,
+            _ => SteamError.Network
+        };
+
+    /// <summary>测试 seam（生产=null=真链）：返回 chunk 解密数据（null/异常=失败）。</summary>
+    internal Func<uint, byte[]?, string?, ManifestChunk, Server?, CancellationToken, Task<byte[]?>>? DownloadChunkFunc;
+
+    private async Task<byte[]?> RealDownloadChunkAsync(
+        uint depotId, byte[] depotKey, string? cdnAuth, ManifestChunk chunk, Server? server, CancellationToken ct)
+    {
+        var (client, manager) = EnsureSession();
+        var server_ = server ?? await ResolveServerOnceAsync(client, manager, ct).ConfigureAwait(false);
+        if (server_ is null) return null;
+        await using var pump = new CallbackPump(manager);
+        using var cdn = new Client(client);
+        var chunkData = new DepotManifest.ChunkData(
+            chunk.ChunkID, chunk.Checksum, chunk.Offset, chunk.CompressedLength, chunk.UncompressedLength);
+        var buffer = new byte[chunk.UncompressedLength];
+        var written = await cdn.DownloadDepotChunkAsync(depotId, chunkData, server_, buffer, depotKey, null, cdnAuth)
+            .WaitAsync(TimeSpan.FromSeconds(120), ct).ConfigureAwait(false);
+        return written > 0 ? buffer : null;
+    }
+
+    private static Server? _resolvedServer;
+
+    private static async Task<Server?> ResolveServerOnceAsync(SteamClient client, CallbackManager manager, CancellationToken ct)
+    {
+        if (_resolvedServer is not null) return _resolvedServer;
+        await using var pump = new CallbackPump(manager);
+        var servers = await client.GetHandler<SteamContent>()!.GetServersForSteamPipe(null, 20)
+            .WaitAsync(TimeSpan.FromSeconds(60), ct).ConfigureAwait(false);
+        _resolvedServer = servers.FirstOrDefault(s =>
+            s.Protocol.ToString().Contains("Http", StringComparison.OrdinalIgnoreCase));
+        return _resolvedServer;
     }
 
     // ---------- 真链步骤（SteamKit 3.4.0 API surface probed) ----------
@@ -225,7 +382,8 @@ public sealed class SteamKitCdnClient : ISteamCdnClient
         var files = (m.Files ?? new()).Select(f => new ManifestFile(
             f.FileName, f.TotalSize, Hex(f.FileHash),
             (f.Chunks ?? new()).Select(c => new ManifestChunk(
-                Hex(c.ChunkID), c.Offset, c.CompressedLength, c.UncompressedLength)).ToList())).ToList();
+                Hex(c.ChunkID), c.ChunkID ?? [], c.Checksum, c.Offset, c.CompressedLength, c.UncompressedLength))
+            .ToList())).ToList();
         return new ManifestHandle(appId, depotId, gid, fileUrl, files, m.TotalUncompressedSize);
     }
 

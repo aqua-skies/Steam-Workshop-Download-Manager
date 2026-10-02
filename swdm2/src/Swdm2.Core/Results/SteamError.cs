@@ -42,6 +42,9 @@ public enum SteamError
     /// <summary>steamcmd 部署链产物损坏（D3.3）：zip 损坏/解压失败/exe 缺失。损坏 zip 重下后仍失败归此（1.x 幂等重下经验）。</summary>
     CorruptAsset,
 
-    /// <summary>steamcmd 版本校验失败（D3.3）：probe 退出码非法（不在 {0,7}）或 banner 版本串不可解析。实测 banner=版本唯一来源。</summary>
+    /// <summary>steamcmd 版本校验失败（D3.3):probe 退出码非法（不在 {0,7})或 banner 版本串不可解析。实测 banner=版本唯一来源。</summary>
     VersionCheck,
+
+    /// <summary>chunk 完整性校验失败（D4.3):SHA/Adler 校验不过或数据为空；重下耗尽后归此（损坏重下上限保护）。</summary>
+    InvalidChecksum,
 }

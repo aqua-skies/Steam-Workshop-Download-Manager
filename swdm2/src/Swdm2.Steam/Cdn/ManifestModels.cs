@@ -6,7 +6,8 @@ namespace Swdm2.Steam.Cdn;
 /// manifest 解析模型（D4.2,spec §3.2 ISteamCdnClient 返回契约）:
 /// - ManifestHandle=文件/chunk 列表快照（不可变；下游 D4.3 chunk 下载的输入）;
 /// - DirectFileUrl!=null=发布物走 HTTP 直链（file_url 路径，非 depot chunk);
-/// - chunk Id/FileHash=SHA-1 十六进制（DepotDownloader dump 同构）。
+/// - chunk Id/FileHash=SHA-1 十六进制（DepotDownloader dump 同构）;
+/// - D4.3 扩展：DepotKey/CdnAuthToken 随柄携带（chunk 下载+校验直接消费，不二次查询）。
 /// </summary>
 public sealed record ManifestHandle(
     uint AppId,
@@ -18,6 +19,12 @@ public sealed record ManifestHandle(
 {
     /// <summary>是否 HTTP 直链文件（非 chunk 路径；UI/下载层需区分提示）。</summary>
     public bool IsDirectLink => !string.IsNullOrEmpty(DirectFileUrl);
+
+    /// <summary>depot 解密密钥（chunk 下载必需；D4.2 解析时取得随柄携带）。</summary>
+    public byte[]? DepotKey { get; init; }
+
+    /// <summary>CDN auth token（随 Server host 绑定）。</summary>
+    public string? CdnAuthToken { get; init; }
 }
 
 public sealed record ManifestFile(
@@ -26,11 +33,25 @@ public sealed record ManifestFile(
     string FileHashHex,
     IReadOnlyList<ManifestChunk> Chunks);
 
+/// <summary>
+/// chunk 描述（不可变；ChunkId 原始 SHA-1 字节+Checksum=Adler32 校验，
+/// D4.3 下载校验输入：长度+Adler 双重断言=比 IDM 更强的 chunk 完整性纪律）。
+/// </summary>
 public sealed record ManifestChunk(
-    string ChunkIdHex,      // SHA-1（20B)
+    string ChunkIdHex,      // SHA-1 hex（展示用）
+    byte[] ChunkID,         // SHA-1 原始 20B（SteamKit ChunkData 直消费）
+    uint Checksum,          // Adler32 of uncompressed
     ulong Offset,
     uint CompressedLength,
     uint UncompressedLength);
+
+/// <summary>chunk 下载结果（D4.3;Data=已解密+校验过的原始字节）。</summary>
+public sealed record ChunkResult(
+    string FileName,
+    string ChunkIdHex,
+    ulong Offset,
+    uint UncompressedLength,
+    byte[] Data);
 
 /// <summary>
 /// -pubfile/-ugc 区别提示文案（D4.2 acceptance：UI 提示文案；UI 消费在 D5)。
