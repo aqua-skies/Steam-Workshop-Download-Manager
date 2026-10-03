@@ -1,0 +1,53 @@
+PASS A-U1a 隐藏态 _real_quit 直接触发 quit
+PASS A-U1b _force_quit 已置位
+PASS A-U1c _do_real_quit 方法存在且可调
+PASS A-U4 回车进入待选链路（_pending_enter_select 已挂）
+PASS A-U4b 搜索就绪自动选中首项
+PASS A-U5 标签精确过滤（交集）
+PASS A-U6a 切游戏清标签选中
+PASS A-U6b 切游戏清过滤输入
+PASS A-U7a 滚动窗口速度稳定（1-30MB/s 合理区间）
+PASS A-U7b 字节达 total 直返 100%
+PASS A-U7c 10Hz 喂入有有效快照下发（非全限流）
+PASS A-U8 突发 20MB 被摊平（峰值 <50MB/s）
+PASS A-U9a 设置页分组区存在
+PASS A-U9b 可见分组相对坐标非负（无挤压重叠）
+PASS A-U9c 目录表首行行高 ≥24
+PASS A-U10a 库删除 → 下载页行清除
+PASS A-U11 删除后列表无残留
+PASS A-U11b 库行含游戏名渲染（Garry's Mod）
+PASS A-U12a 详情页缓存命中不走网络
+PASS B1a 通道下拉含三通道
+PASS B1b 下拉项附可用性标记文案
+PASS B2 切换通道写入 config.download.channel
+PASS B3a CDN 匿名无直链 → FAILED
+PASS B3b 回退提示文案带 SteamCMD
+PASS B3c CDN should_fallback=True
+PASS B4a 链尾永远是 steamcmd
+PASS B4b 首选 cdn 在链首
+PASS B4c terminal 通道豁免熔断（生产路径失败后 steamcmd 仍可用）
+PASS B5a cdn 熔断后被链构造跳过
+PASS B5b 熔断后链尾仍是 steamcmd
+PASS B6 queue.position>0 → resolve 返空串（干净回退）
+PASS B7a 坏包消息含回退原因
+PASS B7b 坏包 should_fallback=True
+PASS B8 ggnetwork requires_key=False（匿名可用）
+PASS C1a 默认无调试 Tab
+PASS C1b debug_tab 实例常在
+PASS C1c 开关默认关闭
+PASS C1d 开关写入 config
+PASS C2a 暂停/继续单按钮
+PASS C2b 重试失败/清除已完成仍独立
+PASS C2c 暂停后按钮切「全部继续」
+PASS C2d 继续后按钮切回「全部暂停」
+PASS C2e mgr.paused 已复位
+PASS C3a 最低间隔 0.7s
+PASS C3b 连接熔断 → 冷却 15s
+PASS C3c 冷却内 search 返空
+PASS C3d 缓存命中即时返回
+PASS C3e 本地联想即时出候选（不等 0.7s）
+PASS D1a 链内回退不消耗 auto_retry（一次 attempt 跑通首通道）
+PASS D1b job.channel 记录实际通道
+PASS D2a _current_filter 方法存在（导出当前筛选）
+PASS D2b 导出按钮可触发导出路径
+RESULT: ALL PASS

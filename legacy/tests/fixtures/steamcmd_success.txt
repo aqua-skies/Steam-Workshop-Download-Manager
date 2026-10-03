@@ -1,0 +1,13 @@
+Steam Console Client (c) Valve Corporation - version 1782532820
+-- type 'quit' to exit --
+Loading Steam API...OK
+
+Connecting anonymously to Steam Public...OK
+Waiting for client config...OK
+Waiting for user info...OK
+Downloading item 3802244270 ...
+Success. Downloaded item 3802244270 to "c:\users\lenovo\appdata\local\temp\swdm_capture\steamapps\workshop\content\4000\3802244270" (1816113 bytes) Unloading Steam API...OK
+Redirecting stderr to 'C:\Program Files (x86)\steamcmd\logs\stderr.txt'
+Logging directory: 'C:\Program Files (x86)\steamcmd/logs'
+[  0%] 正在检查可用更新...
+[----] 下载完成。

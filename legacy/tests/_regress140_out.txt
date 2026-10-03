@@ -1,0 +1,78 @@
+﻿Set-Location : 找不到路径“C:\Users\Lenovo\Desktop\绋嬪簭璁捐\steam mod program”，因为该路径不存在。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:2 字符: 1
++ Set-Location "C:\Users\Lenovo\Desktop\绋嬪簭璁捐\steam mod program"
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\Users\Lenovo...eam mod program:String) [Set-Location], ItemNotFoundE 
+   xception
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.SetLocationCommand
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 
+不能对 Null 值表达式调用方法。
+所在位置 C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\run_all.ps1:13 字符: 5
++     $line = ($out -split "`n" | Where-Object { $_ -match "RESULT:" }  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) []，RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 

@@ -1,0 +1,30 @@
+元数据接口返回: 3 个（live=True）
+---- 550/3803864823 'Early Left 4 Dead 2 Skies' ----
+[PASS] 550: 下载成功 bytes=30810934
+[PASS] 550: 字节数与 API 一致 30810934 vs api=30810934
+[PASS] 550: 已入库 
+[PASS] 550: local_path 是目录 c:\users\lenovo\appdata\local\temp\swdm_legacy_ndfhw7kw\swdm\mods\steamapps\workshop\content\550\3803864823
+[PASS] 550: 元数据旁车存在 
+[PASS] 550: legacy 文件在目录中 ['9312387543250644888_legacy.bin']
+[PASS] 550: 关键词检索 
+[PASS] 550: 分类检索 
+---- 1250/3804451821 'Chronic for Killing Floor' ----
+[PASS] 1250: 下载成功 bytes=68552188
+[PASS] 1250: 字节数与 API 一致 68552188 vs api=68552188
+[PASS] 1250: 已入库 
+[PASS] 1250: local_path 是目录 c:\users\lenovo\appdata\local\temp\swdm_legacy_ndfhw7kw\swdm\mods\steamapps\workshop\content\1250\3804451821
+[PASS] 1250: 元数据旁车存在 
+[PASS] 1250: legacy 文件在目录中 ['18287630419486239310_legacy.bin']
+[PASS] 1250: 关键词检索 
+[PASS] 1250: 分类检索 
+---- 8930/3804862053 '_Reworked Mercenary Army_' ----
+[PASS] 8930: 下载成功 bytes=7816
+[PASS] 8930: 字节数与 API 一致 7816 vs api=7816
+[PASS] 8930: 已入库 
+[PASS] 8930: local_path 是目录 c:\users\lenovo\appdata\local\temp\swdm_legacy_ndfhw7kw\swdm\mods\steamapps\workshop\content\8930\3804862053
+[PASS] 8930: 元数据旁车存在 
+[PASS] 8930: legacy 文件在目录中 ['17083313881337076231_legacy.bin']
+[PASS] 8930: 关键词检索 
+[PASS] 8930: 分类检索 
+库统计: {'total': 3, 'enabled': 3, 'size': 99370938, 'games': 3}
+[PASS] 3 款 legacy 游戏全部入库 {'total': 3, 'enabled': 3, 'size': 99370938, 'games': 3}

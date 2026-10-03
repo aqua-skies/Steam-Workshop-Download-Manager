@@ -1,0 +1,11 @@
+﻿python : Traceback (most recent call last):
+所在位置 行:1 字符: 184
++ ... PLATFORM="offscreen"; python tests\test_legacy_format.py 2>&1 | Out-F ...
++                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\Lenovo\Desktop\程序设计\steam mod program\tests\test_legacy_format.py", line 105, in <module>
+    want = int(d.get("file_size") or 0)
+               ^^^^^
+AttributeError: 'WorkshopItem' object has no attribute 'get'

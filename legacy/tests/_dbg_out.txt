@@ -1,0 +1,3 @@
+DBG start
+DBG win ready
+DBG before _apply_all

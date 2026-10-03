@@ -1,0 +1,38 @@
+[PASS] P1 滚动条 pressed 态（dark） 
+[PASS] P1 滚动条 pressed 态（light） 
+[PASS] P1 滚动条 handle 描边（dark） 
+[PASS] P2 表头 min-height>=24（dark） 
+[PASS] P2 表头 min-height>=24（light） 
+[PASS] P2 表头 hover（dark） 
+[PASS] P2 表头 hover（light） 
+[PASS] P3 进度条 done/failed（dark） 
+[PASS] P3 进度条 done/failed（light） 
+[PASS] qss(未知主题) 回退深色不崩 
+[PASS] P4 system_theme_supported 返回 bool 
+[PASS] P4 qss('auto') 不崩溃 
+[PASS] 设置页首个分组坐标可量化 (12.0, 12.0)
+[PASS] P4 三档主题切换不崩溃且 QSS 有效 
+[PASS] P4 主题切换后首分组坐标无漂移 (12.0, 12.0)
+[PASS] P4 auto 模式已连接 colorSchemeChanged 
+[PASS] P4 非 auto 模式已解绑 colorSchemeChanged 
+[PASS] P5 下载队列空时空态可见 
+[PASS] P5 下载页空态显示「前往工坊浏览」按钮文本 
+[PASS] P5 下载页空态按钮跳到工坊页 
+[PASS] P3 成功态进度条 status=done 
+[PASS] P3 失败态进度条 status=failed 
+[PASS] P5 空库时空态面板可见 
+[PASS] P5 空库时列表隐藏 
+[PASS] P5 空库文案为「还没有 mod」 
+[PASS] P5 空库显示「前往工坊浏览」按钮 
+[PASS] P5 空库不显示「清除筛选」 
+[PASS] P5 空状态按钮跳到工坊页 
+[PASS] 下载页有任务行时列表显示、空态隐藏 rows=1
+[PASS] P5 筛选无结果时显示「清除筛选」 
+[PASS] P5 「清除筛选」恢复列表 
+[PASS] 高 DPI/常规下设置页分组间距 >= 6px gap=326.0
+[PASS] 主题切换后表头默认行高 >= 24 h=30
+[PASS] list_channels 返回非空通道清单 ['cdn', 'ggnetwork', 'account_steamcmd', 'steamcmd']
+[PASS] 技术债① 匿名态 cdn 显示 NO_KEY Availability.NO_KEY
+[PASS] 技术债① 设置页下拉含「未配置」标记 ['CDN 直链（HTTP 高速，需登录）（未配置，链内自动跳过）', 'GGNetwork 代理（匿名加速，实验性）', 'SteamCMD（私人账号·自己有权内容）（未配置，链内自动跳过）', 'SteamCMD（内置，匿名稳定）']
+[PASS] 三档 QSS 全部可应用 
+RESULT: ALL PASS

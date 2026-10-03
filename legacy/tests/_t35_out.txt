@@ -1,0 +1,36 @@
+[PASS] 默认配置 clipboard_watch 为 True
+[PASS] 启动后 dataChanged 已连接（_clip_connected=True）
+[PASS] 工坊链接已解析并入队
+[PASS] 状态栏非模态提示已显示
+[PASS] 同一链接重复触发只入队一次（队列去重）
+[PASS] 非工坊文本静默跳过、无异常、不入队
+[PASS] 未缓存任何剪贴板文本内容（防御性设计）
+[PASS] 详情请求失败时静默跳过不崩
+[PASS] 空/纯空白剪贴板不发起详情请求
+[PASS] 配置关闭后 dataChanged 已解绑
+[PASS] 关闭状态下即使信号到达也不入队（处理器内二次判配置）
+[PASS] 重新开启后即时重连（设置变更即生效）
+[PASS] _is_new_item 对队列内 id 判重
+[PASS] _is_new_item 对新 id 放行
+[PASS] 设置页开关反映配置值（默认勾选）
+[PASS] 开关 tooltip 说明防御性设计
+[PASS] 设置页保存写入 general.clipboard_watch
+[PASS] 保存后 settings_changed 即时解绑监听
+[PASS] 恢复开启后即时重连
+[PASS] filedetails 链接解析出 id
+[PASS] 纯数字 id 解析
+[PASS] 普通文本解析为空
+[PASS] 空文本解析为空
+[PASS] B5 两个有效链接均入队
+[PASS] B5 重复 token 去重
+[PASS] B5 无效 token 被跳过
+[PASS] 冷却期内待选词已记录
+[PASS] 冷却重发定时器已启动
+[PASS] 冷却结束后自动重发同一待选词
+[PASS] 重发后待选词已清空
+[PASS] 用户改词后旧待选词不再重发
+[PASS] 搜索结果到达后待选词清空
+[PASS] GameSearchClient.is_in_cooldown 公开且冷却外返回 False
+[PASS] cooldown_remaining 冷却外为 0
+
+RESULT: ALL PASS

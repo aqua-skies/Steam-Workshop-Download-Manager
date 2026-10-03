@@ -1,0 +1,53 @@
+PASS
+[PASS] spinner 固定尺寸 40x40 40x40
+[PASS] spinner setSize(56) -> 56x56 
+[PASS] spinner angle 落在 [0,360) angle=137.5
+[PASS] spinner 动画已启动 
+[PASS] spinner 旋转中动画仍在运行 
+[PASS] spinner 旋转后角度仍在 [0,360) angle=174.4
+[PASS] spinner.stop() 后动画停止 
+[PASS] spinner.stop() 后角度归零 
+[PASS] overlay 初始不可见 
+[PASS] overlay.start() 后可见 
+[PASS] overlay 文本正确 正在加载工坊列表…
+[PASS] overlay 覆盖宿主全部区域 PySide6.QtCore.QRect(0, 0, 400, 300)
+[PASS] overlay 跟随宿主 resize PySide6.QtCore.QRect(0, 0, 520, 360)
+[PASS] overlay 遮罩内 spinner 在运行 
+[PASS] overlay.stop() 后不可见 
+[PASS] overlay.stop() 后 spinner 停止 
+[PASS] overlay 可反复 start 
+[PASS] SmoothScrollBar 安装成功 
+[PASS] QScrollArea 内滚动条范围 > 0 max=184
+[PASS] 滚动条初始值 0 
+[PASS] 滚动动画进行中 value=90
+[PASS] QScrollArea 内滚动落到目标值 value=100
+[PASS] 独立滚动条范围正确 
+[PASS] 独立滚动条滚动动画进行中 value=536
+[PASS] 独立滚动条最终落到 600 value=600
+[PASS] 独立滚动条回到 0 value=0
+[PASS] 连续滚动最终落到 900 value=900
+[PASS] ModCard 固定高度 96 h=96
+[PASS] ModCard 宽度 > 0 w=536
+[PASS] ModCard 标题非空 超能装甲：终结者前线— 一段非常非常长的模组标题用…
+[PASS] ModCard 标题被省略（以 … 结尾） 非常长的模组标题用…
+[PASS] ModCard 省略时 ToolTip 含全文 超能装甲：终结者前线— 一段非常非常长的
+[PASS] ModCard 热度小字含订阅数 🔥 1,234,567 订阅  ·  42.3 MB
+[PASS] ModCard 热度小字含大小 
+[PASS] ModCard chips 数 = 3 + 1 溢出标记 chips=4
+[PASS] ModCard 已安装角标 
+[PASS] ModCard 缩略图已设置 
+[PASS] ModCard data() 回读 
+[PASS] card clicked 
+[PASS] ModCard clicked 信号 
+[PASS] ModCard(未安装) 角标 
+[PASS] ModCard(空数据) 标题兜底 未命名模组
+[PASS] ModCard(无图) 占位图非空 
+[PASS] ElidedLabel 宽度受限时省略（以 … 结尾） 文A字A标A题…
+[PASS] ElidedLabel 省略时 ToolTip 含全文 
+[PASS] ElidedLabel 宽度充足时不省略 短文本
+[PASS] ElidedLabel 不省略时无 ToolTip 
+[PASS] ElidedLabel 宽度充足不省略 略的较长标题文本
+[PASS] ElidedLabel resize 后重新省略 res…
+[PASS] qss('dark') 非空且含 #central 选择器 
+[PASS] qss('light') 非空且含 #central 选择器 
+[PASS] QSS 覆盖 QPushButton/菜单/滚动条/分组框 

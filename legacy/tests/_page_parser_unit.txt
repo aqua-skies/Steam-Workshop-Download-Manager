@@ -1,0 +1,62 @@
+[PASS] 真实页面 detail_252490_2551690809.html 描述非空 len=52
+[PASS] 真实页面 detail_252490_2551690809.html 含 'Supply Package containing th' 
+[PASS] 真实页面 detail_4000_3803871160.html 描述非空 len=2405
+[PASS] 真实页面 detail_4000_3803871160.html 含 'Coldridge Prison: Half-Life ' 
+[PASS] 真实页面 detail_4000_3803871160.html 含 '"Shall we gather for whiskey' 
+[PASS] 真实页面 detail_4000_3803871160.html 含 'requires no additional addon' 
+[PASS] 真实页面 deps_4000_3801998124.html 描述非空 len=1791
+[PASS] 真实页面 deps_4000_3801998124.html 含 'This is not a real gamemode!' 
+[PASS] 真实页面 deps_4000_3801998124.html 含 'Spawnmenu > Options > MW Mat' 
+[PASS] 真实页面 deps_4000_3805232163.html 描述非空 len=1716
+[PASS] 真实页面 deps_4000_3805232163.html 含 'Hello there! Welcome to my S' 
+[PASS] 真实页面 deps_4000_3805232163.html 含 'Bethesda Game Studios - All ' 
+[PASS] 描述含多行（块级标签已转行） 行数=53
+[PASS] 描述已去标签 Coldridge Prison: Half-Life 2 Style (ver
+[PASS] 描述无非间断空格残留 
+[PASS] 空 HTML 描述返回空 
+[PASS] 无描述锚点返回空 
+[PASS] 实体还原 'Guns & Ammo <cheap> "quoted" \'ok\''
+[PASS] <br> 与块级闭合转行 'line1\n\nline2\nline3\nHead\ntail'
+[PASS] class/id 顺序互换兼容 
+[PASS] 单条评论解析 1
+[PASS] 评论作者 {'author': 'Someone', 'content': 'Nice mod & good work', 'timestamp': '1 January, 2026 @ 10:00:00 am PDT'}
+[PASS] 评论正文去标签+实体 'Nice mod & good work'
+[PASS] 评论时间戳 '1 January, 2026 @ 10:00:00 am PDT'
+[PASS] 评论字段齐全 
+[PASS] 真实页面 detail_4000_3803871160.html 评论数 >= 10 n=10
+[PASS] 真实页面 detail_4000_3803871160.html 评论字段齐全 
+[PASS] 真实页面 detail_4000_3803871160.html 评论作者非空 ['SunGood', 'Rogerchick | 先輩', 'tiltowait']
+[PASS] 真实页面 detail_4000_3803871160.html 时间戳非空 21 September, 2026 @ 12:38:34 am PDT
+[PASS] 真实页面 deps_4000_3801998124.html 评论数 >= 10 n=10
+[PASS] 真实页面 deps_4000_3801998124.html 评论字段齐全 
+[PASS] 真实页面 deps_4000_3801998124.html 评论作者非空 ['Kris Dreemurr', 'rui', 'John Dopamine']
+[PASS] 真实页面 deps_4000_3801998124.html 时间戳非空 21 September, 2026 @ 4:16:53 am PDT
+[PASS] 真实页面 deps_4000_3805232163.html 评论数 >= 10 n=10
+[PASS] 真实页面 deps_4000_3805232163.html 评论字段齐全 
+[PASS] 真实页面 deps_4000_3805232163.html 评论作者非空 ['Lhosokov', 'dosh.ivon', 'Mernants']
+[PASS] 真实页面 deps_4000_3805232163.html 时间戳非空 21 September, 2026 @ 3:02:44 am PDT
+[PASS] 真实页面作者名不含 [author] 徽章 ['Lhosokov', 'dosh.ivon', 'Mernants', 'Limakenori', 'slang107']
+[PASS] 多条评论有序 ['Alice', 'Bob']
+[PASS] 空 HTML 评论返回空 
+[PASS] 无评论容器返回空 
+[PASS] 无作者链接的块被跳过（如已删除评论） 
+[PASS] 浏览页标签解析 ['Map', 'Weapon', 'NPC']
+[PASS] 标签不含排序项 
+[PASS] HTML 实体编码标签解码 ['Buildings & Props']
+[PASS] 无容器时全页面兜底 ['Addon']
+[PASS] 下拉框标签解析（跳过 -1 占位项） ['Scenario', 'Campaign']
+[PASS] 纯数字 value 不当标签 
+[PASS] 链接形态不当标签（bug14 回归保护） []
+[PASS] 空 HTML 标签返回空 
+[PASS] 无标签链接返回空 
+[PASS] fetch_comments 解析 JSON 列表 [{'author': 'Tester', 'content': 'Great mod & fun', 'timestamp': '2 Jan @ 3:00pm'}]
+[PASS] fetch_comments 字段齐全 
+[PASS] fetch_comments 正文实体还原 'Great mod & fun'
+[PASS] fetch_comments 调用端点路径 
+[PASS] fetch_comments 端点路径正确 /comment/PublishedFile_Public/render/4000/3803871160/
+[PASS] fetch_comments 传 start/count 参数 {'start': 0, 'count': 5}
+[PASS] 非 JSON 响应安全降级 []
+[PASS] 网络异常安全降级 []
+[PASS] api=None 安全降级 []
+[PASS] 缺 item_id 安全降级 
+[PASS] 缺 appid 安全降级 

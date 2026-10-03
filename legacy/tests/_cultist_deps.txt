@@ -1,0 +1,41 @@
+[PASS] 零账号匿名模式 
+[PASS] 无任何凭据 
+---- 第 1 步：解析前置依赖 ----
+  解析到 5 个依赖:
+    3445157833 'Apostle Contemnant'
+    3171408151 'Apostle Proterant'
+    2944178812 'Apostle Obdurant'
+    2901287611 'GHIRBI, the Gatekeeper'
+    2625527332 'The Roost Machine'
+[PASS] 子模组存在前置依赖 
+[PASS] 依赖带标题 
+  [GUI 模拟] 弹窗「是否一并下载？」-> 选「是」
+---- 第 2 步：依赖优先入队并下载 ----
+  入队 6 个，顺序: ['3445157833', '3171408151', '2944178812', '2901287611', '2625527332', '3801750928']
+[PASS] 依赖在根 mod 之前入队 
+  下载结果:
+    3445157833 ('Apostle Contemnant'): success 75745009 bytes
+    3171408151 ('Apostle Proterant'): success 78476755 bytes
+    2944178812 ('Apostle Obdurant'): success 80914101 bytes
+    2901287611 ('GHIRBI, the Gatekeeper'): success 126702 bytes
+    2625527332 ('The Roost Machine'): success 1671541 bytes
+    3801750928 ('【哀殛魅影】蔑世使徒 - 子模组'): success 7043240 bytes
+[PASS] 根 mod 下载成功 
+[PASS] 依赖 3445157833 下载成功 
+[PASS] 依赖 3171408151 下载成功 
+[PASS] 依赖 2944178812 下载成功 
+[PASS] 依赖 2901287611 下载成功 
+[PASS] 依赖 2625527332 下载成功 
+---- 第 3 步：入库与分类检索 ----
+  库统计: {'total': 6, 'enabled': 6, 'size': 243977348, 'games': 1}
+[PASS] 下载数与入库数一致 6 vs 6
+[PASS] 根 mod 已入库 
+[PASS] 根 mod 可关键词检索 
+[PASS] 根 mod 可分类检索 
+[PASS] 根 mod 记录了依赖 ['3445157833', '3171408151', '2944178812', '2901287611', '2625527332']
+[PASS] 依赖 3445157833 已入库 
+[PASS] 依赖 3171408151 已入库 
+[PASS] 依赖 2944178812 已入库 
+[PASS] 依赖 2901287611 已入库 
+[PASS] 依赖 2625527332 已入库 
+[PASS] 元数据旁车存在 
