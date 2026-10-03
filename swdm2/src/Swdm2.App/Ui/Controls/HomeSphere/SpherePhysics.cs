@@ -118,7 +118,15 @@ public sealed class SpherePhysics
                 if (len < 1e-9) continue;
 
                 var rest = _restEdgeLength[e];
-                var diff = (len - rest) / len * 0.5 * EdgeStiffness * dt * 60.0; // 归一化修正量
+                // 线刚性=边长差的比例收缩（单次迭代收回差值的固定比例；
+                // 不用增益*dt 复合=避免正反馈爆炸把位移推到 MaxDisplacement
+                // 钳值——用户条款是"线刚性骨架不散"，比例收缩是稳定收敛的
+                // 投影法，逐帧 iterations 次）
+                var diff = (len - rest) / len * 0.5;
+                // 单帧边长修正钳制（与位移振幅同量级，不发散）
+                var maxStep = MaxDisplacement * 0.25;
+                if (diff > maxStep) diff = maxStep;
+                if (diff < -maxStep) diff = -maxStep;
                 // 沿边方向拉回（位移沿法向投影=不破坏仅法向自由度的软化语义）
                 var corr = new Vector3D(dx * diff, dy * diff, dz * diff);
                 ProjectToNormal(a, corr, sign: -1);
