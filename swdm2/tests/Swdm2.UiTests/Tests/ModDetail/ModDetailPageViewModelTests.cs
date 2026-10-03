@@ -44,7 +44,7 @@ public sealed class ModDetailPageViewModelTests
         var paths = new PathService(PathMode.Portable, AppContext.BaseDirectory);
         var bus = new DownloadEventBus(100);
         var downloads = new DownloadsPageViewModel(bus);
-        var provider = new DownloadProviderRouter(null!, null!, bus);
+        var provider = new DownloadProviderRouter(StubProvider.Instance, StubProvider.Instance, bus);
         var scheduler = new DownloadScheduler(new DownloadQueue(), (e, ct) => Task.FromResult(true), 1);
         return new ModDetailPageViewModel(paths, new DownloadQueue(), downloads,
             provider, scheduler, navigateToDownloads: null,
@@ -311,6 +311,15 @@ public sealed class ModDetailPageViewModelTests
             => _fail is { } e
                 ? Task.FromResult(Result<WorkshopItem, SteamError>.Fail(e))
                 : Task.FromResult(Result<WorkshopItem, SteamError>.Ok(_item!));
+    }
+
+    private sealed class StubProvider : IDownloadProvider
+    {
+        public static readonly StubProvider Instance = new();
+        public Task<bool> ExecuteAsync(DownloadTaskEntry entry, CancellationToken ct)
+            => Task.FromResult(true);
+        public Task PauseAsync(DownloadTaskId taskId) => Task.CompletedTask;
+        public Task CancelAsync(DownloadTaskId taskId) => Task.CompletedTask;
     }
 
     private sealed class StubComments : ICommentSource

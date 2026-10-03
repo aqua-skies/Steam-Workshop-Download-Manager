@@ -5,18 +5,136 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
              mc:Ignorable="d"
-             d:DesignHeight="480" d:DesignWidth="840">
-    <!-- D3.5b minimum testable skeleton. Skin-level look (PCL2 card layering / shadows) deferred to D5. -->
-    <StackPanel Margin="16">
-        <TextBlock AutomationProperties.AutomationId="ModDetailPage_TitleText"
-                   Text="{Binding Title}" FontSize="18" FontWeight="Bold"
-                   Margin="0,0,0,12" TextTrimming="CharacterEllipsis"/>
-        <TextBlock Text="dependency list (sample)" FontWeight="SemiBold" Margin="0,0,0,6"/>
-        <ListBox AutomationProperties.AutomationId="ModDetailPage_DependencyList_Items"
-                 ItemsSource="{Binding Dependencies}" Height="140" Margin="0,0,0,16"/>
-        <Button AutomationProperties.AutomationId="ModDetailPage_DownloadButton"
-                Content="Download"
-                Command="{Binding DownloadCommand}"
-                Padding="20,8" FontSize="14" HorizontalAlignment="Left"/>
-    </StackPanel>
+             d:DesignHeight="560" d:DesignWidth="840">
+    <!--
+      D5.6 mod 详情页（t2 §2.5;1.x detail_dialog 契约移植）：
+      - 依赖来自 Web API(GetPublishedFileDetailsAsync required_items)
+      - 字段缺失→社区回退渲染+来源标注（API/社区回退/字段缺失）=诚实降级
+      - 冲突（自引用/重复/循环）独立列表展示
+      - 评论区（社区页 HTML 解析；加载失败=状态文本降级）
+      AutomationId 契约=t3 §3.2 保留表（ModDetailPage_TitleText/DependencyList_Items/
+      DownloadButton 不动——P0 旅程锚点）+新增 `<页面>_<语义>`。
+      颜色一律 DynamicResource swdm-*（t2 §1.4 不变量③）。
+    -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+        <StackPanel>
+            <!-- 整页错误态（加载失败；重试命令） -->
+            <Border AutomationProperties.AutomationId="ModDetailPage_ErrorBanner"
+                    Background="{DynamicResource swdm-Danger100Brush}"
+                    BorderBrush="{DynamicResource swdm-Danger500Brush}" BorderThickness="1"
+                    CornerRadius="6" Padding="10,8" Margin="0,0,0,12"
+                    Visibility="{Binding HasErrorVisibility}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⚠" FontSize="16" VerticalAlignment="Center"
+                               Foreground="{DynamicResource swdm-Danger500Brush}" Margin="0,0,8,0"/>
+                    <TextBlock AutomationProperties.AutomationId="ModDetailPage_ErrorMessageText"
+                               Text="{Binding ErrorMessage}" VerticalAlignment="Center"
+                               Foreground="{DynamicResource swdm-Danger500Brush}" TextWrapping="Wrap"/>
+                    <Button AutomationProperties.AutomationId="ModDetailPage_ReloadButton"
+                            Content="重试" Padding="10,3" Margin="12,0,0,0"
+                            Command="{Binding ReloadCommand}"
+                            Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                            Background="{DynamicResource swdm-Accent500Brush}"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock AutomationProperties.AutomationId="ModDetailPage_TitleText"
+                       Text="{Binding ItemTitle}" FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                       Margin="0,0,0,4" TextTrimming="CharacterEllipsis"/>
+            <!-- 作者+来源标注（诚实降级：来源=API/社区回退/字段缺失） -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <TextBlock AutomationProperties.AutomationId="ModDetailPage_CreatorText"
+                           Text="{Binding ItemCreator}" FontSize="13"
+                           Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text=" · 来源：" FontSize="11" VerticalAlignment="Center"
+                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                <TextBlock AutomationProperties.AutomationId="ModDetailPage_CreatorSourceLabel"
+                           Text="{Binding CreatorSource}" FontSize="11" VerticalAlignment="Center"
+                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+            </StackPanel>
+
+            <!-- 描述（直显；来源标注同上） -->
+            <TextBlock Text="简介" FontWeight="SemiBold" Margin="0,8,0,4"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+            <TextBlock AutomationProperties.AutomationId="ModDetailPage_DescriptionText"
+                       Text="{Binding ItemDescription}" FontSize="13" TextWrapping="Wrap"
+                       Foreground="{DynamicResource swdm-TextSecondaryBrush}" Margin="0,0,0,2"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="来源：" FontSize="11" VerticalAlignment="Center"
+                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                <TextBlock AutomationProperties.AutomationId="ModDetailPage_DescriptionSourceLabel"
+                           Text="{Binding DescriptionSource}" FontSize="11" VerticalAlignment="Center"
+                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+            </StackPanel>
+
+            <!-- 依赖列表（API required_items;保留 id=契约表） -->
+            <TextBlock FontWeight="SemiBold" Margin="0,4,0,4"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                       Text="dependency list"/>
+            <TextBlock AutomationProperties.AutomationId="ModDetailPage_DependenciesSourceLabel"
+                       Text="{Binding DependenciesSource}" FontSize="11" Margin="0,0,0,4"
+                       Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+            <ListBox AutomationProperties.AutomationId="ModDetailPage_DependencyList_Items"
+                     ItemsSource="{Binding DependencyRows}" Height="140" Margin="0,0,0,8">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Display}"
+                                   Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- 冲突列表（自引用/重复/循环；1.x 冲突展示契约） -->
+            <TextBlock Text="冲突" FontWeight="SemiBold" Margin="0,4,0,4"
+                       Foreground="{DynamicResource swdm-Warning500Brush}"
+                       Visibility="{Binding HasConflictsVisibility}"/>
+            <ListBox AutomationProperties.AutomationId="ModDetailPage_ConflictList_Items"
+                     ItemsSource="{Binding Conflicts}" Height="100" Margin="0,0,0,8"
+                     Visibility="{Binding HasConflictsVisibility}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Display}"
+                                   Foreground="{DynamicResource swdm-Warning500Brush}"
+                                   TextWrapping="Wrap"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- 评论区（社区页解析；状态文本降级） -->
+            <TextBlock Text="评论" FontWeight="SemiBold" Margin="0,4,0,4"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+            <TextBlock AutomationProperties.AutomationId="ModDetailPage_CommentsStatusLabel"
+                       Text="{Binding CommentsStatus}" FontSize="11" Margin="0,0,0,4"
+                       Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+            <ListBox AutomationProperties.AutomationId="ModDetailPage_CommentList_Items"
+                     ItemsSource="{Binding Comments}" Height="200" Margin="0,0,0,12">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,4">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Author}" FontWeight="SemiBold" FontSize="12"
+                                           Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                                <TextBlock Text=" · " Foreground="{DynamicResource swdm-TextTertiaryBrush}"
+                                           FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Time}" FontSize="11"
+                                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Content}" FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Button AutomationProperties.AutomationId="ModDetailPage_DownloadButton"
+                    Content="Download"
+                    Command="{Binding DownloadCommand}"
+                    Padding="20,8" FontSize="14" HorizontalAlignment="Left"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"/>
+        </StackPanel>
+    </ScrollViewer>
 </pages:PageBase>
