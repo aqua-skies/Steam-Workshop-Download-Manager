@@ -1,0 +1,78 @@
+<pages:PageBase x:Class="Swdm2.App.Ui.Pages.SphereHomePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sphere="clr-namespace:Swdm2.App.Ui.Controls.HomeSphere"
+             xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
+             mc:Ignorable="d"
+             d:DesignHeight="640" d:DesignWidth="960"
+             Background="{DynamicResource swdm-SurfaceCanvasBrush}">
+    <!--
+      D5.15 球体主页（t2 v1.4 §2.8/2.9 行号级规格）：
+      - 左：默认游戏卡（独立卡非顶置固定 §2.9 四槽位：名/图标/开始钮/下载mod 直通；空态灰字）
+      - 右：球体区（液态玻璃半透明黑底=不依赖 Mica,兼容 D5.3 弃 FluentWindow 裁决）
+      - 切页退场动画 §2.8.4 由宿主触发（SphereHomePage_ExitStoryboard)
+      - 全局圆弧（§2.10 A6):主页容器 CornerRadius 8
+    -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧：默认游戏卡 -->
+        <Border Grid.Column="0" Margin="16,20,8,20" CornerRadius="8"
+                Background="{DynamicResource swdm-SurfaceCardBrush}"
+                BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+            <Grid Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <!-- §2.9 独立卡槽位 i 名 -->
+                <TextBlock Grid.Row="0" AutomationProperties.AutomationId="DefaultGameCard_TitleText"
+                           Text="{Binding DefaultGameTitle}" FontSize="15" FontWeight="Bold"
+                           Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                           TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <!-- §2.9 槽位 ii 图标（在上）+空态灰字 -->
+                <Border Grid.Row="1" Width="64" Height="64" HorizontalAlignment="Left" Margin="0,0,0,12"
+                        CornerRadius="8"
+                        Background="{DynamicResource swdm-SurfaceRaisedBrush}">
+                    <Image AutomationProperties.AutomationId="DefaultGameCard_IconImage"
+                           Source="{Binding DefaultGameIcon}" Stretch="Uniform" Margin="4"/>
+                </Border>
+                <TextBlock Grid.Row="1" AutomationProperties.AutomationId="DefaultGameCard_EmptyHint"
+                           Text="无默认游戏，前往设置"
+                           Visibility="{Binding EmptyHintVisibility}"
+                           FontSize="12" Margin="0,8,0,0"
+                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                <!-- §2.9 槽位 iii 开始钮 + iv「下载 mod」直通 -->
+                <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,4,0,0">
+                    <Button AutomationProperties.AutomationId="DefaultGameCard_StartButton"
+                            Content="开始游戏" Padding="12,6" Margin="0,0,0,8"
+                            Command="{Binding StartGameCommand}"
+                            Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                            Background="{DynamicResource swdm-Accent500Brush}"/>
+                    <Button AutomationProperties.AutomationId="DefaultGameCard_DownloadModButton"
+                            Content="下载 mod" Padding="12,6"
+                            Command="{Binding DownloadModCommand}"
+                            Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                            Background="{DynamicResource swdm-SurfaceRaisedBrush}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 右侧：球体区（液态玻璃半透明黑底） -->
+        <Border Grid.Column="1" Margin="8,20,20,20" CornerRadius="8" ClipToBounds="True">
+            <Border.Background>
+                <SolidColorBrush Color="#14000000" Opacity="0.92"/>
+            </Border.Background>
+            <sphere:HomeSphereControl x:Name="SphereHostControl"
+                                      AutomationProperties.AutomationId="SphereHome_HostShell"
+                                      GameTiles="{Binding Tiles}"
+                                      GameTileClicked="{Binding TileClickedCommand}"/>
+        </Border>
+    </Grid>
+</pages:PageBase>

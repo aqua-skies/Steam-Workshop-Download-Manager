@@ -31,6 +31,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     private readonly WorkshopBrowsePageViewModel _browse;
     // D5.12 库页 VM
     private readonly LibraryPageViewModel _library;
+    // D5.15 球体主页 VM（用户 2026-10-03 亲定：进入即球体主页=替换原主页）
+    private readonly SphereHomePageViewModel _sphereHome;
 
     /// <summary>详情页 VM（MainWindow 初始化默认页时取 DataContext）。</summary>
     public ModDetailPageViewModel ModDetail => _modDetail;
@@ -47,6 +49,9 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     /// <summary>D5.12 库页 VM（P0 旅程 5 载体）。</summary>
     public LibraryPageViewModel Library => _library;
 
+    /// <summary>D5.15 球体主页 VM（默认主页）。</summary>
+    public SphereHomePageViewModel SphereHome => _sphereHome;
+
     /// <summary>D5.9 状态栏连接 VM（MainWindow 状态栏绑定源）。</summary>
     public ConnectivityBarViewModel Connectivity { get; }
 
@@ -55,6 +60,7 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     public ICommand NavigateBrowseCommand { get; } // [arch-20 t44]
     public ICommand NavigateGameSelectCommand { get; }
     public ICommand NavigateLibraryCommand { get; } // D5.12
+    public ICommand NavigateSphereHomeCommand { get; } // D5.15
 
     public MainShellViewModel(
         IPathService paths,
@@ -109,6 +115,17 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         NavigateLibraryCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<LibraryPage>(
                 () => new LibraryPage { DataContext = _library }));
+
+        // D5.15: 球体主页（贴图点击→跳该游戏 mod 选择页；开始/下载钮直通）
+        _sphereHome = new SphereHomePageViewModel(
+            navigateToGameSelect: _ => AppHost.Navigation.Navigate<GameSelectPage>(
+                () => new GameSelectPage { DataContext = _gameSelect }),
+            startGame: () => { /* D5.x:启动默认游戏（阶段 6 启动器） */ },
+            downloadMod: () => AppHost.Navigation.Navigate<GameSelectPage>(
+                () => new GameSelectPage { DataContext = _gameSelect }));
+        NavigateSphereHomeCommand = new RelayCommand(
+            () => AppHost.Navigation.Navigate<Ui.Pages.SphereHomePage>(
+                () => new Ui.Pages.SphereHomePage { DataContext = _sphereHome }));
     }
 
     /// <summary>#10 旅程：详情页下载入队后跳下载页。</summary>

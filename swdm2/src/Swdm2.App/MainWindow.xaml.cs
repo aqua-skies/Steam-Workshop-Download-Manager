@@ -19,11 +19,12 @@ public partial class MainWindow : Window
         DataContext = AppHost.Shell;
 
         // D5.3:页面容器替换（PageNavigationService;返回栈+110→30ms 切页时序）
-        // 默认页=ModDetailPage(D3.7 #10 旅程起点：详情可点击下载）
+        // D5.15（用户 2026-10-03 亲定）：默认页=球体主页（进入即球体主页；
+        // t54 验收①）。ModDetail 改由贴图点击/导航钮进入。
         AppHost.Navigation.Attach(PageHost);
-        AppHost.Navigation.Initialize<ModDetailPage>(() => new ModDetailPage
+        AppHost.Navigation.Initialize<Ui.Pages.SphereHomePage>(() => new Ui.Pages.SphereHomePage
         {
-            DataContext = AppHost.Shell.ModDetail,
+            DataContext = AppHost.Shell.SphereHome,
         });
     }
 

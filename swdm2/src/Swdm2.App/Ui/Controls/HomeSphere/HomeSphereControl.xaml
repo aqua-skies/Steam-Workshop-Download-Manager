@@ -1,0 +1,37 @@
+<UserControl x:Class="Swdm2.App.Ui.Controls.HomeSphere.HomeSphereControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="800"
+             Background="Transparent">
+    <!--
+      D5.15 球体主页核心控件（t2 v1.4 §2.8 行号级规格）：
+      - Viewport3D 全幅（契约 id SphereHome_Host）
+      - 右下象限相机 + 鼠标=PointLight 光源
+      - 贴图三角面（方形 UV 裁剪）+ 无贴图区透明（液态玻璃观感由宿主页底色承载）
+      - 对话泡泡（贴图命中时其上方浮出游戏名；移开复原）
+      颜色一律 DynamicResource swdm-*（t2 §1.4 不变量③）。
+    -->
+    <Grid>
+        <Viewport3D x:Name="SphereHost" AutomationProperties.AutomationId="SphereHome_Host"
+                    ClipToBounds="False"/>
+        <!-- 对话泡泡（默认隐藏；命中贴图时移动到命中点上方） -->
+        <Border x:Name="GameBubble" AutomationProperties.AutomationId="GameBubbleHost"
+                Visibility="Collapsed"
+                Background="{DynamicResource swdm-SurfaceRaisedBrush}"
+                BorderBrush="{DynamicResource swdm-Accent500Brush}" BorderThickness="1"
+                CornerRadius="6" Padding="10,5" HorizontalAlignment="Left" VerticalAlignment="Top"
+                IsHitTestVisible="False">
+            <TextBlock x:Name="GameBubbleText" FontSize="12"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+        </Border>
+        <!-- 空态引导（无任何贴图=全透明球+文案） -->
+        <TextBlock x:Name="EmptyHint" AutomationProperties.AutomationId="SphereHome_EmptyHint"
+                   Text="在设置里绑定游戏后，图标会浮上球体"
+                   FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="Collapsed"
+                   Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+    </Grid>
+</UserControl>
