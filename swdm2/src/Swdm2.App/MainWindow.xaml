@@ -5,17 +5,84 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="SWDM 2.0" Height="600" Width="900"
+        MinWidth="810" MinHeight="470"
+        WindowStyle="None" ResizeMode="CanResize" ShowInTaskbar="True"
         WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         AutomationProperties.AutomationId="MainShell">
-    <!-- D5.1 主题应用层（皮肤签名组件 SwdmCard 留 t41/D5.2）。
-         MainShell id = t3 §3.2 保留表（启动断言锚点）。
-         颜色一律 DynamicResource swdm-*（t2 §1.4 不变量③：切换即时生效无闪烁）。 -->
+    <!--
+      D5.3 窗口 chrome（t2 §2.4）：
+      **路线裁决（D5.3 实证修订，A8b 实测纪律）**：原计划"WPF-UI FluentWindow/TitleBar
+      简化通道"在无桌面合成沙箱下 UIA 子树为零（三次最小复现实验：去外挂 WindowChrome /
+      去 Mica / 去 ExtendsContentIntoTitleBar+TitleBar 均仍零子；plain Window 对照立即恢复
+      子树）——FlaUI 真实输入旅程（用户路线①硬约束）不可达。t2 §2.4 已预见此分支，
+      任务 fallback 条款"若弃 WPF-UI TitleBar 时启用"=本实现。
+      - WindowChrome（声明式缩放命中区 ResizeBorderThickness=8,PCL2 Resizer 同值）：
+        保留系统贴靠（Aero Snap/Win11 SnapLayouts）与 DWM 合成阴影（放弃
+        AllowsTransparency 路线的核心收益，t2 §2.4 论证表）。
+      - 标题栏 48px 自绘：accent400 单端线性渐变皮肤 + logo 图标钮 + 关闭/最小化钮
+        （AutomationId 按 t3 §3.2 保留表 Main_Window_Close/Minimize）。
+      - WM_NCHITTEST fallback 条款（Chrome/CustomChromeFallback.cs)，默认不挂
+        （WindowChrome CaptionHeight 已覆盖主拖拽路径）。
+      - Mica 首版不做（纯色 swdm-SurfaceCanvasBrush;讨论组裁决后再上）。
+      - MainShell id = t3 §3.2 保留表（启动断言锚点）。
+      颜色一律 DynamicResource swdm-*（t2 §1.4 不变量③）。
+    -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome GlassFrameThickness="0" CaptionHeight="48"
+                      ResizeBorderThickness="8" CornerRadius="6"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
     <Grid Background="{DynamicResource swdm-SurfaceCanvasBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Margin="10,8">
+        <!-- 标题栏 48px：皮肤渐变（自绘，始终）+ logo 图标钮 + 关闭/最小化钮（自绘） -->
+        <Grid Height="48" Grid.Row="0">
+            <!-- 皮肤渐变：accent400 单端 → 透明（t2 §2.4 片段） -->
+            <Grid.Background>
+                <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
+                    <GradientStop Color="{DynamicResource swdm-Accent400Color}" Offset="0"/>
+                    <GradientStop Color="Transparent" Offset="1"/>
+                </LinearGradientBrush>
+            </Grid.Background>
+            <!-- logo 图标钮（自绘，始终；A7 可靠载体=Button) -->
+            <Button x:Name="BtnLogo" HorizontalAlignment="Left" Height="28" Width="28"
+                    Margin="12,0,0,0" VerticalAlignment="Center"
+                    WindowChrome.IsHitTestVisibleInChrome="True"
+                    Background="Transparent" BorderThickness="0"
+                    AutomationProperties.AutomationId="Main_Window_Logo">
+                <Path Width="16" Height="16" Stretch="Uniform"
+                      Fill="{DynamicResource swdm-TextOnAccentBrush}"
+                      Data="M8,0 l2,5 5,0 -4,3.5 1.5,5.5 -4.5,-3.5 -4.5,3.5 1.5,-5.5 -4,-3.5 5,0 z"/>
+            </Button>
+            <!-- 自绘关闭/最小化钮（X 与横线几何沿用 PCL2 path;pcl2 §2.2);
+                 WindowChrome.IsHitTestVisibleInChrome 让按钮在 Caption 区可点击 -->
+            <Button x:Name="BtnClose" HorizontalAlignment="Right" Height="28" Width="28"
+                    Margin="0,0,12,0" VerticalAlignment="Center"
+                    WindowChrome.IsHitTestVisibleInChrome="True"
+                    Background="Transparent" BorderThickness="0"
+                    AutomationProperties.AutomationId="Main_Window_Close"
+                    Click="BtnClose_Click">
+                <Path Width="10" Height="10" Stretch="Uniform"
+                      Fill="{DynamicResource swdm-TextOnAccentBrush}"
+                      Data="M0,0 l2,-2 3,3 3,-3 2,2 -3,3 3,3 -2,2 -3,-3 -3,3 -2,-2 3,-3 z"/>
+            </Button>
+            <Button x:Name="BtnMin" HorizontalAlignment="Right" Height="28" Width="28"
+                    Margin="0,0,44,0" VerticalAlignment="Center"
+                    WindowChrome.IsHitTestVisibleInChrome="True"
+                    Background="Transparent" BorderThickness="0"
+                    AutomationProperties.AutomationId="Main_Window_Minimize"
+                    Click="BtnMin_Click">
+                <Path Width="10" Height="2" Stretch="Fill"
+                      Fill="{DynamicResource swdm-TextOnAccentBrush}"
+                      Data="M0,0 h10 v2 h-10 z"/>
+            </Button>
+        </Grid>
+        <!-- 导航条：契约 id 保留（t3 §3.2)；侧栏形态=t2 §2.6,D5.x 页面群时改造 -->
+        <StackPanel Orientation="Horizontal" Margin="10,8" Grid.Row="1">
             <Button AutomationProperties.AutomationId="MainShell_Nav_ModDetailButton"
                     Content="Mod detail (sample)" Padding="12,5" Margin="0,0,8,0"
                     Foreground="{DynamicResource swdm-TextOnAccentBrush}"
@@ -26,6 +93,7 @@
                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                     Command="{Binding NavigateDownloadsCommand}"/>
         </StackPanel>
-        <ContentControl Grid.Row="1" Margin="10" Content="{Binding CurrentPageView}"/>
+        <!-- PageHost 容器替换（t2 §2.5;PageNavigationService.Attach 时序驱动 110→30ms) -->
+        <ContentControl x:Name="PageHost" Grid.Row="2" Margin="10"/>
     </Grid>
 </Window>

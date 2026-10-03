@@ -1,8 +1,9 @@
-<UserControl x:Class="Swdm2.App.Views.ModDetailPage"
+<pages:PageBase x:Class="Swdm2.App.Views.ModDetailPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
              mc:Ignorable="d"
              d:DesignHeight="480" d:DesignWidth="840">
     <!-- D3.5b minimum testable skeleton. Skin-level look (PCL2 card layering / shadows) deferred to D5. -->
@@ -18,4 +19,4 @@
                 Command="{Binding DownloadCommand}"
                 Padding="20,8" FontSize="14" HorizontalAlignment="Left"/>
     </StackPanel>
-</UserControl>
+</pages:PageBase>

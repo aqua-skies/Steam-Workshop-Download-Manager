@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Swdm2.App.Configuration;
+using Swdm2.App.Navigation;
 using Swdm2.App.Session;
 using Swdm2.App.ViewModels;
 using Swdm2.Core.Logging;
@@ -32,6 +33,7 @@ public static class AppHost
     private static DownloadEventBus? _bus;
     private static MainShellViewModel? _shell;
     private static SteamKitSessionManager? _session;
+    private static PageNavigationService? _navigation;
 
     /// <summary>会话管理器（D4.1;#23 FlaUI 旅程与登录链入口）。</summary>
     public static SteamKitSessionManager Session
@@ -39,6 +41,10 @@ public static class AppHost
 
     public static MainShellViewModel Shell
         => _shell ?? throw new InvalidOperationException("AppHost 未启动（先调 Start()）。");
+
+    /// <summary>页面导航服务（D5.3:返回栈+110→30ms 切页时序；MainWindow 构造时 Attach 页面容器）。</summary>
+    public static PageNavigationService Navigation
+        => _navigation ?? throw new InvalidOperationException("AppHost 未启动（先调 Start()）。");
 
     public static void Start()
     {
@@ -81,6 +87,7 @@ public static class AppHost
         _bus = bus;
         _queue = queue;
         _scheduler = scheduler;
+        _navigation = new PageNavigationService();
         _shell = new MainShellViewModel(paths, queue, provider, scheduler, bus);
 
         if (test2Fa)

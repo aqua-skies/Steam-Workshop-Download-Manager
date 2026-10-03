@@ -32,7 +32,9 @@ public sealed class ThemeService
         Current == SwdmTheme.FollowSystem ? DetectSystemTheme() : Current;
 
     /// <summary>
-    /// 换主题字典条目（先移除旧的再添加新的，避免双主题状态）。
+    /// 换主题字典条目（先移除全部旧主题条目再添加新的，避免双主题状态；
+    /// 单条删除在字典合并累积状态（测试驱动同一 Application 顺序复用）下
+    /// 会留下残条=违反 A3 不变量①，全删是幂等稳健形态）。
     /// 所有消费处 DynamicResource 在字典交换后立即重应用 = 无闪烁。
     /// </summary>
     public void Apply(SwdmTheme theme)
@@ -42,13 +44,14 @@ public sealed class ThemeService
         var resources = Application.Current?.Resources;
         if (resources is null) return;
 
-        var existing = resources.MergedDictionaries
-            .FirstOrDefault(d => d.Source is not null
-                                 && d.Source.OriginalString.Contains(ThemeMarker)
-                                 && !d.Source.OriginalString.EndsWith("Common.xaml", StringComparison.Ordinal)
-                                 && !d.Source.OriginalString.EndsWith("Accent.xaml", StringComparison.Ordinal));
-        if (existing is not null)
-            resources.MergedDictionaries.Remove(existing);
+        var staleEntries = resources.MergedDictionaries
+            .Where(d => d.Source is not null
+                        && d.Source.OriginalString.Contains(ThemeMarker)
+                        && !d.Source.OriginalString.EndsWith("Common.xaml", StringComparison.Ordinal)
+                        && !d.Source.OriginalString.EndsWith("Accent.xaml", StringComparison.Ordinal))
+            .ToList();
+        foreach (var stale in staleEntries)
+            resources.MergedDictionaries.Remove(stale);
 
         resources.MergedDictionaries.Add(new ResourceDictionary
         {

@@ -327,6 +327,9 @@ PCL2 `MyListItem` 等价（pcl2 §4.3 可粘贴 XAML；行高/网格/动画实�
 - **入场动画**（可选，默认开）：旋转 −4°→0 / 500ms + 位移 Y 60→0 / 600ms（均 `OutBack(Weak)`）+ 透明度 250ms，延迟 100ms（pcl2 §7 数值表）。
 - **Mica/亚克力**：首版**不做**（纯色 `swdm-SurfaceCanvasBrush` 画布）；后续迭代经讨论组裁决再上 `DwmSetWindowAttribute(DWMWA_SYSTEMBACKDROP_TYPE)`（精简原则）。
 - **简化通道**：WPF-UI `FluentWindow`/`TitleBar` 内置 Win11 SnapLayout（pcl2 §2.4 核验）；若 §1.3 试装门通过且选用 WPF-UI 窗口基座，标题栏渐变与图标钮仍自绘（主题从属自建字典）。
+  > **D5.3 路线裁决（v1.3 回写，2026-10-03 实证）**：**弃用 WPF-UI FluentWindow/TitleBar 简化通道，走 fallback 条款**（任务 t42 原文"若弃 WPF-UI TitleBar 时启用"）。实证：该沙箱（无桌面合成会话）下 FluentWindow 的 UIA 子树为**零子节点**（3 次最小复现：去外挂 WindowChrome / 去 Mica / 去 ExtendsContentIntoTitleBar+TitleBar 均仍零子；plain `Window` 对照立即恢复子树）→ FlaUI 真实输入旅程（用户路线①硬约束）不可达。
+  > 实现路线=`WindowStyle=None`+`WindowChrome`（ResizeBorderThickness=8/CaptionHeight=48/CornerRadius=6/GlassFrameThickness=0/UseAeroCaptionButtons=False)+**自绘标题栏**（accent400 单端渐变皮肤+logo 图标钮+关闭/最小化钮 `Main_Window_Close/Minimize` 按 t3 §3.2 保留表）+`WM_NCHITTEST` fallback 条款代码保留（默认不挂；弃 WPF-UI TitleBar 的 fallback 机制=CustomChromeFallback.Attach，需要时启用）。
+  > 同族环境教训：driver 进程内组装 AppHost 下载链会污染同进程 UIA/Win32 状态（FlaUI 旅程 Win32(5) 拒绝访问）→ chrome 层测试用 XamlReader 纯 XAML 对象树（剥 x:Class/Click）;SendInput 鼠标注入在该会话稳定被拒（非间歇，P0_10 经 blankCapture 门降级，DownloadJourneySmoke D5.3 补齐同族门）。
 
 **验收判据**：① 拖拽标题栏移动窗口（FlaUI 真实拖拽）；② 边缘拖拽缩放；③ 最大化后还原（系统贴靠行为不回归坏）；④ 圆角 6px 像素断言（窗口角采样透明/圆滑）；⑤ 标题栏 48px 几何断言；⑥ 关闭/最小化钮真实点击生效。
 

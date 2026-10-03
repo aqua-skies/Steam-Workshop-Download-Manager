@@ -34,8 +34,18 @@
     <Duration x:Key="swdm-MotionButtonOut">0:0:0.2</Duration>      <!-- 200ms：按钮离开 -->
     <Duration x:Key="swdm-MotionSmoothScroll">0:0:0.3</Duration>   <!-- 300ms QuinticEase（⚠️近似，t2 §6） -->
     <Duration x:Key="swdm-MotionPageOut">0:0:0.11</Duration>       <!-- 110ms 页面退出 → 替换 → 30ms 进入 -->
-    <Duration x:Key="swdm-MotionPageIn">0:0:0.03</Duration>
+    <Duration x:Key="swdm-MotionPageIn">0:0:0.03</Duration>        <!-- 30ms 进入抬升偏移窗口 -->
+    <!-- 页面进入/退出与交错（t2 §2.5：进入 fade 100ms OutFluent(Weak)+双段位移 +5px/250ms 与 +11px/350ms OutBack；
+         stagger 25ms；退出 opacity −1 + TranslateY −6px 70ms,stagger 15ms；⚠️[参数待重标定]） -->
+    <Duration x:Key="swdm-MotionPageEnterFade">0:0:0.1</Duration>  <!-- 100ms 元素 fade -->
+    <Duration x:Key="swdm-MotionPageShift1">0:0:0.25</Duration>    <!-- 250ms 位移段 1(+5px） -->
+    <Duration x:Key="swdm-MotionPageShift2">0:0:0.35</Duration>    <!-- 350ms 位移段 2(+11px） -->
+    <Duration x:Key="swdm-MotionPageExitElement">0:0:0.07</Duration> <!-- 70ms 元素退出 -->
+    <Duration x:Key="swdm-MotionStaggerIn">0:0:0.025</Duration>    <!-- 25ms 进入交错 -->
+    <Duration x:Key="swdm-MotionStaggerOut">0:0:0.015</Duration>   <!-- 15ms 退出交错 -->
     <QuinticEase x:Key="swdm-EaseOutExtraStrong" EasingMode="EaseOut"/>  <!-- ≡ AniEaseOutFluent(ExtraStrong)=1-(1-t)^5 -->
+    <QuinticEase x:Key="swdm-EaseOutFluentWeak" EasingMode="EaseOut"/>   <!-- ≈ OutFluent(Weak),t2 §2.5 进入 fade；⚠️近似，t2 §6 -->
+    <BackEase x:Key="swdm-EaseOutBack" EasingMode="EaseOut" Amplitude="0.5"/>  <!-- ≈ OutBack,页面双段位移；⚠️近似，t2 §6 -->
     <!-- 颜色动画用 linear：不设 EasingFunction 即线性（Duration 引 swdm-MotionColor） -->
 
     <!-- ===== 阴影标量（t2 §2.1 阴影双路线 / §2.7 菜单阴影）⚠️[参数待重标定] ===== -->

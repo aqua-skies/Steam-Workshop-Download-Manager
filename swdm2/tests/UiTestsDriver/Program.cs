@@ -14,6 +14,7 @@
 // 当前测试均为 FlaUI 同步调用不受影响，D5 UI 测试增多后须扩展 STA/WPF 帧泵。
 // 产出回归仍在普通交互桌面用 `dotnet test`（架构 SP-3）；沙箱内临时回归用本驱动。
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using FlaUI.Core.Capturing;
@@ -22,6 +23,19 @@ var asm = typeof(Swdm2.UiTests.Tests.Smoke.AppLaunchSmokeTests).Assembly;
 int pass = 0, fail = 0, skip = 0;
 var failures = new List<string>();
 var watch = Stopwatch.StartNew();
+
+// D5.3 输入预热：SendInput 首调在该沙箱会话被 Win32(5) 拒绝访问（输入桌面 attach
+// 延迟；后续调用即恢复——DownloadJourneyMouse 首用路径实证），让失败发生在测试外。
+try
+{
+    FlaUI.Core.Input.Mouse.MoveTo(new System.Drawing.Point(1, 1));
+    FlaUI.Core.Input.Mouse.Click(FlaUI.Core.Input.MouseButton.Left);
+    Console.WriteLine("[WARMUP] SendInput 预热完成");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[WARMUP-SKIP] {ex.GetType().Name}: {ex.Message}");
+}
 
 // Q10 驱动级加固：套件启动前清理残留被测进程（单实例互斥 + 真实输入串行的前置）
 foreach (var residual in Process.GetProcessesByName("Swdm2.App"))
@@ -54,6 +68,11 @@ var sta = new Thread(() =>
     {
         foreach (var type in asm.GetTypes().OrderBy(t => t.FullName))
         {
+            // D5.3 调试支持：dotnet run -- <类型全名前缀>（诊断单测顺序耦合；跳过 -- 分隔符 token）
+            var typeFilter = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
+            if (typeFilter is not null && !(type.FullName ?? string.Empty)
+                .StartsWith(typeFilter, StringComparison.Ordinal))
+                continue;
             foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                                        .OrderBy(m => m.Name))
             {
@@ -71,11 +90,31 @@ var sta = new Thread(() =>
                 if (rows.Count == 0)
                     rows.Add(Array.Empty<object?>());
 
-                foreach (var args2 in rows)
+        foreach (var args2 in rows)
                 {
                     var p = (object[]?)args2 ?? Array.Empty<object?>();
-                    var instance = Activator.CreateInstance(type);
                     var name = $"{type.FullName}.{method.Name}" + (p.Length > 0 ? $"[{string.Join(",", p)}]" : "");
+                    // D5.3: ctor 抛异常（如 AppHost 组装失败）记为该测试 FAIL 并继续，
+                    // 不再以 DRIVER-LEVEL 中止整个运行（ctor 诊断信息同样宝贵）
+                    object? instance = null;
+                    try
+                    {
+                        instance = Activator.CreateInstance(type);
+                    }
+                    catch (TargetInvocationException tie) when (tie.InnerException is not null)
+                    {
+                        fail++;
+                        CaptureFailure(name);
+                        failures.Add($"{name}: ctor: {tie.InnerException.GetType().Name}: {tie.InnerException.Message}");
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        fail++;
+                        CaptureFailure(name);
+                        failures.Add($"{name}: ctor: {ex.GetType().Name}: {ex.Message}");
+                        continue;
+                    }
                     try
                     {
                         SynchronizationContext.SetSynchronizationContext(null);
@@ -95,13 +134,13 @@ var sta = new Thread(() =>
                     {
                         fail++;
                         CaptureFailure(name);
-                        failures.Add($"{name}: {tie.InnerException.GetType().Name}: {tie.InnerException.Message}");
+                        failures.Add($"{name}: {tie.InnerException.GetType().Name}: {tie.InnerException.Message}{StackSnippet(tie.InnerException)}");
                     }
                     catch (Exception ex)
                     {
                         fail++;
                         CaptureFailure(name);
-                        failures.Add($"{name}: {ex.GetType().Name}: {ex.Message}");
+                        failures.Add($"{name}: {ex.GetType().Name}: {ex.Message}{StackSnippet(ex)}");
                     }
                 }
             }
@@ -127,6 +166,17 @@ foreach (var f in failures) Console.WriteLine($"FAIL {f}");
 return fail == 0 ? 0 : 1;
 
 // 双判据：特性类型基链含 "Xunit.FactAttribute"（v2/v3 均适用），或名称以 FactAttribute/TheoryAttribute 结尾。
+static string StackSnippet(Exception ex)
+{
+    // D5.3: 失败堆栈前 3 帧（定位断言行号，不刷屏）
+    try
+    {
+        var frames = (ex.StackTrace ?? "").Split('\n').Where(l => l.Contains(":line")).Take(3);
+        return "\n  stack: " + string.Join(" | ", frames);
+    }
+    catch { return ""; }
+}
+
 static bool IsTestAttribute(MethodInfo m, out bool isTheory)
 {
     isTheory = false;

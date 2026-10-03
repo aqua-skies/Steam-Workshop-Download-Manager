@@ -57,6 +57,17 @@ public sealed class DownloadJourneySmokeTests
             Assert.True(downloadButton!.BoundingRectangle.Width > 4);
             Assert.True(downloadButton.BoundingRectangle.Height > 2);
 
+            // 环境降级门（D5.3 补齐，与 P0_10 同族）：沙箱无桌面合成=Capture 全黑
+            // ⇒ SendInput 鼠标注入被 Win32(5) 稳定拒绝（输入桌面未 attach;
+            // 另 P0_10 同路径经 blankCapture 门降级，本测试此前缺此门=硬挂）。
+            // 真实点击旅程层=ENV-DOWNGRADE 桌面通道复跑（同 t28/t38）。
+            var blankCapture = UiTestHelpers.MainScreenCaptureIsBlank();
+            if (blankCapture)
+            {
+                UiTestHelpers.DumpTree(window, "env-downgrade: mouse input not routed");
+                return; // 旅程层=桌面通道复跑；Layer 1 契约已断言（上方）
+            }
+
             // Layer 2 (desktop-required): physical click -> enqueue -> row -> state text.
             bool journeyAsserted;
             try
@@ -123,22 +134,12 @@ public sealed class DownloadJourneySmokeTests
     /// Real physical click (spike-verified pattern t4): GetClickablePoint when available;
     /// fallback = bounding-rect center + Mouse.MoveTo + Mouse.Click (physical down/up).
     /// No InvokePattern / no programmatic activation (t3 hard rule: real input only).
+    /// <summary>
+    /// 真实物理点击（t28 自建副本；D5.3 收编为 UiTestHelpers.RealClick 统一实现——
+    /// helper 在 P0_10 等同沙箱路径验证稳定，避免副本分叉）。
     /// </summary>
     private static void RealClick(AutomationElement element)
-    {
-        System.Drawing.Point pt;
-        try
-        {
-            pt = element.GetClickablePoint();
-        }
-        catch (FlaUI.Core.Exceptions.NoClickablePointException)
-        {
-            var r = element.BoundingRectangle;
-            pt = new System.Drawing.Point(r.X + r.Width / 2, r.Y + r.Height / 2);
-        }
-        Mouse.MoveTo(pt);
-        Mouse.Click(MouseButton.Left);
-    }
+        => UiTestHelpers.RealClick(element);
 
     // read-only UIA tree dump for domain audit (env-downgrade evidence).
     private static void DumpTree(Window window)
