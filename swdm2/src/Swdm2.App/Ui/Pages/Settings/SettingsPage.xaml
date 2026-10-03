@@ -142,7 +142,7 @@
                     </StackPanel>
                     <ProgressBar AutomationProperties.AutomationId="SettingsPage_Update_ProgressBar"
                                  Height="4" Margin="0,0,0,8" Maximum="100"
-                                 Value="{Binding UpdateDownloadProgress}"
+                                 Value="{Binding UpdateDownloadProgress, Mode=OneWay}"
                                  Visibility="{Binding UpdateProgressVisibility}"
                                  Foreground="{DynamicResource swdm-Accent500Brush}"/>
                     <TextBlock AutomationProperties.AutomationId="SettingsPage_Update_MessageText"
