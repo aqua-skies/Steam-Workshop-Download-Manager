@@ -7,6 +7,22 @@
 
 ---
 
+## [0.7.0] · 2026-10-03 · D6.3 Velopack 升级集成（t60)
+
+**版本**：0.6.0→0.7.0（`Directory.Build.props` 三同步：Version/AssemblyVersion/FileVersion)。
+
+**交付**（commit t60):
+- `IUpdateManager`/`VelopackUpdateManager`(Velopack 1.2.161 file:// feed):检查+下载+应用升级三路径
+- `UpdateService` 状态机（Idle→Checking→Available→Downloading→ReadyToApply→Applied/
+  Error/OverwriteInstall)+同步进度（SyncProgress:Progress<T> 异步 post 在驱动进程时序假阴性）
+- SmartScreenHintCard：未签名诚实提示卡（ captain v2.1 条款：三步教学，不伪装签名）
+- 设置页「软件更新」区：检查/下载/应用按钮+进度条+覆盖安装诚实降级提示（t58 降级②落地）
+- 编译修复一行：AppHost 缺 using Swdm2.Steam.Workshop(t59 WIP 同编译解锁）
+
+**验证**：clean+warnaserror 0-0;Updates 6/0（含 file feed 0.5.0→0.6.0 真包检查+下载实测
+  TestVelopackLocator);Settings 6/0+Core 72/Steam 161/Downloads 81 回归全绿。
+
+---
 ## [0.6.0] · 2026-10-03 · 阶段 6 开门：Velopack 打包链（t58 D6.1)
 
 **版本**：0.5.0→0.6.0（`Directory.Build.props` 三同步：Version/AssemblyVersion/FileVersion)。

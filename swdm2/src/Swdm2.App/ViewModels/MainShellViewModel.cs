@@ -12,6 +12,10 @@ using Swdm2.Downloads.Providers;
 using Swdm2.Downloads.Queue;
 using Swdm2.Steam.Community;
 using Swdm2.Steam.Web;
+// t59: 别名规避（Steam.Workshop.WorkshopBrowsePage=缓存载体 ≠ UI 页 WorkshopBrowsePage)
+using Swdm2.Steam.Workshop;
+using IWorkshopUpdateSource = Swdm2.Steam.Workshop.IWorkshopUpdateSource;
+using WorkshopUpdateChecker = Swdm2.Steam.Workshop.WorkshopUpdateChecker;
 
 namespace Swdm2.App.ViewModels;
 
@@ -77,7 +81,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         IConnectivityController? connectivity = null,
         ISteamWebApiClient? api = null,
         ICommunitySource? community = null,
-        ICommentSource? comments = null)
+        ICommentSource? comments = null,
+        IWorkshopUpdateSource? updateSource = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(queue);
@@ -100,7 +105,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         // [arch-20 t44] D5.5 浏览页（合成千项；网络源 D5.x 同契约注入）
         _browse = new WorkshopBrowsePageViewModel(WorkshopBrowseItem.SampleData());
         // D5.12: 库页（P0 旅程 5 载体；LocalLibraryScanner 轻扫，D6.1 替换真实库管理）
-        _library = new LibraryPageViewModel(new LocalLibraryScanner(paths), paths);
+        // D6.2(t59): 注入真实更新检查源+下载队列（角标/Hint 不阻塞；入队询问才下载）
+        _library = new LibraryPageViewModel(new LocalLibraryScanner(paths), paths, updateSource, queue);
 
         // D5.3: 导航委托 PageNavigationService（返回栈+时序）
         NavigateModDetailCommand = new RelayCommand(
@@ -110,9 +116,10 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
             () => AppHost.Navigation.Navigate<DownloadsPage>(
                 () => new DownloadsPage { DataContext = _downloads }));
         // [arch-20 t44] D5.5 浏览页导航（契约 id MainShell_Nav_BrowseButton)
+        // 全限定规避 Steam.Workshop.WorkshopBrowsePage（t56 缓存载体）歧义
         NavigateBrowseCommand = new RelayCommand(
-            () => AppHost.Navigation.Navigate<WorkshopBrowsePage>(
-                () => new WorkshopBrowsePage { DataContext = _browse }));
+            () => AppHost.Navigation.Navigate<Swdm2.App.Ui.Pages.WorkshopBrowsePage>(
+                () => new Swdm2.App.Ui.Pages.WorkshopBrowsePage { DataContext = _browse }));
         // D5.4: 游戏选择页导航（保留契约 id MainShell_Nav_GameSelectButton)
         NavigateGameSelectCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<GameSelectPage>(

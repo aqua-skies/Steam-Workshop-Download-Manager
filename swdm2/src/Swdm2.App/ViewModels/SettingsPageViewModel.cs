@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 using Swdm2.App.Boot;
+using Swdm2.App.Updates;
 using Swdm2.App.Connectivity;
 using Swdm2.App.Ui.Themes;
 using Swdm2.Core.Options;
@@ -24,6 +25,8 @@ public sealed class SettingsPageViewModel : ViewModelBase
     private readonly IPathService _paths;
     private readonly IConnectivityController _connectivity;
     private readonly ThemeService _themeService;
+    // D6.3: 升级服务（Velopack UpdateManager 封装）
+    private readonly UpdateService? _updates;
 
     private ProxyMode _proxyMode = ProxyMode.SystemProxy;
     private string _customProxyUrl = string.Empty;
@@ -132,18 +135,88 @@ public sealed class SettingsPageViewModel : ViewModelBase
     /// <summary>保存=持久化 JSON+重探代理（t48 契约）。</summary>
     public ICommand SaveCommand { get; }
 
+    /// <summary>D6.3:检查更新（Velopack feed)。</summary>
+    public ICommand CheckUpdateCommand { get; }
+
+    /// <summary>D6.3:下载更新（进度推进）。</summary>
+    public ICommand DownloadUpdateCommand { get; }
+
+    /// <summary>D6.3:应用更新并重启（VelopackApp.Run 钩子消费）。</summary>
+    public ICommand ApplyUpdateCommand { get; }
+
+    /// <summary>D6.3:升级服务状态镜像（绑 Message/Progress)。</summary>
+    public UpdateService? Updates => _updates;
+
+    /// <summary>升级进度（0-100;下载中推进）。</summary>
+    public int UpdateDownloadProgress => _updates?.DownloadProgress ?? 0;
+
+    /// <summary>升级状态消息（检查/下载/错误文案；诚实不吞）。</summary>
+    public string UpdateMessage => _updates?.Message ?? string.Empty;
+
+    /// <summary>覆盖安装（非 Velopack 通道）提示可见性（t58 诚实降级②)。</summary>
+    public Visibility UpdateOverwriteHintVisibility =>
+        _updates is { State: UpdateService.UpdateState.OverwriteInstall }
+            ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>下载进度条可见性（仅 Downloading)。</summary>
+    public Visibility UpdateProgressVisibility =>
+        _updates is { State: UpdateService.UpdateState.Downloading }
+            ? Visibility.Visible : Visibility.Collapsed;
+
     // ComboBox=双向绑 ProxyModeIndex（直驱 A2 抽屉，无需命令）
+
+    /// <summary>
+    /// D6.3 releases feed 默认值：开发期=file:// artifacts(t58 已就位双版本索引）;
+    /// 生产期换 GitHub Releases URL(D7 发布前配置化）。
+    /// </summary>
+    /// <summary>
+    /// 默认升级 feed 解析：上溯 artifacts(t58 双版本索引）→Velopack 自安装上下文
+    /// （update.exe 同级);缺则回退 exe 目录（覆盖安装下不读 feed=降级②安全路径）。
+    /// </summary>
+    private static IUpdateManager CreateDefaultUpdateManager(string? urlOverride)
+    {
+        var feed = urlOverride;
+        if (string.IsNullOrEmpty(feed))
+        {
+            var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+            while (dir is not null)
+            {
+                var cand = System.IO.Path.Combine(dir.FullName, "artifacts");
+                if (System.IO.File.Exists(System.IO.Path.Combine(cand, "RELEASES")))
+                {
+                    feed = cand;
+                    break;
+                }
+                dir = dir.Parent;
+            }
+        }
+        try
+        {
+            return new VelopackUpdateManager(feed ?? AppContext.BaseDirectory);
+        }
+        catch
+        {
+            return new NullUpdateManager(); // 上下文不可用=覆盖安装诚实降级②
+        }
+    }
 
     public SettingsPageViewModel(
         IPathService paths,
         IConnectivityController connectivity,
         ThemeService themeService,
         SteamOptions? steamOptions = null,
-        DownloadOptions? downloadOptions = null)
+        DownloadOptions? downloadOptions = null,
+        IUpdateManager? updateManager = null,
+        string? releasesFeedUrl = null)
     {
         _paths = paths ?? throw new ArgumentNullException(nameof(paths));
         _connectivity = connectivity ?? throw new ArgumentNullException(nameof(connectivity));
         _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+
+        // D6.3:升级服务（可注入桩测试；默认=上溯本地 artifacts feed(t60 实测通道；
+        // Velopack 安装环境=update.exe 同级 feed，GitHub Releases 于 D7 发布期配置化）
+        _updates = new UpdateService(
+            updateManager ?? CreateDefaultUpdateManager(releasesFeedUrl));
 
         // 当前值加载（option 快照）
         if (steamOptions is not null)
@@ -156,6 +229,35 @@ public sealed class SettingsPageViewModel : ViewModelBase
         _theme = _themeService.Current;
 
         SaveCommand = new RelayCommand(async () => await SaveAsync()); // 校验在 Save 内
+
+        // D6.3:升级流程命令（转发 UpdateService 状态机；UI 进度/消息经 mirror 属性）
+        CheckUpdateCommand = new RelayCommand(async () =>
+        {
+            if (_updates is null) return;
+            await _updates.CheckAsync();
+            RaiseUpdateMirrors();
+        });
+        DownloadUpdateCommand = new RelayCommand(async () =>
+        {
+            if (_updates is null) return;
+            await _updates.DownloadAsync();
+            RaiseUpdateMirrors();
+        });
+        ApplyUpdateCommand = new RelayCommand(async () =>
+        {
+            if (_updates is null) return;
+            await _updates.ApplyAsync();
+            RaiseUpdateMirrors();
+        });
+    }
+
+    /// <summary>D6.3:UpdateService 状态变化后镜像属性刷新（消息/进度/可见性）。</summary>
+    private void RaiseUpdateMirrors()
+    {
+        RaisePropertyChanged(nameof(UpdateMessage));
+        RaisePropertyChanged(nameof(UpdateDownloadProgress));
+        RaisePropertyChanged(nameof(UpdateProgressVisibility));
+        RaisePropertyChanged(nameof(UpdateOverwriteHintVisibility));
     }
 
     /// <summary>保存：校验→写 JSON→重探（端点/代理）。</summary>

@@ -1,0 +1,38 @@
+<UserControl x:Class="Swdm2.App.Ui.Controls.SmartScreenHintCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="220" d:DesignWidth="560">
+    <!--
+      D6.3 SmartScreen 未签名提示卡（captain v2.1 条款：诚实不伪装签名）:
+      - 未签名 exe 首次运行 Windows SmartScreen 会拦（"Windows 已保护你的电脑"）
+      - 引导三步：更多信息 → 仍要运行
+      - 明确声明当前发布未代码签名（不自称 EV/受信任发布者）
+      契约 id SmartScreenHint_<语义>。A6 圆弧+swdm-* 词条。
+    -->
+    <Border CornerRadius="6" Padding="16"
+            Background="{DynamicResource swdm-SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+        <StackPanel>
+            <TextBlock Text="Windows SmartScreen 提示" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+            <TextBlock AutomationProperties.AutomationId="SmartScreenHint_UnsignedStatementText"
+                       Text="当前发布未代码签名——首次运行时 Windows 可能拦截（诚实说明：我们不伪装签名验证）。"
+                       FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"
+                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+            <TextBlock Text="若被拦截，按以下步骤放行：" FontSize="12" Margin="0,0,0,4"
+                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+            <TextBlock AutomationProperties.AutomationId="SmartScreenHint_Step1Text"
+                       Text="① 点击「更多信息」" FontSize="12" Margin="8,0,0,2"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+            <TextBlock AutomationProperties.AutomationId="SmartScreenHint_Step2Text"
+                       Text="② 点击「仍要运行」" FontSize="12" Margin="8,0,0,2"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+            <TextBlock AutomationProperties.AutomationId="SmartScreenHint_Step3Text"
+                       Text="③ 仅需信任本项目的官方发布渠道（GitHub Releases）" FontSize="12" Margin="8,0,0,0"
+                       Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+        </StackPanel>
+    </Border>
+</UserControl>

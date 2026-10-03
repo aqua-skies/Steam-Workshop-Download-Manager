@@ -21,6 +21,7 @@
     <PackageReference Include="FlaUI.Core" Version="5.0.0" />
     <PackageReference Include="FlaUI.UIA3" Version="5.0.0" />
     <!-- D1.5锛氳劚鏁?sink 鐨?Serilog 绠￠亾娴嬭瘯锛堟枃浠?sink 瀹炴祴锛?-->
+    <PackageReference Include="Velopack" Version="1.2.161" />
     <PackageReference Include="Serilog" Version="4.0.2" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>

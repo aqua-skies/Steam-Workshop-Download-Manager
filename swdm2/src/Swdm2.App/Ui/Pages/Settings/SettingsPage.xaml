@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
+             xmlns:controls="clr-namespace:Swdm2.App.Ui.Controls"
              xmlns:themes="clr-namespace:Swdm2.App.Ui.Themes"
              mc:Ignorable="d"
              d:DesignHeight="640" d:DesignWidth="760"
@@ -114,6 +115,50 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+
+            <!-- 检查更新组（D6.3;Velopack UpdateManager） -->
+            <Border CornerRadius="6" Padding="16" Margin="0,0,0,12"
+                    Background="{DynamicResource swdm-SurfaceCardBrush}"
+                    BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="软件更新" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button AutomationProperties.AutomationId="SettingsPage_Update_CheckButton"
+                                Content="检查更新" Padding="12,5" Margin="0,0,12,0"
+                                Command="{Binding CheckUpdateCommand}"
+                                Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                                Background="{DynamicResource swdm-Accent500Brush}"/>
+                        <Button AutomationProperties.AutomationId="SettingsPage_Update_DownloadButton"
+                                Content="下载更新" Padding="12,5" Margin="0,0,12,0"
+                                Command="{Binding DownloadUpdateCommand}"
+                                Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                Background="{DynamicResource swdm-SurfaceRaisedBrush}"/>
+                        <Button AutomationProperties.AutomationId="SettingsPage_Update_ApplyButton"
+                                Content="应用并重启" Padding="12,5"
+                                Command="{Binding ApplyUpdateCommand}"
+                                Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                                Background="{DynamicResource swdm-SurfaceRaisedBrush}"/>
+                    </StackPanel>
+                    <ProgressBar AutomationProperties.AutomationId="SettingsPage_Update_ProgressBar"
+                                 Height="4" Margin="0,0,0,8" Maximum="100"
+                                 Value="{Binding UpdateDownloadProgress}"
+                                 Visibility="{Binding UpdateProgressVisibility}"
+                                 Foreground="{DynamicResource swdm-Accent500Brush}"/>
+                    <TextBlock AutomationProperties.AutomationId="SettingsPage_Update_MessageText"
+                               Text="{Binding UpdateMessage}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                    <!-- 覆盖安装提示（t58 诚实降级②:自动升级不可用=引导 Setup/releases) -->
+                    <TextBlock AutomationProperties.AutomationId="SettingsPage_Update_OverwriteHintText"
+                               Text="当前为覆盖安装——自动升级不可用，请用 GitHub Releases 的 Setup 或发布包更新。"
+                               FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"
+                               Visibility="{Binding UpdateOverwriteHintVisibility}"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- SmartScreen 未签名提示卡（captain v2.1 条款：诚实不伪装签名） -->
+            <controls:SmartScreenHintCard Margin="0,0,0,12"/>
 
             <!-- 高级组 -->
             <Border CornerRadius="6" Padding="16" Margin="0,0,0,16"
