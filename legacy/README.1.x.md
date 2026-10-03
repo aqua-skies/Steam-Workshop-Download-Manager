@@ -1,8 +1,8 @@
-# SWDM — Steam 工坊下载管理器（v1.4.2)
+﻿# SWDM — Steam 工坊下载管理器
 
-[English](legacy/README.en.md) | [中文](README.md)
+[English](README.en.md) | [中文](README.md)
 
-![version](https://img.shields.io/badge/version-1.4.2-blue)
+![version](https://img.shields.io/badge/version-1.4.1-blue)
 ![python](https://img.shields.io/badge/python-3.12-3776AB)
 ![pyside6](https://img.shields.io/badge/GUI-PySide6-41CD52)
 ![platform](https://img.shields.io/badge/platform-Windows-0078D6)
@@ -64,11 +64,11 @@
 
 | 工坊浏览 | 下载队列 |
 |---|---|
-| ![工坊浏览](legacy/docs/screenshots/workshop.png) | ![下载队列](legacy/docs/screenshots/downloads.png) |
+| ![工坊浏览](docs/screenshots/workshop.png) | ![下载队列](docs/screenshots/downloads.png) |
 
 | mod 库 | 设置 |
 |---|---|
-| ![mod 库](legacy/docs/screenshots/library.png) | ![设置](legacy/docs/screenshots/settings.png) |
+| ![mod 库](docs/screenshots/library.png) | ![设置](docs/screenshots/settings.png) |
 
 ## 快速开始
 
