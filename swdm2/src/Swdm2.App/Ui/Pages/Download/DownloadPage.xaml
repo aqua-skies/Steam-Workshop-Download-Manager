@@ -1,0 +1,134 @@
+<pages:PageBase x:Class="Swdm2.App.Ui.Pages.Download.DownloadPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:Swdm2.App.ViewModels"
+             xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
+             xmlns:ctrl="clr-namespace:Swdm2.App.Ui.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="560" d:DesignWidth="900">
+    <!--
+      D5.7 下载页（IDM 体感完整版；t46）：
+      - 三栏布局：左=类别树（游戏→目录;Filter 选中过滤行）
+        中=任务列表（DataGrid 风格行：文件名/大小/状态/ETA/速度/分段数/Q 列）
+        行级动作按钮=选中行驱动（工具栏+行内双通道，状态机 CanXxx)
+      - Q 列=排队序（Queued/Pending 计数器，空="—";IDM Q 列语义）
+      - 三档通知强度：Hint(Info/Success/Warning/Error) 消费事件总线 Message
+        （聚合：Failed/Error→Error,限流关键字→Warning,完成→Success,其余 Info;
+        消息文本全部来自 ProgressSnapshot.Message=真实回显，不编造）
+      - 保留契约 id（t3 §3.2):DownloadsPage_TaskList_Items/_Item 六字段+四按钮
+        （t26/t38/t49 断言直接复用，不破坏 FlaUI 回归）
+      - 色彩全 DynamicResource swdm-*;皮肤级动画留 t55
+    -->
+    <UserControl.Resources>
+        <DataTemplate x:Key="DownloadRowTemplate" DataType="{x:Type vm:DownloadTaskRowViewModel}">
+            <Grid Margin="0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>      <!-- Q -->
+                    <ColumnDefinition Width="*"/>        <!-- 文件名 -->
+                    <ColumnDefinition Width="110"/>      <!-- 状态 -->
+                    <ColumnDefinition Width="80"/>       <!-- 速度 -->
+                    <ColumnDefinition Width="72"/>       <!-- ETA -->
+                    <ColumnDefinition Width="58"/>       <!-- 分段数 -->
+                    <ColumnDefinition Width="100"/>      <!-- 大小 -->
+                    <ColumnDefinition Width="Auto"/>      <!-- 动作 -->
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_QueueText"
+                           Text="{Binding QueueText}" VerticalAlignment="Center"
+                           HorizontalAlignment="Center" Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                           Margin="0,0,6,0"/>
+                <TextBlock Grid.Column="1" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_FileNameText"
+                           Text="{Binding FileName}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="2" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_StateText"
+                           Text="{Binding StateText}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                <TextBlock Grid.Column="3" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_SpeedText"
+                           Text="{Binding SpeedText}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="4" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_EtaText"
+                           Text="{Binding EtaText}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="5" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_SegmentsText"
+                           Text="{Binding SegmentsText}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="6" AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_SizeText"
+                           Text="{Binding SizeText}" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="7" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_PauseButton"
+                            Content="暂停" Margin="0,0,4,0" Padding="8,2"
+                            Command="{Binding PauseCommand}"/>
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_ResumeButton"
+                            Content="继续" Margin="0,0,4,0" Padding="8,2"
+                            Command="{Binding ResumeCommand}"/>
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_RetryButton"
+                            Content="重试" Margin="0,0,4,0" Padding="8,2"
+                            Command="{Binding RetryCommand}"/>
+                    <Button AutomationProperties.AutomationId="DownloadsPage_TaskList_Item_CancelButton"
+                            Content="取消" Padding="8,2"
+                            Command="{Binding CancelCommand}"/>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="12,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 顶栏：工具条+三档通知 -->
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button AutomationProperties.AutomationId="DownloadsPage_PauseSelectedButton"
+                    Content="暂停选中" Padding="10,3" Margin="0,0,6,0"
+                    Command="{Binding PauseSelectedCommand}"/>
+            <Button AutomationProperties.AutomationId="DownloadsPage_ResumeSelectedButton"
+                    Content="继续选中" Padding="10,3" Margin="0,0,6,0"
+                    Command="{Binding ResumeSelectedCommand}"/>
+            <Button AutomationProperties.AutomationId="DownloadsPage_RetrySelectedButton"
+                    Content="重试选中" Padding="10,3" Margin="0,0,6,0"
+                    Command="{Binding RetrySelectedCommand}"/>
+            <Button AutomationProperties.AutomationId="DownloadsPage_CancelSelectedButton"
+                    Content="取消选中" Padding="10,3" Margin="0,0,12,0"
+                    Command="{Binding CancelSelectedCommand}"/>
+            <ctrl:Hint AutomationProperties.AutomationId="DownloadsPage_NotificationHint"
+                       Message="{Binding NotificationMessage}"
+                       Kind="{Binding NotificationKind}"
+                       CloseAutomationId="DownloadsPage_Notification_Close"
+                       MinWidth="240" MaxWidth="520"/>
+        </StackPanel>
+
+        <!-- 左：类别树=游戏→目录 -->
+        <TreeView Grid.Row="1" Grid.Column="0" Margin="0,0,8,0"
+                  AutomationProperties.AutomationId="DownloadsPage_CategoryTree"
+                  ItemsSource="{Binding Categories}"
+                  SelectedItemChanged="OnCategorySelected">
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                    <TextBlock Text="{Binding Display}"/>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+
+        <!-- 右：任务列表（IDM 行） -->
+        <ListBox Grid.Row="1" Grid.Column="1"
+                 AutomationProperties.AutomationId="DownloadsPage_TaskList_Items"
+                 ItemsSource="{Binding FilteredRows}"
+                 SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                 ItemTemplate="{StaticResource DownloadRowTemplate}"
+                 HorizontalContentAlignment="Stretch">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="AutomationProperties.AutomationId"
+                            Value="DownloadsPage_TaskList_Item"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="6,3"/>
+                    <Setter Property="Margin" Value="0,1"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+        </ListBox>
+    </Grid>
+</pages:PageBase>

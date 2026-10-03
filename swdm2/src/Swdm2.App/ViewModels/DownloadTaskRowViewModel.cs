@@ -25,11 +25,14 @@ public sealed class DownloadTaskRowViewModel : ViewModelBase
     private string _etaText = "N/A";
     private string _segmentsText = "N/A";
     private string _sizeText = "N/A";
+    private string _queueText = "—";
     private bool _notifiedComplete;
 
     public DownloadTaskId Id { get; }
     public string FileName { get; }
     public string DestinationDirectory { get; }
+    /// <summary>游戏 AppId（类别树=游戏→目录数据源）。</summary>
+    public AppId AppId { get; }
 
     /// <summary>状态文本（断言锚点 DownloadsPage_TaskList_Item_StateText）。</summary>
     public string StateText
@@ -62,6 +65,13 @@ public sealed class DownloadTaskRowViewModel : ViewModelBase
         private set => SetProperty(ref _sizeText, value);
     }
 
+    /// <summary>Q 列文本（IDM 排队序语义；Queued/Pending 计数器，空="—")。</summary>
+    public string QueueText
+    {
+        get => _queueText;
+        set => SetProperty(ref _queueText, value);
+    }
+
     /// <summary>本行是否已推过完成弹窗（去重，终态只弹一次）。</summary>
     public bool NotifiedComplete
     {
@@ -92,6 +102,7 @@ public sealed class DownloadTaskRowViewModel : ViewModelBase
         Id = task.Id;
         FileName = task.Item.Title;
         DestinationDirectory = task.DestinationDirectory;
+        AppId = task.AppId;
 
         PauseCommand = new RelayCommand(() => FireAndForget(() => provider.PauseAsync(Id)), () => CanPause);
         // Resume 下游=scheduler 的 Paused→Downloading 再执行器（D3.6/D4 接入点，arch-20 域）。
