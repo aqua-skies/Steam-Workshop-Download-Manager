@@ -1,4 +1,5 @@
 using System.Windows;
+using Swdm2.App.Boot;
 using Swdm2.App.Ui.Pages;
 
 namespace Swdm2.App.Ui.Pages;
@@ -19,5 +20,14 @@ public partial class SphereHomePage : PageBase
     {
         if (SphereHostControl is not null)
             SphereHostControl.StartAnimation();
+    }
+    /// <summary>§2.9 空态「前往设置」入口=跳设置页（D5.18 落地）。</summary>
+    private void EmptyHint_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        AppHost.Navigation.Navigate<Ui.Pages.Settings.SettingsPage>(
+            () => new Ui.Pages.Settings.SettingsPage
+            {
+                DataContext = AppHost.Shell.Settings,
+            });
     }
 }

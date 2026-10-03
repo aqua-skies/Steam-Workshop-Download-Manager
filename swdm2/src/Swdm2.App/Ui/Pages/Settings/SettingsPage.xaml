@@ -1,0 +1,143 @@
+<pages:PageBase x:Class="Swdm2.App.Ui.Pages.Settings.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
+             xmlns:themes="clr-namespace:Swdm2.App.Ui.Themes"
+             mc:Ignorable="d"
+             d:DesignHeight="640" d:DesignWidth="760"
+             Background="{DynamicResource swdm-SurfaceCanvasBrush}">
+    <!--
+      D5.18 设置页（t2 v1.4 D5.8 规格）:
+      - 分组：账号 / SteamCMD / 网络（代理模式下拉 A2 抽屉+Custom 必填） / 外观（主题即时预览） / 高级
+      - A6 全局圆弧：卡片 CornerRadius=RadiusMd(6);液态玻璃观感
+      - 颜色 DynamicResource swdm-*（t2 §1.4 不变量③）
+      契约 id SettingsPage_<组>_<语义>（t3 §3.2)
+    -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0">
+        <StackPanel Margin="16" Width="560" HorizontalAlignment="Left">
+
+            <!-- 账号组 -->
+            <Border CornerRadius="6" Padding="16" Margin="0,0,0,12"
+                    Background="{DynamicResource swdm-SurfaceCardBrush}"
+                    BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="账号" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <TextBlock Text="Steam 账号名（匿名下载留空）" FontSize="12" Margin="0,0,0,4"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                    <TextBox AutomationProperties.AutomationId="SettingsPage_Account_UserNameTextBox"
+                             Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" Padding="8,5"
+                             Background="{DynamicResource swdm-SurfaceInputBrush}"
+                             Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                             BorderBrush="{DynamicResource swdm-StrokeInputBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- SteamCMD 组 -->
+            <Border CornerRadius="6" Padding="16" Margin="0,0,0,12"
+                    Background="{DynamicResource swdm-SurfaceCardBrush}"
+                    BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="SteamCMD" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <TextBlock Text="steamcmd.exe 路径（首次使用自动下载安装）" FontSize="12" Margin="0,0,0,4"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                    <TextBox AutomationProperties.AutomationId="SettingsPage_SteamCmd_PathTextBox"
+                             Text="{Binding SteamCmdDirectory, UpdateSourceTrigger=PropertyChanged}" Padding="8,5" IsReadOnly="True"
+                             Background="{DynamicResource swdm-SurfaceInputBrush}"
+                             Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                             BorderBrush="{DynamicResource swdm-StrokeInputBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 网络组（代理模式下拉 + A2 抽屉 Custom 输入 + 必填校验） -->
+            <Border CornerRadius="6" Padding="16" Margin="0,0,0,12"
+                    Background="{DynamicResource swdm-SurfaceCardBrush}"
+                    BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="网络" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <TextBlock Text="代理模式" FontSize="12" Margin="0,0,0,4"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                    <ComboBox AutomationProperties.AutomationId="SettingsPage_Network_ProxyModeComboBox"
+                              SelectedIndex="{Binding ProxyModeIndex, Mode=TwoWay}"
+                              Padding="8,5" Margin="0,0,0,8">
+                        <ComboBoxItem Content="直连（不使用代理）"/>
+                        <ComboBoxItem Content="系统代理（Windows 设置）"/>
+                        <ComboBoxItem Content="自定义代理"/>
+                    </ComboBox>
+
+                    <!-- A2 抽屉：Custom 输入区（SlideDown/SlideUp 300ms;Visibility 驱动） -->
+                    <Border x:Name="CustomProxyPanel"
+                            AutomationProperties.AutomationId="SettingsPage_Network_CustomProxyPanel"
+                            Visibility="{Binding CustomPanelVisibility}"
+                            CornerRadius="6" Padding="12" Margin="0,0,0,8"
+                            Background="{DynamicResource swdm-SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource swdm-Accent500Brush}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="自定义代理 URL（必填）" FontSize="12" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                            <TextBox AutomationProperties.AutomationId="SettingsPage_Network_CustomProxyUrlTextBox"
+                                     Text="{Binding CustomProxyUrl, UpdateSourceTrigger=PropertyChanged}" Padding="8,5"
+                                     Background="{DynamicResource swdm-SurfaceInputBrush}"
+                                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                     BorderBrush="{DynamicResource swdm-StrokeInputBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 外观组（主题即时预览） -->
+            <Border CornerRadius="6" Padding="16" Margin="0,0,0,12"
+                    Background="{DynamicResource swdm-SurfaceCardBrush}"
+                    BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="外观" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <TextBlock Text="主题（选择即预览，A4 无闪烁换皮）" FontSize="12" Margin="0,0,0,4"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton AutomationProperties.AutomationId="SettingsPage_Appearance_ThemeLightRadio"
+                                     Content="薄荷清晨（亮）" Margin="0,0,16,0" Padding="4"
+                                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                     IsChecked="{Binding ThemeIsLight, Mode=TwoWay}"/>
+                        <RadioButton AutomationProperties.AutomationId="SettingsPage_Appearance_ThemeDarkRadio"
+                                     Content="薄荷夜（暗）" Margin="0,0,16,0" Padding="4"
+                                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                     IsChecked="{Binding ThemeIsDark, Mode=TwoWay}"/>
+                        <RadioButton AutomationProperties.AutomationId="SettingsPage_Appearance_ThemeFollowSystemRadio"
+                                     Content="跟随系统" Padding="4"
+                                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                     IsChecked="{Binding ThemeIsFollowSystem, Mode=TwoWay}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 高级组 -->
+            <Border CornerRadius="6" Padding="16" Margin="0,0,0,16"
+                    Background="{DynamicResource swdm-SurfaceCardBrush}"
+                    BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="高级" FontSize="14" FontWeight="Bold" Margin="0,0,0,4"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <TextBlock Text="节流/并发/退避起点值见 appsettings.json（⚠️[参数待重标定] 交付前实测锁定）"
+                               FontSize="12" TextWrapping="Wrap"
+                               Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 校验/保存反馈（诚实文案） -->
+            <TextBlock AutomationProperties.AutomationId="SettingsPage_ValidationMessageText"
+                       Text="{Binding ValidationMessage}" FontSize="12" Margin="0,0,0,8" TextWrapping="Wrap"
+                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+
+            <Button AutomationProperties.AutomationId="SettingsPage_SaveButton"
+                    Content="保存设置" Padding="16,8" HorizontalAlignment="Left"
+                    Command="{Binding SaveCommand}"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"/>
+        </StackPanel>
+    </ScrollViewer>
+</pages:PageBase>

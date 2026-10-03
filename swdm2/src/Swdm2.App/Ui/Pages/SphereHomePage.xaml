@@ -47,7 +47,7 @@
                            Text="无默认游戏，前往设置"
                            Visibility="{Binding EmptyHintVisibility}"
                            FontSize="12" Margin="0,8,0,0"
-                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                           Foreground="{DynamicResource swdm-TextTertiaryBrush}" MouseLeftButtonDown="EmptyHint_Click" Cursor="Hand"/>
                 <!-- §2.9 槽位 iii 开始钮 + iv「下载 mod」直通 -->
                 <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,4,0,0">
                     <Button AutomationProperties.AutomationId="DefaultGameCard_StartButton"

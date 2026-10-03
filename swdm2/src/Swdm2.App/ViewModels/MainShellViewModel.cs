@@ -33,6 +33,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     private readonly LibraryPageViewModel _library;
     // D5.15 球体主页 VM（用户 2026-10-03 亲定：进入即球体主页=替换原主页）
     private readonly SphereHomePageViewModel _sphereHome;
+    // D5.18 设置页 VM
+    private readonly SettingsPageViewModel _settings;
 
     /// <summary>详情页 VM（MainWindow 初始化默认页时取 DataContext）。</summary>
     public ModDetailPageViewModel ModDetail => _modDetail;
@@ -52,6 +54,9 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     /// <summary>D5.15 球体主页 VM（默认主页）。</summary>
     public SphereHomePageViewModel SphereHome => _sphereHome;
 
+    /// <summary>D5.18 设置页 VM。</summary>
+    public SettingsPageViewModel Settings => _settings;
+
     /// <summary>D5.9 状态栏连接 VM（MainWindow 状态栏绑定源）。</summary>
     public ConnectivityBarViewModel Connectivity { get; }
 
@@ -61,6 +66,7 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     public ICommand NavigateGameSelectCommand { get; }
     public ICommand NavigateLibraryCommand { get; } // D5.12
     public ICommand NavigateSphereHomeCommand { get; } // D5.15
+    public ICommand NavigateSettingsCommand { get; } // D5.18
 
     public MainShellViewModel(
         IPathService paths,
@@ -126,6 +132,13 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         NavigateSphereHomeCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<Ui.Pages.SphereHomePage>(
                 () => new Ui.Pages.SphereHomePage { DataContext = _sphereHome }));
+
+        // D5.18: 设置页（契约 id MainShell_Nav_SettingsButton;主页空态「前往设置」入口）
+        _settings = new SettingsPageViewModel(paths, AppHost.Connectivity,
+            new Ui.Themes.ThemeService());
+        NavigateSettingsCommand = new RelayCommand(
+            () => AppHost.Navigation.Navigate<Ui.Pages.Settings.SettingsPage>(
+                () => new Ui.Pages.Settings.SettingsPage { DataContext = _settings }));
     }
 
     /// <summary>#10 旅程：详情页下载入队后跳下载页。</summary>
