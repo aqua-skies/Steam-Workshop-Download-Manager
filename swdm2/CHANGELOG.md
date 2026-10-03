@@ -7,6 +7,29 @@
 
 ---
 
+## [0.5.0] · 2026-10-03 · 阶段 5:PCL2 视觉主体+页面群+真实数据源（D5.11 交付门）
+
+**四要素**：全量回归 Core 72/Steam 161/Downloads 81 两连绿+build 0-0 warnaserror；Ui 逻辑层全绿（六清单 1-6 逻辑层断言）+FlaUI 输入层 12 失败=环境劣化基线族（三重实测证据，桌面复跑条款）；讨论组评审\docs/process/review_2.0_0.5.0.md\（三原则）；版本 0.4.0→0.5.0（\Directory.Build.props\）。
+### 新增（主题系统+自绘控件+chrome 导航+页面群+球体主页+动画套件+真实数据源）
+- **D5.1 主题系统**（t40,07d5fa0)：四字典（Common 几何/字体/动画/阴影标量+Light/Dark 21 令牌×双资源+Accent 换皮覆盖位）+App.xaml 单点合并（A3)+ThemeService 换 MergedDictionaries 条目=全树 DynamicResource 立即重应用（无闪烁）+FollowSystem 注册表探测。WCAG 实算复验两处声明值不足→深化回写 spec v1.2。
+- **D5.2 自绘控件层**（t41,631af14)：SwdmCard 三层+悬停四路 90ms 并行+150ms 高/250ms 箭头/200ms 退出；AniHelper 命名轨道+StartColor 陷阱修复（动画期独立可写 brush,Completed 回 DynamicResource);Hint 四档语义色条（Info/Success/Warning/Error)+ModListItem 行 42+勾选双段生长+SmoothScrollViewer 300ms 惯性滚轮。
+- **D5.3 窗口 chrome 与导航**（t42,3f9dcdb）：**弃 WPF-UI FluentWindow（A8b 实测：三次最小复现 UIA 子树零节点→FlaUI 真实输入不可达）**;WindowChrome 覆盖缩放（PCL2 Resizer 同值）+自绘 48px 标题栏+WM_NCHITTEST fallback 条款+PageBase 四态+PageNavigationService 返回栈（110→30ms 切换时序）。
+- **D5.4 游戏选择页**（t43,70ed703):**1.x 三 bug 内置防呆**：联想重做→单实例 Clear+Add(Assert.Same 引用不变）;即时反馈→同步进入搜索态；中英别名→NFKC 归一化（饥荒≡Don't Starve);回车去重→幂等兑现。四契约 id+确认钮 CanExecute 语义。
+- **D5.5 工坊浏览页**（t44,2ca235f,arch-20):搜索/标签/作者/排序+分页 VM+A2 虚拟化路线 A 六不变量断言+惯性滚轮+帧计数 API。
+- **D5.6 mod 详情页**（t45,508a35e):依赖来自 API 直显+诚实降级三重链（API 错误态/社区回退标注/字段缺失不造假）+评论解析器+冲突检测三规则。
+- **D5.7 下载页 IDM 体感**（t46,6891905,qa-20):类别树（游戏→目录，GameAliasTable 兜底）+八列任务行（文件名/状态/速度/ETA/分段数/大小/Q/动作）+工具栏选中驱动+三档 Hint 通知（**文本全部来自事件总线 Message*)。steamcmd 分段数 N/A 诚实。
+- **D5.8 设置页**（t47→t57 承接，31f51de):四分组+JSON 持久化热更新+SwitchProxyModeAsync 工厂重建重探+A2 抽屉+A6 圆弧+双重校验+空态"前往设置"入口。
+- **D5.9 状态栏端点可达性**（t48,7c22642,arch-20):三端点芯片+代理模式标签+失败引导+真基线实验（环境层归因实证）。
+- **D5.10 P0 冒烟+A9 重标定**（t49,277d63f,qa-20):旅程 1/3/4 真实输入+**A9 计时挂真实旅程**（N=3 样本≤150ms 断言，禁 InvokePattern);诚实阻断：旅程 2 搜索页/旅程 5 库页阻断矩阵入 calibration_2.md §F/§G。
+- **D5.12 库页**（t51,3a6f6bd,arch-20):LibraryPage+VM+ILibraryScanner（开放封闭 D6.1 注入点）+LocalLibraryScanner。
+- **D5.13-D5.15 视觉三件套**（t52/t53/t54,visual-20)：视觉规格 v1.4 回写（配色A 薄荷清晨 21 令牌双模式+WCAG 实算+球体主页规格+动画清单 A1-A6)+配色A 令牌迁移（换皮即 Accent 覆盖证明）+**球体主页 3D 自绘**(Viewport3D 二十面体细分 sub3=1280 面+1/r² 弹簧场+PointLight 薄荷光源+拖拽惯性 0.92+RayHitTest 贴图命中+对话泡泡+进入即主页）。**两条 WPF 3D 实证纠正**：RayMeshGeometry3DHitTestResult 无 TriangleIndex(反射实测）→VertexIndex 顶点反查；EdgeStiffness*dt*60 增益发散→比例+量级钳制。
+- **D5.16 动画套件**（t55,587e48c,arch-20):A1-A6+帧采样门 8 件套（60 帧窗口/20fps 门）；A3 编排骨架在位（终值对齐 t54 球体退场）。
+- **D5.17 真实 Steam 数据源**（t56,0278818,arch-20):storesearch 匿名+指纹头+Store 桶节流+熔断+**缓存深拷贝（api_cache 学费断言化）**+诚实降级；参数裁决文档化（Store 域=Store 桶 250ms)。
+### 验证
+clean+warnaserror **0-0**;Core 72/Steam 161/Downloads 81 两连绿（Steam +13=t56 storesearch);Ui 逻辑层全绿（Anim 18/HomeSphere 11/Library 4/Downloads 10/ModDetail 12/Settings 6/Themes 23/Browse 27/Controls 10 等）；FlaUI 输入层 12 失败=沙箱环境劣化基线族（AppData 拒写→AppHost 启动崩，三重实测非代码回归，同 0.4.0 门同族）+桌面复跑条款。SLN 全绿 0-0。**SP-3 链路（xUnit testhost 崩溃替代）**：四驱动反射执行 [WpfFact],TMP/TEMP 双重定向 .dtmp。
+
+---
+
 ## [0.4.0] · 2026-10-03 · 阶段 4:下载核心域（D4.10 交付门）
 
 **四要素**:全量回归**318/0 两连绿**（增量+clean 双口径 build 0-0 warnaserror+CoreTestsDriver 72/0+SteamTestsDriver 148/0+DownloadsTestsDriver 81/0+UiTestsDriver 17/0,SP-3 沙箱驱动，TEMP/TMP 双重定向）+ 讨论组评审 \docs/process/review_2.0_0.4.0.md\（三原则）+ 版本 0.3.0→0.4.0（\Directory.Build.props\）+ 本变更记录。

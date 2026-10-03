@@ -133,7 +133,9 @@ public sealed class SettingsPageViewModelTests
 
         public ProxyMode CurrentProxyMode => ProxyMode.SystemProxy;
         public string? CustomProxyUrl => null;
+#pragma warning disable CS0067 // 事件为接口实现契约保留（消费方订阅）
         public event EventHandler? ProxyModeChanged;
+#pragma warning restore CS0067
 
         public Task RefreshAsync(CancellationToken ct = default) => Task.CompletedTask;
 
