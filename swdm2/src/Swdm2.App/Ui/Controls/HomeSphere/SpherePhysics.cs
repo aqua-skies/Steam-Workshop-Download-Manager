@@ -118,13 +118,13 @@ public sealed class SpherePhysics
                 if (len < 1e-9) continue;
 
                 var rest = _restEdgeLength[e];
-                // 线刚性=边长差的比例收缩（单次迭代收回差值的固定比例；
-                // 不用增益*dt 复合=避免正反馈爆炸把位移推到 MaxDisplacement
-                // 钳值——用户条款是"线刚性骨架不散"，比例收缩是稳定收敛的
-                // 投影法，逐帧 iterations 次）
-                var diff = (len - rest) / len * 0.5;
+                // 线刚性=边长差的比例收缩（位移通道小幅修正，避免正反馈指数
+                // 爆炸把位移推到 MaxDisplacement 钳值——实测旧版 step5-7
+                // far 位移 2e-6→1.2e-5→3.7e-4 指数发散；比例 0.5→0.1
+                // + 修正量级钳制=修正始终小于边长差本身，收敛）
+                var diff = (len - rest) / len * 0.1;
                 // 单帧边长修正钳制（与位移振幅同量级，不发散）
-                var maxStep = MaxDisplacement * 0.25;
+                var maxStep = MaxDisplacement * 0.05;
                 if (diff > maxStep) diff = maxStep;
                 if (diff < -maxStep) diff = -maxStep;
                 // 沿边方向拉回（位移沿法向投影=不破坏仅法向自由度的软化语义）
