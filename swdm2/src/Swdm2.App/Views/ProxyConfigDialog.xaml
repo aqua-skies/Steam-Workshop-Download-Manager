@@ -1,0 +1,52 @@
+<Window x:Class="Swdm2.App.Views.ProxyConfigDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="配置代理" Height="240" Width="420"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        AutomationProperties.AutomationId="ProxyConfig_Dialog">
+    <!--
+    D5.9 失败引导：状态栏端点失败→配代理弹窗。
+    S5:C# HttpClient 不读系统代理 → ProxyMode 三态显式注入（Direct/SystemProxy/Custom)。
+    id 契约（t3 §3.2 同族）：ProxyConfig_Dialog/_ModeCombo/_CustomUrl/_Apply/_Cancel。
+    颜色一律 DynamicResource swdm-*（t2 §1.4 不变量）。
+    -->
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="代理模式" FontWeight="Bold"
+                   Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+        <ComboBox x:Name="ModeCombo" Grid.Row="1" Margin="0,6,0,0"
+                  AutomationProperties.AutomationId="ProxyConfig_ModeCombo"
+                  SelectedIndex="0">
+            <ComboBoxItem Content="直连（不使用代理）" AutomationProperties.AutomationId="ProxyConfig_Mode_Direct"/>
+            <ComboBoxItem Content="系统代理" AutomationProperties.AutomationId="ProxyConfig_Mode_System"/>
+            <ComboBoxItem Content="自定义代理" AutomationProperties.AutomationId="ProxyConfig_Mode_Custom"/>
+        </ComboBox>
+        <TextBlock Grid.Row="2" Margin="0,14,0,4" Text="自定义代理 URL（Custom 模式必填，如 http://127.0.0.1:7897)"
+                   Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+        <TextBox x:Name="CustomUrlBox" Grid.Row="3"
+                 AutomationProperties.AutomationId="ProxyConfig_CustomUrl"
+                 />
+        <TextBlock x:Name="ErrorText" Grid.Row="4" Margin="0,8,0,0"
+                   Foreground="{DynamicResource swdm-Danger500Brush}"
+                   TextWrapping="Wrap" Visibility="Collapsed"/>
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="取消" Padding="16,6" Margin="0,0,10,0"
+                    AutomationProperties.AutomationId="ProxyConfig_Cancel"
+                    IsCancel="True"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+            <Button Content="应用并探测" Padding="16,6"
+                    AutomationProperties.AutomationId="ProxyConfig_Apply"
+                    IsDefault="True" Click="Apply_Click"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"/>
+        </StackPanel>
+    </Grid>
+</Window>

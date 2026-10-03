@@ -1,10 +1,15 @@
 using System.Windows.Input;
 using Swdm2.App.Boot;
+using Swdm2.App.Community;
+using Swdm2.App.Connectivity;
+using Swdm2.App.ViewModels;
 using Swdm2.App.Views;
 using Swdm2.Core.Paths;
 using Swdm2.Downloads.Events;
 using Swdm2.Downloads.Providers;
 using Swdm2.Downloads.Queue;
+using Swdm2.Steam.Community;
+using Swdm2.Steam.Web;
 
 namespace Swdm2.App.ViewModels;
 
@@ -30,6 +35,9 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     /// <summary>游戏选择页 VM（D5.4:联想搜索+中英别名+即时反馈）。</summary>
     public GameSelectPageViewModel GameSelect => _gameSelect;
 
+    /// <summary>D5.9 状态栏连接 VM（MainWindow 状态栏绑定源）。</summary>
+    public ConnectivityBarViewModel Connectivity { get; }
+
     public ICommand NavigateModDetailCommand { get; }
     public ICommand NavigateDownloadsCommand { get; }
     public ICommand NavigateGameSelectCommand { get; }
@@ -39,19 +47,29 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         IDownloadQueue queue,
         IDownloadProvider provider,
         DownloadScheduler scheduler,
-        IDownloadEventBus bus)
+        IDownloadEventBus bus,
+        IConnectivityController? connectivity = null,
+        ISteamWebApiClient? api = null,
+        ICommunitySource? community = null,
+        ICommentSource? comments = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(queue);
         ArgumentNullException.ThrowIfNull(provider);
         ArgumentNullException.ThrowIfNull(scheduler);
         ArgumentNullException.ThrowIfNull(bus);
+        if (connectivity is null) throw new ArgumentNullException(nameof(connectivity));
 
+        // D5.4 机械修复保留双向注入（IConnectivityState 订阅+IConnectivityController 命令；
+        // 运行时实例=ConnectivityStateService 同时实现两者——归属 arch-20 t48)
+        Connectivity = new ConnectivityBarViewModel((Swdm2.Steam.Connectivity.IConnectivityState)connectivity, connectivity);
         _downloads = new DownloadsPageViewModel(bus);
+        // D5.6: 真详情加载链（API→社区回退→评论；null=未装配=VM 错误态不造假）
         _modDetail = new ModDetailPageViewModel(
-            paths, queue, _downloads, provider, scheduler, NavigateToDownloads);
+            paths, queue, _downloads, provider, scheduler, NavigateToDownloads,
+            api, community, comments);
         // D5.4: 游戏选择页（在线源可选——网络熔断时本地别名兜底；
-        // 确认后回详情页：旅程 2 搜索→确认→详情可下载）
+        // 确认后回详情页（旅程 2:搜索→确认→详情可下载）
         _gameSelect = new GameSelectPageViewModel(navigateToDetail: _ => NavigateToModDetail());
 
         // D5.3: 导航委托 PageNavigationService（返回栈+时序）
@@ -61,7 +79,7 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         NavigateDownloadsCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<DownloadsPage>(
                 () => new DownloadsPage { DataContext = _downloads }));
-        // D5.4: 游戏选择页导航（契约 id MainShell_Nav_GameSelectButton)
+        // D5.4: 游戏选择页导航（保留契约 id MainShell_Nav_GameSelectButton)
         NavigateGameSelectCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<GameSelectPage>(
                 () => new GameSelectPage { DataContext = _gameSelect }));

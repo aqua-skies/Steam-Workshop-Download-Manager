@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
+using Swdm2.App.Community;
 using Swdm2.App.Configuration;
+using Swdm2.App.Connectivity;
 using Swdm2.App.Navigation;
 using Swdm2.App.Session;
 using Swdm2.App.ViewModels;
@@ -11,6 +13,7 @@ using Swdm2.Downloads.Limiter;
 using Swdm2.Downloads.Providers;
 using Swdm2.Downloads.Queue;
 using Swdm2.Steam.Cdn;
+using Swdm2.Steam.Community;
 using Swdm2.Steam.Resilience;
 using Swdm2.Steam.SteamCmd;
 using Swdm2.Steam.Web;
@@ -34,6 +37,7 @@ public static class AppHost
     private static MainShellViewModel? _shell;
     private static SteamKitSessionManager? _session;
     private static PageNavigationService? _navigation;
+private static ConnectivityStateService? _connectivity;
 
     /// <summary>会话管理器（D4.1;#23 FlaUI 旅程与登录链入口）。</summary>
     public static SteamKitSessionManager Session
@@ -43,6 +47,10 @@ public static class AppHost
         => _shell ?? throw new InvalidOperationException("AppHost 未启动（先调 Start()）。");
 
     /// <summary>页面导航服务（D5.3:返回栈+110→30ms 切页时序；MainWindow 构造时 Attach 页面容器）。</summary>
+    /// <summary>D5.9 连接状态服务（状态栏数据源+代理切换）。</summary>
+    public static ConnectivityStateService Connectivity
+        => _connectivity ?? throw new InvalidOperationException("AppHost 未启动（先调 Start())");
+
     public static PageNavigationService Navigation
         => _navigation ?? throw new InvalidOperationException("AppHost 未启动（先调 Start()）。");
 
@@ -57,6 +65,9 @@ public static class AppHost
 
         var redaction = new RegexRedactionPolicy();
         var httpFactory = new SteamHttpClientFactory(steam);
+        // D5.9(状态栏端点可达性）：IConnectivityState 数据源+代理切换（S5 工厂快照语义→切代理重建）
+        _connectivity = new ConnectivityStateService(steam);
+        _ = Task.Run(async () => await _connectivity.RefreshAsync().ConfigureAwait(false)); // 启动后首探（异步不阻塞壳）
         var breaker = new CircuitBreaker(SystemTimeProvider.Instance,
             steam.CircuitThreshold, steam.CircuitCooldownMs);
         var deployer = new SteamCmdDeployer(paths, httpFactory, new SteamCmdProcessProbe(),
@@ -88,7 +99,15 @@ public static class AppHost
         _queue = queue;
         _scheduler = scheduler;
         _navigation = new PageNavigationService();
-        _shell = new MainShellViewModel(paths, queue, provider, scheduler, bus);
+
+        // D5.6: 详情页元数据链（Web API 主源+D2.5 社区回退+评论源共享 community-detail
+        // 节流桶；装配真实源后详情页 LoadDetailAsync 按需加载，失败=VM 错误态不造假）
+        var apiClient = new SteamWebApiClient(httpFactory);
+        var communitySource = new CommunityPageSource(httpFactory);
+        var commentSource = new CommunityCommentSource(httpFactory);
+
+        _shell = new MainShellViewModel(paths, queue, provider, scheduler, bus,
+            _connectivity, apiClient, communitySource, commentSource);
 
         if (test2Fa)
         {
@@ -115,5 +134,6 @@ public static class AppHost
         if (_queue is not null) await _queue.DisposeAsync().ConfigureAwait(false);
         if (_bus is not null) await _bus.DisposeAsync().ConfigureAwait(false);
         _shell?.Dispose();
+        _connectivity?.Dispose();
     }
 }

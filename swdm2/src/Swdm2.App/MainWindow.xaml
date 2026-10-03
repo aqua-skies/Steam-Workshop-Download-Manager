@@ -38,6 +38,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/> <!-- D5.9 状态栏 -->
         </Grid.RowDefinitions>
         <!-- 标题栏 48px：皮肤渐变（自绘，始终）+ logo 图标钮 + 关闭/最小化钮（自绘） -->
         <Grid Height="48" Grid.Row="0">
@@ -83,6 +84,10 @@
         </Grid>
         <!-- 导航条：契约 id 保留（t3 §3.2)；侧栏形态=t2 §2.6,D5.x 页面群时改造 -->
         <StackPanel Orientation="Horizontal" Margin="10,8" Grid.Row="1">
+            <Button AutomationProperties.AutomationId="MainShell_Nav_GameSelectButton"
+                    Content="选择游戏" Padding="12,5" Margin="8,0,0,0"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                    Command="{Binding NavigateGameSelectCommand}"/>
             <Button AutomationProperties.AutomationId="MainShell_Nav_ModDetailButton"
                     Content="Mod detail (sample)" Padding="12,5" Margin="0,0,8,0"
                     Foreground="{DynamicResource swdm-TextOnAccentBrush}"
@@ -92,12 +97,71 @@
                     Content="Downloads" Padding="12,5"
                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                     Command="{Binding NavigateDownloadsCommand}"/>
-            <Button AutomationProperties.AutomationId="MainShell_Nav_GameSelectButton"
-                    Content="选择游戏" Padding="12,5" Margin="8,0,0,0"
-                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
-                    Command="{Binding NavigateGameSelectCommand}"/>
         </StackPanel>
         <!-- PageHost 容器替换（t2 §2.5;PageNavigationService.Attach 时序驱动 110→30ms) -->
         <ContentControl x:Name="PageHost" Grid.Row="2" Margin="10"/>
+        <!--
+        D5.9 状态栏端点可达性（t48):
+        - 三端点芯片（Api/Store/Community:直连/经代理/封禁/不可达+延迟）+代理模式标签
+        - 失败引导=HasFailures 时文案+配代理钮（ProxyConfigDialog)
+        - id 契约：StatusBar_Connectivity/StatusBar_ProxyMode/StatusBar_Refresh/StatusBar_ProxyConfigure
+        - 颜色/字体一律 DynamicResource swdm-*（t2 §1.4 不变量）
+        -->
+        <Border Grid.Row="3" Background="{DynamicResource swdm-SurfaceCardBrush}"
+                BorderBrush="{DynamicResource swdm-SurfaceCanvasBrush}" BorderThickness="0,1,0,0"
+                Padding="10,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Margin="0,0,10,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                               FontSize="11"
+                               AutomationProperties.AutomationId="StatusBar_ProxyMode"
+                               Text="{Binding Connectivity.ProxyModeText}"/>
+                    <!-- 契约根 id 挂 ItemsControl(UIA control-view 可见；Border/Panel 无 AutomationPeer 不可达） -->
+                    <ItemsControl AutomationProperties.AutomationId="StatusBar_Connectivity"
+                                  ItemsSource="{Binding Connectivity.Endpoints}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                    <TextBlock VerticalAlignment="Center"
+                                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                               FontSize="11" Text="{Binding Name}"/>
+                                    <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="11"
+                                               Foreground="{Binding StatusBrush}"
+                                               Text="{Binding ReachText}"/>
+                                    <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="11"
+                                               Foreground="{DynamicResource swdm-TextTertiaryBrush}"
+                                               Text="{Binding LatencyText}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- 失败引导（HasFailures 才可见：GuidanceVisibility） -->
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"
+                               Foreground="{DynamicResource swdm-Danger500Brush}"
+                               Text="{Binding Connectivity.GuidanceText}"
+                               Visibility="{Binding Connectivity.GuidanceVisibility}"/>
+                    <Button Content="配置代理" Padding="10,3" FontSize="11"
+                            Visibility="{Binding Connectivity.GuidanceVisibility}"
+                            Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                            Background="{DynamicResource swdm-Warning500Brush}"
+                            Command="{Binding Connectivity.ConfigureProxyCommand}"
+                            AutomationProperties.AutomationId="StatusBar_ProxyConfigure"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="↻ 刷新" Padding="10,3" FontSize="11"
+                        Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                        Command="{Binding Connectivity.RefreshCommand}"
+                        AutomationProperties.AutomationId="StatusBar_Refresh"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
