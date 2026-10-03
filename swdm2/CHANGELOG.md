@@ -7,6 +7,25 @@
 
 ---
 
+## [2.0.0] · 2026-10-03 · SWDM 2.0 正式版（D7 发布门）
+
+**SWDM 2.0.0 正式发布**——C# WPF 从零重构（用户 2026-10-02 裁定路线①）完成。GitHub release v2.0.0（tag main+安装包 Setup 81.4MB+Portable)。
+
+**四要素**：全量回归两连绿（clean 0-0+Core 72/Steam 169/Downloads 81+Ui 逻辑层全绿）;FlaUI 输入层环境门（同 0.5.0 基线族三重实测，桌面复跑条款）;讨论组 4/4 三原则；版本 0.7.0→**2.0.0**(Version/AssemblyVersion/FileVersion 三同步）+本终条；release notes 按 D6 全交付链。
+
+### 阶段 6 交付链（D6)
+- **D6.1 Velopack 打包链**（t58,27243b6):SelfContained win-x64 不裁剪（产品优先级原则=不为体积牺牲运行时体验）;scripts/pack-velopack.ps1 一键化（publish→vpk pack→artifacts);首次安装落 %LOCALAPPDATA%\Swdm2+开始菜单 lnk+Update.exe;三处诚实降级文档化（CJK 路径 Setup 须 ASCII 执行/覆盖安装非升级路径/ --delta none)。
+- **D6.2 mod 更新检查**（t59):本地时间戳对比+SteamKit manifest 远端查询+更新徽章 UI 契约。
+- **D6.3 Velopack 升级集成+SmartScreen**（t60,829efac):UpdateManager 实例属性实证（公网 VelopackApp.IsInstalled=旧版/Squirrel 误导=UpdateManager.IsInstalled/CurrentVersion);System.Version 4 段漂移=3 段化；SmartScreen 未签名提示卡。
+
+### 全交付链总览（阶段 1-7)
+阶段 1(0.1.0)→2(0.2.0)→3(0.3.0)→4(0.4.0)→5(0.5.0)→6(0.6.0/0.7.0)→**7(2.0.0)**：65 任务/7 阶段全交付。核心机制连续性：SteamKit2 3.4.0 CDN 主链+steamcmd 回退（路由表 8 回退/4 不回退）;IDM in-half 分段+16B 重叠+kill 续传+偏移直写+稀疏占位+令牌桶双点限速+B3 五参数全锁；PCL2 视觉体系（薄荷清晨配色+球体主页+动画套件 A1-A6);真实输入 FlaUI 5.0.0 SP-3 驱动链；四重诚实降级（429 指纹头/社区回退/字段缺失/环境门）+1.x 五交互 bug 防呆全内置。
+
+### 验证
+clean+warnaserror **0-0**(Swdm2.sln Release/Debug 双配置）;Core 72/0+Steam **169/0**+Downloads 81/0 两连绿；Ui 逻辑层全绿（Downloads 10+HomeSphere 11+Settings 6+Library 10+Anim 18+Browse 27+Controls 10+Themes 23+ModDetail 12);FlaUI 输入层 12 失败=环境劣化基线族（沙箱无桌面+AppData 拒写，三重实测非代码回归，桌面复跑条款同 0.5.0 门）。打包实测：Setup 81.4MB 自包含安装+Portable 74.2MB+首次安装路径/lnk/Update.exe 三验证。
+
+---
+
 ## [0.7.0] · 2026-10-03 · D6.3 Velopack 升级集成（t60)
 
 **版本**：0.6.0→0.7.0（`Directory.Build.props` 三同步：Version/AssemblyVersion/FileVersion)。
