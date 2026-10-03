@@ -1,6 +1,7 @@
 # SWDM 2.0 视觉实现规格（Visual System Specification）
 
-> 版次：v1.2 · 2026-10-03 · 维护：visual-20（视觉/UI 域 owner）
+> 版次：**v1.4** · 2026-10-03 · 维护：visual-20（视觉/UI 域 owner）
+> **v1.4 变更（D5.13 用户亲定回写，2026-10-03 15:25 裁定）**：① 配色A「薄荷清晨」#F6FBF7 底+薄荷绿 #3ED598+明黄 #FFC531——§1.2 **21 令牌亮/暗双模式全表重染+WCAG 实算**（亮底深字路线：text.on_accent 深绿 7.89/8.14 双达标；白字仅非文本位 accent.deep 4.74;danger 深化 4.39→5.13);② **球体主页**（§2.8,替换主页=进入即此页：Viewport3D 二十面体细化球+右下视角+液态玻璃半透明黑底+贴图三角面/无贴图透明+顺时针缓转+1/r² 节点振荡+鼠标光源/拖拽惯性+贴图悬停放大点击跳 mod 选择页+对话泡泡+切页编排时序）；③ **左侧默认游戏卡**（§2.9,独立卡+空态灰字）；④ **动画清单**（§2.10:上→下凝实 25ms×交错总 400ms/抽屉 300ms/页面分离/BackEase 过冲/钮放大 1.1/全局圆弧 CornerRadius)；⑤ 参照 Refero Rainbow/TypeUI Friendly/2026 色彩趋势（活泼轻松轻盈）。
 > **v1.2 变更（D5.1 WCAG 实算回写）**:dark accent.500 `#7C5CFF`→`#7655F8`（白字实算 4.35<4.5 基线，深化后 4.79;spec 原声明 4.6 与实算不符，按经验复验/设计对照纪律修正）；light link.default `#1F7EB8`→`#1A72A8`（实算 4.47→5.23）。实现同步：`Ui/Themes/Dark.xaml`（Accent500+StrokeFocus+AccentShadow)+`Light.xaml`（LinkDefault)+断言测试。
 > **v1.1 变更（A7 同步回写，review_2.0_plan.md P1 自办项）**：① §2 通用条款补 AutomationId 载体限制（可靠载体=Window/内容控件/UserControl/WPF-UI 模板部件固定 id；**禁** Grid/ContentControl/Border 及库提升型容器承载测试锚点——SP-2 实证）；② §2.1 SwdmCard 根声明改 UserControl（pcl2 §1.2 可粘贴片段的 `Grid` 根仅作布局参考，Grid 为 UIA 提升型容器、id 被吞，自绘 UserControl id 完全暴露 type=Custom）；③ §2.2 Hint 根 `Border` → UserControl（Border 无 AutomationPeer）；④ §2.4 标题栏片段条件化（仅不用 WPF-UI TitleBar 时落地；走 TitleBar 按钮用模板部件固定 id）。**视觉数值未动**（90ms/150ms/0.07→0.4 等与 §5 对照表口径不变）。
 > 依据：`docs/research2/pcl2_xaml_patterns.md`（可粘贴 XAML + §7 数值速查总表）、`docs/design/visual_language_study.md`（§7 PCL2 数值速查）、`docs/design/design_tokens.md`（令牌定义）、`swdm2/docs/design_baseline_2.0.md`（9 条锁定决策）、`swdm2/docs/architecture_2.0.md`（不变量 A1-A12 + 两项裁决）
@@ -11,7 +12,7 @@
 
 ## 0. 一句话结论
 
-SWDM 2.0 的「PCL2 皮肤质感」在 WPF 侧 = **自建 Light/Dark/Accent 资源字典作主题真源（明度阶梯 Brush 体系）+ 自绘签名组件层（SwdmCard 三层结构 / Hint / ModListItem / 自定义窗口 / 容器替换导航）+ 90ms 颜色 × 150ms 高度双段动画 × 0.07→0.4 品牌色阴影抬升 + 列表虚拟化路线 A（VSP Recycling + Pixel）**。WPF-UI 4.3.0 仅作窗口/控件基座，**ApplicationThemeManager 不作主题真源**（避免双主题状态，与架构规格 A8 裁决一致）；签名级观感任何库都给不了，必须自绘。视觉验收走 FlaUI 截图 + read_image 读图校验（本机已恢复，基线决策 5）+ 像素断言三件套。
+SWDM 2.0 的「PCL2 皮肤质感 × 薄荷清晨」在 WPF 侧 = **自建 Light/Dark/Accent 资源字典作主题真源（v1.4 配色A：#F6FBF7 底+#3ED598 薄荷绿+#FFC531 明黄；21 令牌亮/暗双模式+WCAG 实算全达标；亮底深字糖果风）+ 自绘签名组件层（SwdmCard 三层结构 / Hint / ModListItem / 自定义窗口 / 容器替换导航 / 球体主页 Viewport3D 二十面体 / 左侧默认游戏卡）+ 90ms 颜色 × 150ms 高度双段动画 × 薄荷品牌色阴影抬升 + PCL2 动画清单（上→下凝实 25ms 交错总 400ms/抽屉 300ms/页面分离编排/BackEase 过冲/钮放大 1.1/全局圆弧 CornerRadius) + 列表虚拟化路线 A（VSP Recycling + Pixel）**。WPF-UI 4.3.0 仅作窗口/控件基座，**ApplicationThemeManager 不作主题真源**（避免双主题状态，与架构规格 A8 裁决一致）；签名级观感任何库都给不了，必须自绘。视觉验收走 FlaUI 截图 + read_image 读图校验（本机已恢复，基线决策 5）+ 像素断言三件套。
 
 ---
 
@@ -42,67 +43,88 @@ swdm2/src/Swdm2.App/Ui/Themes/
 
 **双资源律**（对应 PCL2 `ColorBrush*`/`ColorObject*` 双轨制）：每个颜色令牌落 **两个**资源——`swdm-XxxColor`（`Color`，供 `ColorAnimation` 阴影/前景动画绑定）+ `swdm-XxxBrush`（`SolidColorBrush`，供 Fill/Background）。动画只能动 `Color` 是 WPF 硬约束，不是怪癖。所有消费处**一律 `DynamicResource`**（主题切换即时生效、无闪烁）。
 
-### 1.2 明度阶梯 Brush 完整映射表
+### 1.2 明度阶梯 Brush 完整映射表（v1.4 配色A「薄荷清晨」重染）
 
-**暗色（Dark.xaml）**——明度递进模拟 z 轴（surface 阶梯 = Steam 式「画布深一档」高程地基）：
+> **v1.4 配色A（用户 2026-10-03 15:25 亲定）**：「薄荷清晨」——#F6FBF7 底 + 薄荷绿 #3ED598 + 明黄 #FFC531 点缀。
+> 参照系：Refero Rainbow（粉彩底+糖果饱和强调）、TypeUI Friendly、2026 色彩趋势（中性底+鲜艳点缀）——活泼、轻松、轻盈。
+> **WCAG 实算（v1.4 全量重算，工具回执 Computation/ 2026-10-03）**：薄荷绿/明黄**饱和度过高，白字一律不达标**（白字 on #3ED598=1.88 ✗；白字 on #FFC531=1.58 ✗）→
+> **品牌强调按钮采用「亮底深字」路线**（Refero Rainbow 同族糖果风：text.on_accent=#052E1F，实算 7.89 ✓）;需要白字的语义位（焦点框/白底图标）用深化变体 accent.deep #15835A（白字 4.74 ✓）。
+> 表中「对比」列=该色与其承载文本/用途配对的实算比值；正文 ≥4.5:1，大字（≥15px 600）与图标 ≥3:1（无障碍基线，同 v1.2)。
 
-| 令牌 | 资源键 | 值 | 用途 |
+**亮色（Light.xaml · 薄荷清晨）**——明度递进 z 轴（薄荷淡染阶梯）：
+
+| 令牌 | 资源键 | 值 | 用途 | WCAG 实算 |
+|---|---|---|---|---|
+| surface.canvas | `swdm-SurfaceCanvasColor/Brush` | `#F6FBF7` | 窗口/页面画布（薄荷白底） | 对 text.primary 14.32 ✓ |
+| surface.card | `swdm-SurfaceCardColor/Brush` | `#FFFFFF` | 卡片、面板主体 | 14.99 ✓ |
+| surface.card_hover | `swdm-SurfaceCardHoverColor/Brush` | `#F0FAF4` | 卡片/行悬停 | 14.05 ✓ |
+| surface.input | `swdm-SurfaceInputColor/Brush` | `#FFFFFF` | 输入框、下拉、菜单、tooltip | 14.99 ✓ |
+| surface.raised | `swdm-SurfaceRaisedColor/Brush` | `#FFFFFF` | 弹出层/对话框（+阴影分离） | 14.99 ✓ |
+| surface.selected | `swdm-SurfaceSelectedColor/Brush` | `#DFF3E8` | 选中态（薄荷 12% 观感） | 12.93 ✓ |
+| stroke.hairline | `swdm-StrokeHairlineColor/Brush` | `#CFDCD3` | 卡片/面板分隔线 | 视觉边界（描边 3:1 豁免，1.35） |
+| stroke.card | `swdm-StrokeCardColor/Brush` | `#C7D8CD` | 卡片描边（悬停→stroke.hover) | 1.42（同上豁免） |
+| stroke.input | `swdm-StrokeInputColor/Brush` | `#AFC4B7` | 输入框描边 | 1.76（同上豁免） |
+| stroke.hover | `swdm-StrokeHoverColor/Brush` | `#B8CCC0` | 交互描边悬停 | 1.61（同上豁免） |
+| text.primary | `swdm-TextPrimaryColor/Brush` | `#23272E` | 主文本、标题 | 对画布 14.32 ✓ |
+| text.secondary | `swdm-TextSecondaryColor/Brush` | `#4A5560` | 元信息、说明 | 7.27 ✓ |
+| text.tertiary | `swdm-TextTertiaryColor/Brush` | `#646E78` | 占位、辅助 | 4.96 ✓ |
+| text.disabled | `swdm-TextDisabledColor/Brush` | `#8A919A` | 禁用（非正文，3:1 档） | 3.2(big3） |
+| text.on_accent | `swdm-TextOnAccentColor/Brush` | `#052E1F` | **强调色上的深字**(v1.4 亮底深字路线） | 对 accent.500 **7.89** ✓ |
+| link.default | `swdm-LinkDefaultColor/Brush` | `#15835A` | 链接/可点文本（薄荷深化，v1.2 精神延续） | 4.53 ✓ |
+| link.hover | `swdm-LinkHoverColor/Brush` | `#0F7A4D` | 链接悬停 | 5.13 ✓ |
+| success.500 | `swdm-Success500Color/Brush` | `#2F9E6B` | 成功/已完成（图标/大字档） | 3.22(big3） |
+| danger.500 | `swdm-Danger500Color/Brush` | `#C92E2E` | 错误/删除（v1.4 深化达标） | **5.13** ✓ |
+| warning.500 | `swdm-Warning500Color/Brush` | `#E5A300` | 警告/限流（明黄系；图标/大字档） | 3.1(big3）/正文用 #C77E00 3.13(big3) |
+
+**暗色（Dark.xaml · 薄荷夜）**——墨绿黑阶梯（薄荷绿在暗底高对比）：
+
+| 令牌 | 资源键 | 值 | 用途 | WCAG 实算 |
+|---|---|---|---|---|
+| surface.canvas | `swdm-SurfaceCanvasColor/Brush` | `#0D1511` | 窗口/页面画布（墨绿黑，最深） | 对 text.primary 16.54 ✓ |
+| surface.card | `swdm-SurfaceCardColor/Brush` | `#14201A` | 卡片、面板主体 | 14.97 ✓ |
+| surface.card_hover | `swdm-SurfaceCardHoverColor/Brush` | `#182721` | 卡片/行悬停 | 15.54 ✓ |
+| surface.input | `swdm-SurfaceInputColor/Brush` | `#1C2E26` | 输入框、下拉、菜单 | 14.30 ✓ |
+| surface.raised | `swdm-SurfaceRaisedColor/Brush` | `#22362C` | 弹出层/对话框 | 12.87 ✓ |
+| surface.selected | `swdm-SurfaceSelectedColor/Brush` | `#1E3A2C` | 选中态 | 12.38 ✓ |
+| stroke.hairline | `swdm-StrokeHairlineColor/Brush` | `#22362C` | 分隔线 | 1.44（描边豁免） |
+| stroke.card | `swdm-StrokeCardColor/Brush` | `#2A3A31` | 卡片描边 | 1.54（豁免） |
+| stroke.input | `swdm-StrokeInputColor/Brush` | `#37513F` | 输入框描边 | 2.13（豁免） |
+| stroke.hover | `swdm-StrokeHoverColor/Brush` | `#46584B` | 交互描边悬停 | ~2.4（豁免） |
+| text.primary | `swdm-TextPrimaryColor/Brush` | `#E8F5EE` | 主文本、标题 | 16.54 ✓ |
+| text.secondary | `swdm-TextSecondaryColor/Brush` | `#9FB8AB` | 元信息、说明 | 8.76 ✓ |
+| text.tertiary | `swdm-TextTertiaryColor/Brush` | `#6E8579` | 占位、辅助 | 4.67 ✓ |
+| text.disabled | `swdm-TextDisabledColor/Brush` | `#4A5A50` | 禁用（非正文） | ~2.6(降级档） |
+| text.on_accent | `swdm-TextOnAccentColor/Brush` | `#072B1D` | 强调色上的深字 | 对 accent.500 **8.14** ✓ |
+| link.default | `swdm-LinkDefaultColor/Brush` | `#3ED598` | 链接/可点文本（暗底薄荷真色） | 9.87 ✓ |
+| link.hover | `swdm-LinkHoverColor/Brush` | `#59DFA6` | 链接悬停 | 11.06 ✓ |
+| success.500 | `swdm-Success500Color/Brush` | `#43B581` | 成功/已完成 | 7.21 ✓ |
+| danger.500 | `swdm-Danger500Color/Brush` | `#F04747` | 错误/删除 | 5.03 ✓ |
+| warning.500 | `swdm-Warning500Color/Brush` | `#FFC531` | 警告/限流（品牌明黄真色） | 11.73 ✓ |
+
+**强调色族（Accent.xaml 内 Light/Dark 各定义一次）——薄荷绿三阶 + 白字深化变体**：
+
+| 令牌 | dark | light | WCAG 实算 |
 |---|---|---|---|
-| surface.canvas | `swdm-SurfaceCanvasColor/Brush` | `#16161C` | 窗口/页面画布（最深，卡片浮起的前提） |
-| surface.card | `swdm-SurfaceCardColor/Brush` | `#1E1E24` | 卡片、面板主体 |
-| surface.card_hover | `swdm-SurfaceCardHoverColor/Brush` | `#25252D` | 卡片/行悬停 |
-| surface.input | `swdm-SurfaceInputColor/Brush` | `#26262E` | 输入框、下拉、菜单、tooltip |
-| surface.raised | `swdm-SurfaceRaisedColor/Brush` | `#2B2B34` | 弹出层/对话框 |
-| surface.selected | `swdm-SurfaceSelectedColor/Brush` | `#32285E` | 选中态（强调色 24% 观感） |
-| stroke.hairline | `swdm-StrokeHairlineColor/Brush` | `#2B2B33` | 卡片/面板分隔线 |
-| stroke.card | `swdm-StrokeCardColor/Brush` | `#2E2E37` | 卡片描边（悬停 → stroke.hover） |
-| stroke.input | `swdm-StrokeInputColor/Brush` | `#3A3A45` | 输入框描边 |
-| stroke.hover | `swdm-StrokeHoverColor/Brush` | `#4A4A57` | 交互描边悬停 |
-| text.primary | `swdm-TextPrimaryColor/Brush` | `#E8EAF0` | 主文本、标题（对画布 14.5:1） |
-| text.secondary | `swdm-TextSecondaryColor/Brush` | `#9AA3AF` | 元信息、说明（7.0:1） |
-| text.tertiary | `swdm-TextTertiaryColor/Brush` | `#6E757F` | 占位、禁用辅助 |
-| text.disabled | `swdm-TextDisabledColor/Brush` | `#5A6068` | 禁用 |
-| text.on_accent | `swdm-TextOnAccentColor/Brush` | `#FFFFFF` | 强调色上的文本（4.6:1 ✓） |
-| link.default | `swdm-LinkDefaultColor/Brush` | `#66C0F4` | 链接/标签/可点文本（Steam 蓝，与操作紫分离语义） |
-| link.hover | `swdm-LinkHoverColor/Brush` | `#8CD4FF` | 链接悬停 |
-| success.500 | `swdm-Success500Color/Brush` | `#43B581` | 成功/已完成 |
-| danger.500 | `swdm-Danger500Color/Brush` | `#F04747` | 错误/删除 |
-| warning.500 | `swdm-Warning500Color/Brush` | `#FAA61A` | 警告/限流提示 |
+| accent.400（悬停，更亮薄荷） | `#6FE9B7` | `#59DFA6` | light 深字 8.84 ✓ / dark 深字 10.21 ✓ |
+| accent.500（主强调=品牌薄荷真色） | `#3ED598` | `#3ED598` | 深字 light 7.89 / dark 8.14 ✓（**配 text.on_accent 深字**） |
+| accent.600（按下） | `#2FB57F` | `#23B57F` | 深字 light 5.64 ✓ |
+| accent.deep（**白字语义位**：焦点框 stroke.focus/白底 icon) | `#3ED598`（暗底无需） | `#15835A` | 白字 4.74 ✓ |
+| 阴影色 `swdm-AccentShadowColor` | = accent.500 | = accent.500 | 薄荷品牌阴影（PCL2 签名延续） |
 
-**浅色（Light.xaml）**——同键名，值如下（PCL2「白卡」路线）：
-
-| 令牌 | 值 | 令牌 | 值 |
-|---|---|---|---|
-| surface.canvas | `#F2F3F6` | surface.card | `#FFFFFF` |
-| surface.card_hover | `#F7F8FA` | surface.input | `#FFFFFF` |
-| surface.raised | `#FFFFFF` | surface.selected | `#E7E0FB` |
-| stroke.hairline / stroke.card | `#DDE1E6` / `#E3E6EB` | stroke.input / stroke.hover | `#C8CCD2` / `#B6BCC5` |
-| text.primary / secondary / tertiary | `#23272E` / `#5A6169` / `#8A919A` | link.default / hover | `#1A72A8` *(v1.2 回写)* / `#1463A0` |
-| success / danger / warning | `#2F9E6B` / `#D63C3C` / `#C77E00` | | |
-
-**强调色族（Accent.xaml）**——dark 与 light 分列于各自主题文件内或 Accent 内分 `x:Key` 区分（实现取后者：`swdm-Accent400Color` 等键在 Light/Dark 两文件各定义一次，Accent.xaml 只放中性阴影色，避免主题切换时 accent 色残留）：
-
-| 令牌 | dark | light |
-|---|---|---|
-| accent.400（悬停） | `#8F74FF` | `#7D5CFF` |
-| accent.500（主强调，品牌延续 1.x 蓝紫） | `#7655F8` *(v1.2：`#7C5CFF` 实算 4.35 深化，见版本注)* | `#6D4AFF` |
-| accent.600（按下） | `#6A48F0` | `#5B3CE0` |
-| 阴影色 `swdm-AccentShadowColor` | = accent.500（阴影用品牌色而非黑色，PCL2 签名） | = accent.500 |
-
-stroke.focus = accent.500；text.on_accent 上白字对比度达标（dark 4.6:1 ✓）；浅色 link 深化至 ≥4.5:1（`#66C0F4` 白底仅 2.4:1 不可用）。**无障碍基线**：正文 ≥4.5:1，大字（≥15px 600）与图标 ≥3:1。
+**v1.4 路线裁决（糖果风深字 vs 白字深化）**：按钮等「强调色底+文本」位一律**深字**（text.on_accent=#052E1F/`#072B1D`,7.89/8.14 双模式达标，Refero Rainbow 同族）；
+白字仅用于 stroke.focus/图标描边等非文本位（accent.deep #15835A,4.74 ✓)。这是配色A 饱和度过高的**实算强制结果**——白字 on #3ED598=1.88 严重不达标，不做实算直接套品牌色会是 v1.2 #7C5CFF(4.35）同族教训的放大版。
 
 **高程表（dark / light / 手段）**——WPF 侧弹层可加真实阴影，描边阶梯保留：
 
 | 层级 | dark | light | 手段 |
 |---|---|---|---|
-| z0 画布 | `#16161C` | `#F2F3F6` | 最深/最亮底 |
-| z1 卡片 | `#1E1E24` + stroke.card 1px | `#FFFFFF` + stroke.card 1px | +1 明度阶 + 1px 描边 |
-| z2 悬停 | `#25252D` + stroke.hover | `#F7F8FA` + stroke.hover | 再 +1 阶 |
-| z3 输入/弹层 | `#26262E` + stroke.input | `#FFFFFF` + stroke.input | +2 阶 + 真实阴影（弹层） |
-| z4 对话框 | `#2B2B34` + 2px stroke.input | `#FFFFFF` + 2px stroke.hover | 最浮 + `DropShadowEffect` |
+| z0 画布 | `#0D1511` | `#F6FBF7` | 最深/最亮底 |
+| z1 卡片 | `#14201A` + stroke.card 1px | `#FFFFFF` + stroke.card 1px | +1 明度阶 + 1px 描边 |
+| z2 悬停 | `#182721` + stroke.hover | `#F0FAF4` + stroke.hover | 再 +1 阶 |
+| z3 输入/弹层 | `#1C2E26` + stroke.input | `#FFFFFF` + stroke.input | +2 阶 + 真实阴影（弹层） |
+| z4 对话框 | `#22362C` + 2px stroke.input | `#FFFFFF` + 2px stroke.hover | 最浮 + `DropShadowEffect`（品牌薄荷色） |
 
 **规则**：任何浮层必须与下层至少有 1 个明度阶 + 描边双重分离；等亮无描边的两块区域 = 设计缺陷。
-
 ### 1.3 WPF-UI ApplicationThemeManager vs 自建资源字典：论证与建议
 
 | 维度 | 路线 A：WPF-UI `ApplicationThemeManager` | 路线 B：自建 `MergedDictionaries` 换字典 |
@@ -367,6 +389,79 @@ public bool GoBack() { /* 出栈，keepInStack:false */ }
 
 ---
 
+### 2.8 球体主页（SphereHome · D5.15 载体 · v1.4 新增）
+
+> **替换主页**——应用进入即此页（原「示例 mod 详情页」降为次级页面），是配色A 与动画清单的**signature 载体**。
+> 实现任务=t54(D5.15);本节给行号级交互规格+几何/物理参数（⚠️[参数待重标定] 标注项随实现实测）。
+
+**2.8.1 几何与渲染**
+
+| 条款 | 规格 | 备注 |
+|---|---|---|
+| 容器 | `Viewport3D` 全屏（窗口客户区减标题栏 48px) | A7 载体=Viewport3D 本身 AutomationId `SphereHome_Host` |
+| 球体 | 二十面体（Icosahedron)**细分**网格（点/线/三角面三拓扑层；细分级别 ⚠️[待重标定] 起点 subdivision=3≈~1280 面） | 细分越高面越圆；观测 CPU 顶点量再定 |
+| 视角 | 相机置于**右下象限**看向球心（PerspectiveCamera;FOV ⚠️[待重标定] 起点 45°;位置 (右+下偏移）） | 「右下象限」=用户裁定原文 |
+| 背景 | 液态玻璃半透明黑（`#0A0A0F` α 0.55~0.75 + BlurBackdrop Mild ⚠️[待标定]，无 Mica 时回退纯净半透明黑） | 与 D5.3 弃 FluentWindow 裁决兼容（不依赖系统 Mica) |
+| 透视明暗 | 远暗近亮：顶点色=按顶点 z（相机空间）插值 canvas→text.primary(Dark)/白(Light) ⚠️ | 单方向光之外的**空间深度线索** |
+| 无贴图区 | 三角面 Alpha=0(**透明**)——球骨架观感=贴图三角面浮在隐约的线框上 | 线框（Edges)色=stroke.hover，α 0.35 ⚠️ |
+| 三角面贴图 | 部分三角面贴**游戏图标**:方形裁剪贴边（图标采样=方形 stretch 到三角形包围盒，贴边对齐），Automaticid `SphereHome_GameIcon_<appId>` | 命中=该游戏已绑定默认 home |
+| 自转 | 顺时针**缓**转（Y 轴角速度 ⚠️[待标定] 起点 6°/s=60s/周） | "缓"=不抢用户注意（PCL2 凝实精神同源） |
+
+**2.8.2 节点物理（用户裁定原文「节点沿球径缓振荡，1/r² 影响、线刚性、CPU 逐帧顶点」）**
+
+| 条款 | 规格 |
+|---|---|
+| 振荡模型 | 每顶点沿法线（球径方向）**弹簧阻尼**振荡：`pos=base + normal * A*sin(ωt+φ)*e^(-kt)`;振幅 A ⚠️[待标定] 起点 0.015(球半径=1.0) |
+| 1/r² 影响 | 鼠标（光源）对顶点的位移影响 ∝ 1/r²（r=顶点到光源距离）：近处顶点被"吸/推"出更大位移，远处几乎不动 |
+| 线刚性 | 边（Edges）长度约束=刚性（弹簧 k_high）→ 线框保持球的拓扑不散架；仅顶点法向自由度软化 |
+| 更新 | **CPU 逐帧顶点**（CompositionTarget.Rendering 或 DispatcherTimer 60fps ⚠️[待标定];顶点数=subdivision²·10 量级，单帧 CPU 预算 <4ms@1080p 起点观测） | 不用 GPU 着色器=可移植+可断言（顶点坐标可程序化采样断言） |
+
+**2.8.3 鼠标交互**
+
+| 条款 | 规格 | 契约 id |
+|---|---|---|
+| 光源 | 鼠标位置=PointLight（颜色=accent.500 薄菏；强度 ⚠️[待标定];近亮远暗）+ 同时驱动 2.8.2 的 1/r² 位移场 | — |
+| 拖拽加速 | 拖拽=绕球心旋转相机（Orbit);松开**惯性**继续转（速度按拖拽末速度衰减，摩擦 ⚠️[待标定] 起点 0.92/frame) | `SphereHome_Host`（Viewport3D) |
+| 自转+拖拽 | 拖拽期间自转暂停（用户输入优先）；惯性衰减到阈值后自转恢复 |
+| 贴图悬停 | 光线命中贴图三角面→该面/图标**放大**（scale 1.0→1.12,150ms,QuinticEase；相邻面按 1/r² 轻缩 0.97） | `SphereHome_GameIcon_<appId>` |
+| 贴图点击 | 点击=跳该游戏的 **mod 选择页**(GameSelectPage):① 图标底色换为该图标（**虚化液态玻璃**=半透明+模糊+混合）② 导航 GameSelectPage(任务 t43 契约：联想搜索+中英别名+即时反馈） | 同上（点击=Invoke/真实输入） |
+| 对话泡泡 | 悬停贴图时其上方浮出**对话泡泡游戏名**(Bubble Border CornerRadius 6 + accent.500 描边 + text.primary;120ms 渐入）**；鼠标移开即复原**（泡泡消失+缩放复原） | `SphereHome_GameBubble_<appId>` |
+| 空态 | 无任何游戏绑定贴图=全透明球+引导文案"在设置里绑定游戏后，图标会浮上球体"（text.secondary,居中） | `SphereHome_EmptyHint` |
+
+**2.8.4 页面切换钮与切页编排（用户裁定原文「上部选项卡中部；切页时序=球后移虚化→左侧文字左移虚化→选项卡左抽消失」）**
+
+| 条款 | 规格 |
+|---|---|
+| 选项卡位置 | 窗口**上部中部**=水平 TabStrip（下载/库/设置；与标题栏中心区共生，t3 §3.2 契约 id 不变） | `MainShell_Nav_*` 沿用 |
+| 切页时序（3 段串行编排，总 ~600ms ⚠️[待标定]) | ① 球后移+虚化（Scale 1→0.92+BlurEffect 0→8,250ms,QuinticEase)→② 左侧默认游戏卡文字左移+虚化（Translate -40+Opacity 1→0,200ms,QuinticEase,与①重叠 100ms 启动=页面分离编排）→③ 选项卡左抽屉式消失（Translate -100% Opacity→0,200ms,CubicEase) |
+| 回程（返回主页） | 逆序：选项卡右抽入→文字右移凝实→球前移聚焦（同曲线逆放，总 ~600ms) |
+
+### 2.9 左侧默认游戏卡（DefaultGameCard · v1.4 新增）
+
+> 与导航选项卡**分开的独立卡**（不吞进 TabStrip;D5.15 载体）。布局=屏幕左侧竖卡。
+
+| 槽位 | 规格 | 契约 id |
+|---|---|---|
+| i 名 | 游戏名（text.primary 15px 600;主区高度 42px) | `DefaultGameCard_Title` |
+| ii 图标在上 | 方形游戏图标（48×48;CornerRadius 8；在 i 名上方 8px) | `DefaultGameCard_Icon` |
+| iii 开始钮 | "开始"（accent.500 底+深字 text.on_accent;14×14 → hover scale 1.1,150ms;见 §2.10) | `DefaultGameCard_StartButton` |
+| iv "下载 mod" 直通 | 次级链接按钮（link.default;点击=跳 GameSelectPage 该游戏联想预填） | `DefaultGameCard_DownloadModLink` |
+| 空态 | "无默认游戏，前往设置"——**灰色字**(text.tertiary)（用户裁定原文：不点亮、不引导点击；点击行为仍保留=整卡可点跳设置） | `DefaultGameCard_Empty` |
+
+### 2.10 动画清单（Animation Checklist · v1.4 新增 · PCL2 体感弹簧）
+
+> 全局不变量：所有动画经 AniHelper 命名轨道（同轨道先停旧）;曲线偏好=QuinticEase(主）/BackEase(过冲）/ElasticEase(回弹）;所有时长⚠️[参数待重标定] 标注。A7:动画完成态必须可断言（终态几何采样，非中间帧）。
+
+| # | 动画 | 时长/曲线 | 触发 | 断言锚点 |
+|---|---|---|---|---|
+| A1 | **上→下凝实**：列表行自上而下交错淡入（半透明 0.4→1+ translateY 12→0) | 每行 ~25ms 交错，**总 400ms**;单行 200ms QuinticEase | 页面装载/列表刷新 | 行 opacity/位置终态采样（ENV-DOWNGRADE 逻辑等价=首帧→末帧 Opacity 断言） |
+| A2 | **抽屉下拉**：面板从顶部下滑展开（Height 0→N+Opacity 0→1) | 300ms QuinticEase | 抽屉/通知面板开 | 终态 Height 精确 |
+| A3 | **页面分离编排**：主页切页=球后移虚化+卡文字左移+选项卡左抽（2.8.4) | 250+200+200ms 三段串行（重叠 100ms 启动） | 导航命令 | 三段终态可见性断言 |
+| A4 | **过冲回弹**：卡片放缩进入（scale 0.94→1.03→1) | 300ms **BackEase**(片幅 1.3);ElasticEase 备选（弹 2 次） | 弹层/对话框打开 | 终态 scale=1 断言 |
+| A5 | **标题 - × 钮放大**：窗口标题钮（最小化/关闭）14×14 → hover **1.1** | 150ms QuinticEase | 鼠标悬停 | 钮终态尺寸采样 |
+| A6 | 全局**圆弧 CornerRadius 统一**：卡 8 / 钮 6 / 输入 4 / 泡泡 6（设计令牌 swdm-CornerRadius*;t2 §1.1 Common 字典） | — | 全局 | 契约扫描（XAML CornerRadius 绑定令牌） |
+
+**与 §5 对照关系**：A1-A3 的 PCL2 数值口径见 §5 速查表（凝实总 400ms=PCL2 §5 实测；单行 25ms=PCL2 交错步进）。§2.1 SwdmCard 90ms/150ms 四路与本清单叠加（卡片自身微动+页面级编排分层，不冲突）。
 ## 3. 列表虚拟化路线 A 与卡片折叠的取舍
 
 **裁决（承接架构 §8 / A2）**：SWDM 2.0 列表走**路线 A（WPF 原生虚拟化）**，弃 PCL2 的惰性实例化。理由：① 工坊/下载/库三主场景数据量已知可上千（PCL2 列表项被卡片折叠天然限流的前提不成立）；② FlaUI 可测性（虚拟化回收容器仍按 AutomationId 稳定可达）；③ 维护成本（PCL2 路线 B 需自移植 `MyVirtualizingElement` + ScrollChanged 可见性判定）。
@@ -464,6 +559,8 @@ public bool GoBack() { /* 出栈，keepInStack:false */ }
 | 字体 | PCL English + 雅黑 UI，11–16 谱 | 雅黑 UI + Segoe UI，10–22 谱令牌（§Common） | ✓（SWDM 略宽，保留） |
 
 **Common.xaml 静态令牌**（不随主题变）：`swdm-RadiusXs/Sm/Md/Lg/Pill` = 3/5/6/8/999；`swdm-Space1..8` = 4/8/12/16/20/24/32；字号 `swdm-TextCaption/BodySm/Body/TitleSm/Title/TitleLg/Hero` = 10/11/12/13/15/18/22；字重 400/600/700；字体族 `"Microsoft YaHei UI, Microsoft YaHei, Segoe UI"`；时长 `swdm-MotionColor/Fast/Base/Slow/Spring` = 90/150/200/250/300；曲线资源 `swdm-EaseFluentOut`（`QuinticEase EaseOut`）/ `swdm-EaseSpring`（`BackEase EaseOut`）。
+
+**v1.4 动画清单对照（A1-A6 ，§2.10;PCL2 §5 实测同源）**：A1 上→下凝实=每行 ~25ms 交错、总 400ms、单行 200ms QuinticEase;A2 抽屉下拉=300ms QuinticEase;A3 页面分离编排=250（球后移虚化）+200（文字左移）+200（选项卡左抽）三段串行重叠 100ms 启动；A4 过冲回弹=300ms BackEase（片幅 1.3)/ElasticEase 备选弹 2 次；A5 标题钮放大=14×14 → hover scale 1.1、150ms QuinticEase;A6 全局圆弧 CornerRadius=卡 8/钮 6/输入 4/泡泡 6（绑 swdm-Radius*).
 
 ---
 
