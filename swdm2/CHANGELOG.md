@@ -7,6 +7,16 @@
 
 ---
 
+## [0.6.0] · 2026-10-03 · 阶段 6 开门：Velopack 打包链（t58 D6.1)
+
+**版本**：0.5.0→0.6.0（`Directory.Build.props` 三同步：Version/AssemblyVersion/FileVersion)。
+
+### 新增（发布流水线）
+- **D6.1 Velopack 打包**（t58):`swdm2/scripts/pack-velopack.ps1` 一键化（publish self-contained win-x64 + `vpk pack` → `artifacts/`);**SelfContained 裁决**（docs/packaging_2.0.md:产品优先级原则——用户机不保证 .NET 8 Desktop Runtime,1.x 同自带运行时；不裁剪：WPF 反射风险 > 体积）;vpk 工具链本机实证：`dotnet tool install` 受 SDK 8.0.425 路径枚举 bug 阻断（网络可达已证=不误读，设计对照纪律）→ 直接解包 `vpk.1.2.161.nupkg` 用 `dotnet vpk.dll pack`（版本同架构契约 Velopack 1.2.161);首次安装+升级路径验证（0.5.0 基线包→0.6.0 Setup 原地升级；沙箱限制按 ENV-DOWNGRADE 诚实标注条款）；steamcmd/运行时依赖按产品优先级原则保留（不裁剪）。
+- 验证：clean+warnaserror 0-0;分发形态/安装升级证据见 docs/packaging_2.0.md 与任务回执。
+
+---
+
 ## [0.5.0] · 2026-10-03 · 阶段 5:PCL2 视觉主体+页面群+真实数据源（D5.11 交付门）
 
 **四要素**：全量回归 Core 72/Steam 161/Downloads 81 两连绿+build 0-0 warnaserror；Ui 逻辑层全绿（六清单 1-6 逻辑层断言）+FlaUI 输入层 12 失败=环境劣化基线族（三重实测证据，桌面复跑条款）；讨论组评审\docs/process/review_2.0_0.5.0.md\（三原则）；版本 0.4.0→0.5.0（\Directory.Build.props\）。

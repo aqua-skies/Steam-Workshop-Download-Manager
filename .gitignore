@@ -30,3 +30,7 @@ dump2122.py
 *.tmp
 *.bak
 swdm2/TestArtifacts/
+
+# ===== SWDM 2.0 打包/临时产物（可经 scripts/pack-velopack.ps1 复现，不入库）=====
+artifacts/
+swdm2/.dtmp/

@@ -25,6 +25,12 @@
     <InternalsVisibleTo Include="Swdm2.UiTests" />
   </ItemGroup>
 
+  <!-- D6.1/t58: Velopack 1.2.161（架构契约同版本；VelopackApp.Build().Run() 必须在
+       应用启动最开头——vpk pack 在打包前校验该调用存在） -->
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
