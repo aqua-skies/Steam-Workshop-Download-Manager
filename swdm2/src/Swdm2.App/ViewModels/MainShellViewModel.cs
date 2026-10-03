@@ -1,6 +1,7 @@
 using Swdm2.App.Ui.Pages;
 using System.Windows.Input;
 using Swdm2.App.Boot;
+using Swdm2.App.Library;
 using Swdm2.App.Community;
 using Swdm2.App.Connectivity;
 using Swdm2.App.ViewModels;
@@ -28,6 +29,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     private readonly GameSelectPageViewModel _gameSelect;
     // [arch-20 t44] D5.5 浏览页 VM
     private readonly WorkshopBrowsePageViewModel _browse;
+    // D5.12 库页 VM
+    private readonly LibraryPageViewModel _library;
 
     /// <summary>详情页 VM（MainWindow 初始化默认页时取 DataContext）。</summary>
     public ModDetailPageViewModel ModDetail => _modDetail;
@@ -41,6 +44,9 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     /// <summary>[arch-20 t44] D5.5 工坊浏览页 VM。</summary>
     public WorkshopBrowsePageViewModel Browse => _browse;
 
+    /// <summary>D5.12 库页 VM（P0 旅程 5 载体）。</summary>
+    public LibraryPageViewModel Library => _library;
+
     /// <summary>D5.9 状态栏连接 VM（MainWindow 状态栏绑定源）。</summary>
     public ConnectivityBarViewModel Connectivity { get; }
 
@@ -48,6 +54,7 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     public ICommand NavigateDownloadsCommand { get; }
     public ICommand NavigateBrowseCommand { get; } // [arch-20 t44]
     public ICommand NavigateGameSelectCommand { get; }
+    public ICommand NavigateLibraryCommand { get; } // D5.12
 
     public MainShellViewModel(
         IPathService paths,
@@ -80,6 +87,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         _gameSelect = new GameSelectPageViewModel(navigateToDetail: _ => NavigateToModDetail());
         // [arch-20 t44] D5.5 浏览页（合成千项；网络源 D5.x 同契约注入）
         _browse = new WorkshopBrowsePageViewModel(WorkshopBrowseItem.SampleData());
+        // D5.12: 库页（P0 旅程 5 载体；LocalLibraryScanner 轻扫，D6.1 替换真实库管理）
+        _library = new LibraryPageViewModel(new LocalLibraryScanner(paths), paths);
 
         // D5.3: 导航委托 PageNavigationService（返回栈+时序）
         NavigateModDetailCommand = new RelayCommand(
@@ -96,6 +105,10 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         NavigateGameSelectCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<GameSelectPage>(
                 () => new GameSelectPage { DataContext = _gameSelect }));
+        // D5.12: 库页导航（契约 id MainShell_Nav_LibraryButton;P0 旅程 5「下载→库」)
+        NavigateLibraryCommand = new RelayCommand(
+            () => AppHost.Navigation.Navigate<LibraryPage>(
+                () => new LibraryPage { DataContext = _library }));
     }
 
     /// <summary>#10 旅程：详情页下载入队后跳下载页。</summary>

@@ -99,9 +99,13 @@
                     Background="{DynamicResource swdm-Accent500Brush}"
                     Command="{Binding NavigateModDetailCommand}"/>
             <Button AutomationProperties.AutomationId="MainShell_Nav_DownloadsButton"
-                    Content="Downloads" Padding="12,5"
+                    Content="Downloads" Padding="12,5" Margin="0,0,8,0"
                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                     Command="{Binding NavigateDownloadsCommand}"/>
+            <Button AutomationProperties.AutomationId="MainShell_Nav_LibraryButton"
+                    Content="Library" Padding="12,5"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                    Command="{Binding NavigateLibraryCommand}"/>
         </StackPanel>
         <!-- PageHost 容器替换（t2 §2.5;PageNavigationService.Attach 时序驱动 110→30ms) -->
         <ContentControl x:Name="PageHost" Grid.Row="2" Margin="10"/>

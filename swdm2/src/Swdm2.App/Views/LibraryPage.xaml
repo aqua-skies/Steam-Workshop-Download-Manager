@@ -1,0 +1,82 @@
+<pages:PageBase x:Class="Swdm2.App.Views.LibraryPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="840">
+    <!--
+      D5.12 库页（P0 旅程 5 载体；t51):
+      - 已下载 mod 列表（标题/AppId/路径/大小）+按游戏分类
+      - 打开目录钮（选中行；explorer 打开 WorkshopContent/<appid>/<itemid>)
+      - 空态诚实文案（库为空/扫描失败/目录不存在）
+      AutomationId 契约 `<页面>_<语义>`（t3 §3.2)。
+      颜色 DynamicResource swdm-*（t2 §1.4 不变量③)。
+    -->
+    <DockPanel Margin="12">
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="已下载的 Mod" FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                       VerticalAlignment="Center"/>
+            <Button Grid.Column="1" AutomationProperties.AutomationId="LibraryPage_RefreshButton"
+                    Content="刷新" Padding="12,4"
+                    Command="{Binding RefreshCommand}"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"/>
+        </Grid>
+
+        <TextBlock DockPanel.Dock="Top" AutomationProperties.AutomationId="LibraryPage_EmptyHint"
+                   Text="{Binding EmptyHint}" FontSize="12" Margin="0,0,0,8"
+                   Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+
+        <Button DockPanel.Dock="Top" AutomationProperties.AutomationId="LibraryPage_OpenDirectoryButton"
+                Content="打开目录" Padding="12,4" Margin="0,0,0,10" HorizontalAlignment="Left"
+                Command="{Binding OpenDirectoryCommand}"
+                Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                Background="{DynamicResource swdm-Accent500Brush}"/>
+
+        <ListBox AutomationProperties.AutomationId="LibraryPage_ItemList_Items"
+                 ItemsSource="{Binding Rows}"
+                 SelectedItem="{Binding SelectedRow, Mode=TwoWay}">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="AutomationProperties.AutomationId"
+                            Value="LibraryPage_Item"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="4,2"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" AutomationProperties.AutomationId="LibraryPage_Item_TitleText"
+                                   Text="{Binding Title}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                        <TextBlock Grid.Column="1" AutomationProperties.AutomationId="LibraryPage_Item_AppIdText"
+                                   Text="{Binding AppIdText}" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                        <TextBlock Grid.Column="2" AutomationProperties.AutomationId="LibraryPage_Item_SizeText"
+                                   Text="{Binding SizeText}" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                        <TextBlock Grid.Column="3" AutomationProperties.AutomationId="LibraryPage_Item_PathText"
+                                   Text="{Binding RelativePath}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</pages:PageBase>
