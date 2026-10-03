@@ -25,7 +25,9 @@ public sealed class ThemeService
     private const string LightPath = "pack://application:,,,/Swdm2.App;component/Ui/Themes/Light.xaml";
     private const string ThemeMarker = "Ui/Themes/";
 
-    public SwdmTheme Current { get; private set; } = SwdmTheme.Dark;
+    // D5.19/t62:默认=Light「薄荷清晨」（用户 2026-10-03 亲定配色A;
+    // 原 Dark 默认=用户看到暗绿底与"活跃轻松轻盈"裁定相悖="看不清"根因之一）
+    public SwdmTheme Current { get; private set; } = SwdmTheme.Light;
 
     /// <summary>当前生效的主题（FollowSystem 解析后的实际值）。</summary>
     public SwdmTheme ResolvedTheme =>

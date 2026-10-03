@@ -4,7 +4,7 @@
              xmlns:local="clr-namespace:Swdm2.App"
              xmlns:cvt="clr-namespace:Swdm2.App.Ui.Converters">
     <!-- 主题字典单点合并（架构 A3 / t2 §1.1）：
-         Common + Accent 主题无关先合并，主题字典（Dark 默认=1.x 品牌延续）最后合并。
+         Common + Accent 主题无关先合并，主题字典（D5.19/t62:Light 默认=配色A「薄荷清晨」用户亲定）最后合并。
          切换 = ThemeService 换主题字典条目（无闪烁，全树 DynamicResource 立即重应用）。
          键名一律 swdm- 前缀防第三方冲突。 -->
     <Application.Resources>
@@ -12,7 +12,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/Ui/Themes/Common.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/Ui/Themes/Accent.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/Ui/Themes/Dark.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Ui/Themes/Light.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <!-- t59 bool→Visibility 转换器（库页更新角标/Hint/行标记） -->
             <cvt:BoolToVisibilityConverter x:Key="swdm-BoolToVisibility" />
