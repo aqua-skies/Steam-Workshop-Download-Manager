@@ -22,6 +22,7 @@
   <!-- D5.3：窗口 chrome 基座（FluentWindow/TitleBar；A8b 实测 4.3.0，spike+t41 反射门） -->
   <ItemGroup>
     <PackageReference Include="WPF-UI" Version="4.3.0" />
+    <InternalsVisibleTo Include="Swdm2.UiTests" />
   </ItemGroup>
 
   <ItemGroup>
