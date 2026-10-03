@@ -1,55 +1,59 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!--
-      Dark.xaml — 暗色主题字典（t2 visual_system_2.0.md §1.2 明度阶梯表，行号级出处见该表）。
+      Dark.xaml — 暗色主题字典（**v1.4 配色A「薄荷夜」**=t2 visual_system_2.0.md §1.2 v1.4 全表重染，行号级出处见该表）。
       双资源律：每个颜色令牌落 Color（供 ColorAnimation 阴影/前景动画绑定）+ Brush（供 Fill/Background）。
       accent 色族按 t2 §1.2 实现裁决（行 82）：键在本文件（与 Light.xaml）各定义一次，
       避免主题切换时 Accent 残留；Accent.xaml 只放中性阴影色。
+      v1.4 WCAG 实算（math_computation 回执 2026-10-03）：薄荷绿 #3ED598 白字=1.88 ✗ 严重不达标 →
+      **亮底深字糖果风**：text.on_accent=#072B1D（对 accent.500 实算 **8.14** ✓，Refero Rainbow 同族）；
+      暗底 link=薄荷真色（9.87 ✓);warning=品牌明黄 #FFC531(11.73 ✓)。
       ⚠️[参数待重标定]：全部移植值起点，D5.x 视觉标定实测锁定。
     -->
 
-    <!-- ===== surface 明度阶梯（z 轴递进 = 高程地基） ===== -->
-    <Color x:Key="swdm-SurfaceCanvasColor">#16161C</Color>
+    <!-- ===== surface 明度阶梯（墨绿黑 z 轴递进 = 高程地基） ===== -->
+    <Color x:Key="swdm-SurfaceCanvasColor">#0D1511</Color>
     <SolidColorBrush x:Key="swdm-SurfaceCanvasBrush" Color="{StaticResource swdm-SurfaceCanvasColor}"/>
-    <Color x:Key="swdm-SurfaceCardColor">#1E1E24</Color>
+    <Color x:Key="swdm-SurfaceCardColor">#14201A</Color>
     <SolidColorBrush x:Key="swdm-SurfaceCardBrush" Color="{StaticResource swdm-SurfaceCardColor}"/>
-    <Color x:Key="swdm-SurfaceCardHoverColor">#25252D</Color>
+    <Color x:Key="swdm-SurfaceCardHoverColor">#182721</Color>
     <SolidColorBrush x:Key="swdm-SurfaceCardHoverBrush" Color="{StaticResource swdm-SurfaceCardHoverColor}"/>
-    <Color x:Key="swdm-SurfaceInputColor">#26262E</Color>
+    <Color x:Key="swdm-SurfaceInputColor">#1C2E26</Color>
     <SolidColorBrush x:Key="swdm-SurfaceInputBrush" Color="{StaticResource swdm-SurfaceInputColor}"/>
-    <Color x:Key="swdm-SurfaceRaisedColor">#2B2B34</Color>
+    <Color x:Key="swdm-SurfaceRaisedColor">#22362C</Color>
     <SolidColorBrush x:Key="swdm-SurfaceRaisedBrush" Color="{StaticResource swdm-SurfaceRaisedColor}"/>
-    <Color x:Key="swdm-SurfaceSelectedColor">#32285E</Color>
+    <Color x:Key="swdm-SurfaceSelectedColor">#1E3A2C</Color>
     <SolidColorBrush x:Key="swdm-SurfaceSelectedBrush" Color="{StaticResource swdm-SurfaceSelectedColor}"/>
 
-    <!-- ===== stroke 描边阶梯 ===== -->
-    <Color x:Key="swdm-StrokeHairlineColor">#2B2B33</Color>
+    <!-- ===== stroke 描边阶梯（描边 3:1 豁免；视觉边界值） ===== -->
+    <Color x:Key="swdm-StrokeHairlineColor">#22362C</Color>
     <SolidColorBrush x:Key="swdm-StrokeHairlineBrush" Color="{StaticResource swdm-StrokeHairlineColor}"/>
-    <Color x:Key="swdm-StrokeCardColor">#2E2E37</Color>
+    <Color x:Key="swdm-StrokeCardColor">#2A3A31</Color>
     <SolidColorBrush x:Key="swdm-StrokeCardBrush" Color="{StaticResource swdm-StrokeCardColor}"/>
-    <Color x:Key="swdm-StrokeInputColor">#3A3A45</Color>
+    <Color x:Key="swdm-StrokeInputColor">#37513F</Color>
     <SolidColorBrush x:Key="swdm-StrokeInputBrush" Color="{StaticResource swdm-StrokeInputColor}"/>
-    <Color x:Key="swdm-StrokeHoverColor">#4A4A57</Color>
+    <Color x:Key="swdm-StrokeHoverColor">#46584B</Color>
     <SolidColorBrush x:Key="swdm-StrokeHoverBrush" Color="{StaticResource swdm-StrokeHoverColor}"/>
-    <Color x:Key="swdm-StrokeFocusColor">#7655F8</Color>  <!-- = accent.500（t2 §1.2 stroke.focus） -->
+    <Color x:Key="swdm-StrokeFocusColor">#3ED598</Color>  <!-- = accent.500（t2 §1.2 stroke.focus） -->
     <SolidColorBrush x:Key="swdm-StrokeFocusBrush" Color="{StaticResource swdm-StrokeFocusColor}"/>
 
-    <!-- ===== text 文本阶梯 ===== -->
-    <Color x:Key="swdm-TextPrimaryColor">#E8EAF0</Color>
+    <!-- ===== text 文本阶梯（v1.4 实算全达标） ===== -->
+    <Color x:Key="swdm-TextPrimaryColor">#E8F5EE</Color>
     <SolidColorBrush x:Key="swdm-TextPrimaryBrush" Color="{StaticResource swdm-TextPrimaryColor}"/>
-    <Color x:Key="swdm-TextSecondaryColor">#9AA3AF</Color>
+    <Color x:Key="swdm-TextSecondaryColor">#9FB8AB</Color>
     <SolidColorBrush x:Key="swdm-TextSecondaryBrush" Color="{StaticResource swdm-TextSecondaryColor}"/>
-    <Color x:Key="swdm-TextTertiaryColor">#6E757F</Color>
+    <Color x:Key="swdm-TextTertiaryColor">#6E8579</Color>
     <SolidColorBrush x:Key="swdm-TextTertiaryBrush" Color="{StaticResource swdm-TextTertiaryColor}"/>
-    <Color x:Key="swdm-TextDisabledColor">#5A6068</Color>
+    <Color x:Key="swdm-TextDisabledColor">#4A5A50</Color>
     <SolidColorBrush x:Key="swdm-TextDisabledBrush" Color="{StaticResource swdm-TextDisabledColor}"/>
-    <Color x:Key="swdm-TextOnAccentColor">#FFFFFF</Color>
+    <!-- v1.4:强调色上的深字（薄荷绿饱和=白字 1.88 ✗→深字 8.14 ✓ 糖果风） -->
+    <Color x:Key="swdm-TextOnAccentColor">#072B1D</Color>
     <SolidColorBrush x:Key="swdm-TextOnAccentBrush" Color="{StaticResource swdm-TextOnAccentColor}"/>
 
-    <!-- ===== link 链接语义色 ===== -->
-    <Color x:Key="swdm-LinkDefaultColor">#66C0F4</Color>
+    <!-- ===== link 链接语义色（暗底薄荷真色 9.87/11.06 ✓） ===== -->
+    <Color x:Key="swdm-LinkDefaultColor">#3ED598</Color>
     <SolidColorBrush x:Key="swdm-LinkDefaultBrush" Color="{StaticResource swdm-LinkDefaultColor}"/>
-    <Color x:Key="swdm-LinkHoverColor">#8CD4FF</Color>
+    <Color x:Key="swdm-LinkHoverColor">#59DFA6</Color>
     <SolidColorBrush x:Key="swdm-LinkHoverBrush" Color="{StaticResource swdm-LinkHoverColor}"/>
 
     <!-- ===== 语义色 ===== -->
@@ -57,19 +61,20 @@
     <SolidColorBrush x:Key="swdm-Success500Brush" Color="{StaticResource swdm-Success500Color}"/>
     <Color x:Key="swdm-Danger500Color">#F04747</Color>
     <SolidColorBrush x:Key="swdm-Danger500Brush" Color="{StaticResource swdm-Danger500Color}"/>
-    <Color x:Key="swdm-Warning500Color">#FAA61A</Color>
+    <!-- v1.4:品牌明黄（11.73 ✓）=配色A 点缀色 -->
+    <Color x:Key="swdm-Warning500Color">#FFC531</Color>
     <SolidColorBrush x:Key="swdm-Warning500Brush" Color="{StaticResource swdm-Warning500Color}"/>
 
-    <!-- ===== accent 色族（悬停/主强调/按下） =====
-         WCAG 实算标定（t2 v1.2 回写）：accent.500 dark #7C5CFF 白字实算 4.35 < 4.5 基线，
-         深化至 #7655F8 = 4.79（spec 原声明 4.6 与实算不符，按经验复验/设计对照纪律修正）。 -->
-    <Color x:Key="swdm-Accent400Color">#8F74FF</Color>
+    <!-- ===== accent 色族（薄荷绿三阶：悬停更亮/主强调真色/按下） =====
+         v1.4:accent.500=#3ED598 品牌薄荷真色（用户亲定）;配 text.on_accent 深字；
+         白字仅非文本语义位=light 的 accent.deep #15835A(4.74,见 Light.xaml 注）。 -->
+    <Color x:Key="swdm-Accent400Color">#6FE9B7</Color>
     <SolidColorBrush x:Key="swdm-Accent400Brush" Color="{StaticResource swdm-Accent400Color}"/>
-    <Color x:Key="swdm-Accent500Color">#7655F8</Color>
+    <Color x:Key="swdm-Accent500Color">#3ED598</Color>
     <SolidColorBrush x:Key="swdm-Accent500Brush" Color="{StaticResource swdm-Accent500Color}"/>
-    <Color x:Key="swdm-Accent600Color">#6A48F0</Color>
+    <Color x:Key="swdm-Accent600Color">#2FB57F</Color>
     <SolidColorBrush x:Key="swdm-Accent600Brush" Color="{StaticResource swdm-Accent600Color}"/>
-    <!-- 品牌色阴影（PCL2 签名：阴影用品牌色而非黑色；= accent.500） -->
-    <Color x:Key="swdm-AccentShadowColor">#7655F8</Color>
+    <!-- 品牌色阴影（PCL2 签名：阴影用品牌色而非黑色；= accent.500 薄荷） -->
+    <Color x:Key="swdm-AccentShadowColor">#3ED598</Color>
     <SolidColorBrush x:Key="swdm-AccentShadowBrush" Color="{StaticResource swdm-AccentShadowColor}"/>
 </ResourceDictionary>

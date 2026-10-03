@@ -40,13 +40,14 @@ public sealed class ThemeServiceTests
     public void Apply_Resolves_DynamicResource_Immediately()
     {
         // 换字典后资源树立即反映新主题值（DynamicResource 重应用的前提条件）
+        // v1.4 配色A：薄荷夜 #0D1511 / 薄荷清晨 #F6FBF7
         var svc = new ThemeService();
         svc.Apply(SwdmTheme.Dark);
-        Assert.Equal(Color.FromRgb(0x16, 0x16, 0x1C),
+        Assert.Equal(Color.FromRgb(0x0D, 0x15, 0x11),
             (Color)Application.Current.Resources["swdm-SurfaceCanvasColor"]);
 
         svc.Apply(SwdmTheme.Light);
-        Assert.Equal(Color.FromRgb(0xF2, 0xF3, 0xF6),
+        Assert.Equal(Color.FromRgb(0xF6, 0xFB, 0xF7),
             (Color)Application.Current.Resources["swdm-SurfaceCanvasColor"]);
     }
 

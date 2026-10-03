@@ -3,7 +3,8 @@
     <!--
       Accent.xaml — 中性阴影色族（t2 §1.2 实现裁决行 82：本文件只放不随主题变的
       中性阴影资源；accent 色族键在 Light/Dark 两文件各定义一次，避免主题切换时残留）。
-      「换 accent 即换皮」扩展位：未来主题包在此追加 accent 色族覆盖时，
+      「换 accent 即换皮」扩展位（v1.4 薄荷 accent 族=Light/Dark 各自定义，换皮即换 accent:
+      Light #59DFA6/#3ED598/#23B57F+深字 #052E1F;Dark #6FE9B7/#3ED598/#2FB57F+深字 #072B1D）。未来主题包在此追加 accent 色族覆盖时，
       ThemeService 会以最后合并者胜出（App.xaml 合并顺序 = Common → Accent → 主题）。
     -->
     <!-- 弹层/菜单中性阴影（PCL2 DropShadowEffect 0.4/4/2，Application.xaml:487）⚠️[参数待重标定] -->

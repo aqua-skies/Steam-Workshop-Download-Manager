@@ -107,17 +107,21 @@ public sealed class ThemeResourceDictionaryTests
     public void Token_Values_Match_Spec_Dark_Palette()
     {
         // t2 §1.2 暗色表行号级抽检（spec 数值 = 单一事实源）
+        // v1.4 配色A「薄荷夜」全表重染（math_computation 实算回执 2026-10-03）
         var dark = LoadXaml("Dark.xaml");
-        Assert.Equal(Color.FromRgb(0x16, 0x16, 0x1C), (Color)dark["swdm-SurfaceCanvasColor"]);
-        Assert.Equal(Color.FromRgb(0x1E, 0x1E, 0x24), (Color)dark["swdm-SurfaceCardColor"]);
-        Assert.Equal(Color.FromRgb(0xE8, 0xEA, 0xF0), (Color)dark["swdm-TextPrimaryColor"]);
-        // WCAG 实算标定后值（t2 v1.2 回写：dark accent.500 4.35→4.79）
-        Assert.Equal(Color.FromRgb(0x76, 0x55, 0xF8), (Color)dark["swdm-Accent500Color"]);
+        Assert.Equal(Color.FromRgb(0x0D, 0x15, 0x11), (Color)dark["swdm-SurfaceCanvasColor"]);
+        Assert.Equal(Color.FromRgb(0x14, 0x20, 0x1A), (Color)dark["swdm-SurfaceCardColor"]);
+        Assert.Equal(Color.FromRgb(0xE8, 0xF5, 0xEE), (Color)dark["swdm-TextPrimaryColor"]);
+        // v1.4:accent.500=品牌薄荷真色（配深字 text.on_accent=8.14 ✓;白字 1.88 ✗）
+        Assert.Equal(Color.FromRgb(0x3E, 0xD5, 0x98), (Color)dark["swdm-Accent500Color"]);
+        // v1.4:亮底深字糖果风（Refero Rainbow 同族）
+        Assert.Equal(Color.FromRgb(0x07, 0x2B, 0x1D), (Color)dark["swdm-TextOnAccentColor"]);
 
         var light = LoadXaml("Light.xaml");
-        Assert.Equal(Color.FromRgb(0xF2, 0xF3, 0xF6), (Color)light["swdm-SurfaceCanvasColor"]);
+        Assert.Equal(Color.FromRgb(0xF6, 0xFB, 0xF7), (Color)light["swdm-SurfaceCanvasColor"]);
         Assert.Equal(Colors.White, (Color)light["swdm-SurfaceCardColor"]);
-        Assert.Equal(Color.FromRgb(0x6D, 0x4A, 0xFF), (Color)light["swdm-Accent500Color"]);
+        Assert.Equal(Color.FromRgb(0x3E, 0xD5, 0x98), (Color)light["swdm-Accent500Color"]);
+        Assert.Equal(Color.FromRgb(0x05, 0x2E, 0x1F), (Color)light["swdm-TextOnAccentColor"]);
     }
 
     [WpfFact]
