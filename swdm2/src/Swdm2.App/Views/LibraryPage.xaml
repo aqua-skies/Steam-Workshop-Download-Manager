@@ -11,6 +11,9 @@
       - 已下载 mod 列表（标题/AppId/路径/大小）+按游戏分类
       - 打开目录钮（选中行；explorer 打开 WorkshopContent/<appid>/<itemid>)
       - 空态诚实文案（库为空/扫描失败/目录不存在）
+      D6.2 更新检查（t59):
+      - 检查更新钮（异步不阻塞）+角标 UpdateCount+非阻塞 Hint
+      - 下载全部更新钮=1.x 学费：询问才入队，不自动下载
       AutomationId 契约 `<页面>_<语义>`（t3 §3.2)。
       颜色 DynamicResource swdm-*（t2 §1.4 不变量③)。
     -->
@@ -19,12 +22,28 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="已下载的 Mod" FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"
-                       VerticalAlignment="Center"/>
-            <Button Grid.Column="1" AutomationProperties.AutomationId="LibraryPage_RefreshButton"
-                    Content="刷新" Padding="12,4"
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="已下载的 Mod" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                           VerticalAlignment="Center"/>
+                <!-- t59 更新角标：>0 才显示（非阻塞提示） -->
+                <Border AutomationProperties.AutomationId="LibraryPage_UpdateBadge"
+                        Visibility="{Binding HasUpdates, Converter={StaticResource swdm-BoolToVisibility}}"
+                        Background="{DynamicResource swdm-Accent500Brush}"
+                        CornerRadius="8" Margin="8,0,0,0" Padding="6,1">
+                    <TextBlock Text="{Binding UpdateCount}" FontSize="11" FontWeight="Bold"
+                               Foreground="{DynamicResource swdm-TextOnAccentBrush}"/>
+                </Border>
+            </StackPanel>
+            <Button Grid.Column="1" AutomationProperties.AutomationId="LibraryPage_CheckUpdatesButton"
+                    Content="检查更新" Padding="12,4" Margin="6,0,0,0"
+                    Command="{Binding CheckForUpdatesCommand}"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"/>
+            <Button Grid.Column="2" AutomationProperties.AutomationId="LibraryPage_RefreshButton"
+                    Content="刷新" Padding="12,4" Margin="6,0,0,0"
                     Command="{Binding RefreshCommand}"
                     Foreground="{DynamicResource swdm-TextOnAccentBrush}"
                     Background="{DynamicResource swdm-Accent500Brush}"/>
@@ -33,6 +52,19 @@
         <TextBlock DockPanel.Dock="Top" AutomationProperties.AutomationId="LibraryPage_EmptyHint"
                    Text="{Binding EmptyHint}" FontSize="12" Margin="0,0,0,8"
                    Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+
+        <!-- t59 更新提示（非阻塞 Hint;有内容才显示） -->
+        <TextBlock DockPanel.Dock="Top" AutomationProperties.AutomationId="LibraryPage_UpdateHint"
+                   Text="{Binding UpdateHint}" FontSize="12" Margin="0,0,0,8"
+                   Visibility="{Binding HasUpdateHint, Converter={StaticResource swdm-BoolToVisibility}}"
+                   Foreground="{DynamicResource swdm-WarningBrush}"/>
+
+        <!-- t59 下载全部更新（询问手势；候选>0 才可用） -->
+        <Button DockPanel.Dock="Top" AutomationProperties.AutomationId="LibraryPage_EnqueueAllUpdatesButton"
+                Content="下载全部更新" Padding="12,4" Margin="0,0,0,10" HorizontalAlignment="Left"
+                Command="{Binding EnqueueAllUpdatesCommand}"
+                Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                Background="{DynamicResource swdm-Accent500Brush}"/>
 
         <Button DockPanel.Dock="Top" AutomationProperties.AutomationId="LibraryPage_OpenDirectoryButton"
                 Content="打开目录" Padding="12,4" Margin="0,0,0,10" HorizontalAlignment="Left"
@@ -56,6 +88,7 @@
                     <Grid Margin="0,3">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="46"/>
                             <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="100"/>
                             <ColumnDefinition Width="200"/>
@@ -64,13 +97,18 @@
                                    Text="{Binding Title}" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
-                        <TextBlock Grid.Column="1" AutomationProperties.AutomationId="LibraryPage_Item_AppIdText"
+                        <!-- t59 行级更新标记（bool→可见性；内置转换器） -->
+                        <TextBlock Grid.Column="1" AutomationProperties.AutomationId="LibraryPage_Item_UpdateMark"
+                                   Text="更新" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"
+                                   Visibility="{Binding HasUpdate, Converter={StaticResource swdm-BoolToVisibility}}"
+                                   Foreground="{DynamicResource swdm-Accent500Brush}"/>
+                        <TextBlock Grid.Column="2" AutomationProperties.AutomationId="LibraryPage_Item_AppIdText"
                                    Text="{Binding AppIdText}" VerticalAlignment="Center"
                                    Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
-                        <TextBlock Grid.Column="2" AutomationProperties.AutomationId="LibraryPage_Item_SizeText"
+                        <TextBlock Grid.Column="3" AutomationProperties.AutomationId="LibraryPage_Item_SizeText"
                                    Text="{Binding SizeText}" VerticalAlignment="Center"
                                    Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
-                        <TextBlock Grid.Column="3" AutomationProperties.AutomationId="LibraryPage_Item_PathText"
+                        <TextBlock Grid.Column="4" AutomationProperties.AutomationId="LibraryPage_Item_PathText"
                                    Text="{Binding RelativePath}" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>

@@ -53,7 +53,8 @@ public sealed class LibraryUpdateTests
             IReadOnlyList<InstalledModSnapshot> installed, CancellationToken ct = default)
         {
             Calls++;
-            Assert.All(installed, s => Assert.Null(s.LocalLastUpdatedUtc)); // t51 轻扫=本地未知
+            // VM 侧基线=ItemLastUpdatedUtc ?? InstalledAtUtc（安装时间兜底，免首次全量假更新）
+            Assert.All(installed, s => Assert.NotNull(s.LocalLastUpdatedUtc));
             return Task.FromResult(_result);
         }
     }

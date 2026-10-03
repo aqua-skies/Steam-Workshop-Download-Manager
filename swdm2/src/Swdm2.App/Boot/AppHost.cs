@@ -17,6 +17,7 @@ using Swdm2.Steam.Community;
 using Swdm2.Steam.Resilience;
 using Swdm2.Steam.SteamCmd;
 using Swdm2.Steam.Web;
+using Swdm2.Steam.Workshop;
 using SteamKit2;
 
 namespace Swdm2.App.Boot;
@@ -106,8 +107,12 @@ private static ConnectivityStateService? _connectivity;
         var communitySource = new CommunityPageSource(httpFactory);
         var commentSource = new CommunityCommentSource(httpFactory);
 
+        // D6.2(t59): 库页更新检查真实源=批量 GetPublishedFileDetails 链（指纹头+
+        // Api 节流桶+熔断全在 apiClient 内）；角标/Hint 不阻塞主线程；入队询问才下载
+        var updateSource = new WorkshopUpdateChecker(apiClient);
+
         _shell = new MainShellViewModel(paths, queue, provider, scheduler, bus,
-            _connectivity, apiClient, communitySource, commentSource);
+            _connectivity, apiClient, communitySource, commentSource, updateSource);
 
         if (test2Fa)
         {

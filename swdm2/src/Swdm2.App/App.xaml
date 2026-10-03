@@ -1,7 +1,8 @@
 <Application x:Class="Swdm2.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Swdm2.App">
+             xmlns:local="clr-namespace:Swdm2.App"
+             xmlns:cvt="clr-namespace:Swdm2.App.Ui.Converters">
     <!-- 主题字典单点合并（架构 A3 / t2 §1.1）：
          Common + Accent 主题无关先合并，主题字典（Dark 默认=1.x 品牌延续）最后合并。
          切换 = ThemeService 换主题字典条目（无闪烁，全树 DynamicResource 立即重应用）。
@@ -13,6 +14,8 @@
                 <ResourceDictionary Source="pack://application:,,,/Ui/Themes/Accent.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/Ui/Themes/Dark.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- t59 bool→Visibility 转换器（库页更新角标/Hint/行标记） -->
+            <cvt:BoolToVisibilityConverter x:Key="swdm-BoolToVisibility" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
