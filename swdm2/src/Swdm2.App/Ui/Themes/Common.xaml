@@ -9,11 +9,11 @@
       （sys=System.Runtime：.NET 8 无 mscorlib 映射）
     -->
 
-    <!-- ===== 几何（t2 §5：PCL2 实测） ===== -->
-    <sys:Double x:Key="swdm-RadiusXs">3</sys:Double>
-    <sys:Double x:Key="swdm-RadiusSm">5</sys:Double>
+    <!-- ===== 几何（t2 §5：PCL2 实测；[arch-20 t55 A6] 圆弧按 v1.4 §2.10 A6 对齐：卡 8/钮 6/输入 4/泡泡 6） ===== -->
+    <sys:Double x:Key="swdm-RadiusXs">4</sys:Double>
+    <sys:Double x:Key="swdm-RadiusSm">6</sys:Double>
     <sys:Double x:Key="swdm-RadiusMd">6</sys:Double>
-    <sys:Double x:Key="swdm-RadiusLg">6</sys:Double>
+    <sys:Double x:Key="swdm-RadiusLg">8</sys:Double>
     <sys:Double x:Key="swdm-CardCollapsedHeight">40</sys:Double>
     <sys:Double x:Key="swdm-ListItemHeight">42</sys:Double>
     <sys:Double x:Key="swdm-TitleBarHeight">48</sys:Double>
