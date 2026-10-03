@@ -1,0 +1,153 @@
+<pages:PageBase x:Class="Swdm2.App.Ui.Pages.WorkshopBrowsePage"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
+        xmlns:vm="clr-namespace:Swdm2.App.ViewModels"
+        xmlns:ctrl="clr-namespace:Swdm2.App.Ui.Controls"
+        mc:Ignorable="d"
+        d:DesignHeight="560" d:DesignWidth="840">
+    <!--
+    D5.5 工坊浏览页（t44;t2 §4.3 路线 A 裁决载体）：
+    - 虚拟化路线 A：VirtualizingPanel.IsVirtualizing=True + Recycling + ScrollUnit=Pixel
+      **ListBox 不被任何 ScrollViewer 包**（A2 不变量④：VSP 自身提供滚动）
+      分组未用=IsVirtualizingWhenGrouping 不适用（N/A，断言以模板存在为准）
+    - 惯性滚轮=SmoothScrollAttach 挂 ListBox 内部 ScrollViewer(300ms QuinticEase)
+    - 筛选/排序/分页全同步（即时反馈 A9；网络源接入在 D5.x 用同一 VM 契约）
+    - id 契约（t3 §3.2）：WorkshopBrowsePage_SearchBox/_TagCombo/_AuthorBox/_SortCombo/
+      _ItemList/_Item 模板/_PrevPage/_NextPage/_PageLabel/_ItemCountLabel
+    - 颜色一律 DynamicResource swdm-*（t2 §1.4 不变量）
+    -->
+    <Grid Margin="12,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- 筛选条 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBox x:Name="SearchBox" Width="220" Padding="6,4"
+                     AutomationProperties.AutomationId="WorkshopBrowsePage_SearchBox"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=150}"/>
+            <ComboBox x:Name="TagCombo" Width="120" Margin="8,0,0,0"
+                      AutomationProperties.AutomationId="WorkshopBrowsePage_TagCombo"
+                      ItemsSource="{Binding TagOptions}" SelectedItem="{Binding SelectedTag, Mode=TwoWay}"/>
+            <ComboBox x:Name="SortCombo" Width="140" Margin="8,0,0,0"
+                      AutomationProperties.AutomationId="WorkshopBrowsePage_SortCombo"
+                      SelectedIndex="{Binding SortKeyAsIndex, Mode=TwoWay}"/>
+            <CheckBox x:Name="SortDescCheck" Content="降序" Margin="8,0,0,0" VerticalAlignment="Center"
+                      IsChecked="{Binding SortDescending}"/>
+            <TextBox x:Name="AuthorBox" Width="140" Margin="8,0,0,0" Padding="6,4"
+                     AutomationProperties.AutomationId="WorkshopBrowsePage_AuthorBox"
+                     Text="{Binding AuthorFilter, UpdateSourceTrigger=PropertyChanged}"/>
+            <Button Content="重置" Margin="8,0,0,0" Padding="10,4"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                    Command="{Binding ResetFiltersCommand}"/>
+        </StackPanel>
+        <!-- 分页大小条 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="每页:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+            <ComboBox x:Name="PageSizeCombo" Width="90" Margin="6,0,0,0"
+                      AutomationProperties.AutomationId="WorkshopBrowsePage_PageSizeCombo"
+                      SelectedIndex="{Binding PageSizeAsIndex, Mode=TwoWay}">
+                <ComboBoxItem Content="50"/>
+                <ComboBoxItem Content="100"/>
+                <ComboBoxItem Content="200"/>
+                <ComboBoxItem Content="全部"/>
+            </ComboBox>
+            <TextBlock x:Name="ItemCountLabel" Margin="14,0,0,0" VerticalAlignment="Center"
+                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                       AutomationProperties.AutomationId="WorkshopBrowsePage_ItemCountLabel"
+                       Text="{Binding ItemCountText}"/>
+        </StackPanel>
+        <!-- 列表（A2 虚拟化路线 A；Note:ListBox 无外部 ScrollViewer 祖先） -->
+        <ListBox x:Name="ItemList" Grid.Row="2"
+                 AutomationProperties.AutomationId="WorkshopBrowsePage_ItemList"
+                 ItemsSource="{Binding PageItems}"
+                 ctrl:SmoothScrollAttach.IsEnabled="True"
+                 Background="{DynamicResource swdm-SurfaceCanvasBrush}"
+                 BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel IsVirtualizing="True"
+                                            VirtualizationMode="Recycling"
+                                            VirtualizingPanel.ScrollUnit="Pixel"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0,0,0,8"/>
+                    <Setter Property="AutomationProperties.AutomationId" Value="WorkshopBrowsePage_Item"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:WorkshopBrowseItem}">
+                    <Border Background="{DynamicResource swdm-SurfaceCardBrush}"
+                            CornerRadius="6" Padding="12,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock FontWeight="Bold"
+                                           Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                           Text="{Binding Title}"/>
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                                           Text="{Binding Author}"/>
+                                <!-- 标签条 -->
+                                <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding Tags}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,6,0" Padding="6,2" CornerRadius="3"
+                                                    Background="{DynamicResource swdm-SurfaceCardHoverBrush}">
+                                                <TextBlock FontSize="11"
+                                                           Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                                                           Text="{Binding}"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <TextBlock HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                           Text="{Binding Subscribers, StringFormat={}{0:N0} 订阅}"/>
+                                <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right" FontSize="11"
+                                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"
+                                           Text="{Binding UpdatedAt, StringFormat={}{0:yyyy-MM-dd}}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <!-- 分页栏 -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="PrevPage" Content="‹ 上一页" Padding="12,5"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                    Command="{Binding PrevPageCommand}"
+                    AutomationProperties.AutomationId="WorkshopBrowsePage_PrevPage"/>
+            <TextBlock x:Name="PageLabel" Margin="10,0" VerticalAlignment="Center"
+                       Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                       AutomationProperties.AutomationId="WorkshopBrowsePage_PageLabel"
+                       Text="{Binding PageLabelText}"/>
+            <Button x:Name="NextPage" Content="下一页 ›" Padding="12,5"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                    Command="{Binding NextPageCommand}"
+                    AutomationProperties.AutomationId="WorkshopBrowsePage_NextPage"/>
+        </StackPanel>
+    </Grid>
+</pages:PageBase>

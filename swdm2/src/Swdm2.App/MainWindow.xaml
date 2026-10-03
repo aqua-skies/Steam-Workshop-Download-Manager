@@ -84,6 +84,11 @@
         </Grid>
         <!-- 导航条：契约 id 保留（t3 §3.2)；侧栏形态=t2 §2.6,D5.x 页面群时改造 -->
         <StackPanel Orientation="Horizontal" Margin="10,8" Grid.Row="1">
+            <Button AutomationProperties.AutomationId="MainShell_Nav_BrowseButton"
+                    Content="浏览工坊" Padding="12,5" Margin="8,0,0,0"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"
+                    Command="{Binding NavigateBrowseCommand}"/>
             <Button AutomationProperties.AutomationId="MainShell_Nav_GameSelectButton"
                     Content="选择游戏" Padding="12,5" Margin="8,0,0,0"
                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"

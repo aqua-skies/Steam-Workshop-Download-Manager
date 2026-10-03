@@ -1,3 +1,4 @@
+using Swdm2.App.Ui.Pages;
 using System.Windows.Input;
 using Swdm2.App.Boot;
 using Swdm2.App.Community;
@@ -25,6 +26,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     private readonly DownloadsPageViewModel _downloads;
     private readonly ModDetailPageViewModel _modDetail;
     private readonly GameSelectPageViewModel _gameSelect;
+    // [arch-20 t44] D5.5 浏览页 VM
+    private readonly WorkshopBrowsePageViewModel _browse;
 
     /// <summary>详情页 VM（MainWindow 初始化默认页时取 DataContext）。</summary>
     public ModDetailPageViewModel ModDetail => _modDetail;
@@ -35,11 +38,15 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     /// <summary>游戏选择页 VM（D5.4:联想搜索+中英别名+即时反馈）。</summary>
     public GameSelectPageViewModel GameSelect => _gameSelect;
 
+    /// <summary>[arch-20 t44] D5.5 工坊浏览页 VM。</summary>
+    public WorkshopBrowsePageViewModel Browse => _browse;
+
     /// <summary>D5.9 状态栏连接 VM（MainWindow 状态栏绑定源）。</summary>
     public ConnectivityBarViewModel Connectivity { get; }
 
     public ICommand NavigateModDetailCommand { get; }
     public ICommand NavigateDownloadsCommand { get; }
+    public ICommand NavigateBrowseCommand { get; } // [arch-20 t44]
     public ICommand NavigateGameSelectCommand { get; }
 
     public MainShellViewModel(
@@ -71,6 +78,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         // D5.4: 游戏选择页（在线源可选——网络熔断时本地别名兜底；
         // 确认后回详情页（旅程 2:搜索→确认→详情可下载）
         _gameSelect = new GameSelectPageViewModel(navigateToDetail: _ => NavigateToModDetail());
+        // [arch-20 t44] D5.5 浏览页（合成千项；网络源 D5.x 同契约注入）
+        _browse = new WorkshopBrowsePageViewModel(WorkshopBrowseItem.SampleData());
 
         // D5.3: 导航委托 PageNavigationService（返回栈+时序）
         NavigateModDetailCommand = new RelayCommand(
@@ -79,6 +88,10 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         NavigateDownloadsCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<DownloadsPage>(
                 () => new DownloadsPage { DataContext = _downloads }));
+        // [arch-20 t44] D5.5 浏览页导航（契约 id MainShell_Nav_BrowseButton)
+        NavigateBrowseCommand = new RelayCommand(
+            () => AppHost.Navigation.Navigate<WorkshopBrowsePage>(
+                () => new WorkshopBrowsePage { DataContext = _browse }));
         // D5.4: 游戏选择页导航（保留契约 id MainShell_Nav_GameSelectButton)
         NavigateGameSelectCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<GameSelectPage>(
