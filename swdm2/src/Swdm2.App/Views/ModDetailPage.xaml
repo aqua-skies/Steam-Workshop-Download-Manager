@@ -44,6 +44,7 @@
                     BorderBrush="{DynamicResource swdm-Warning500Brush}" BorderThickness="1"
                     CornerRadius="6" Padding="10,6" Margin="0,0,0,12"
                     Visibility="{Binding IsSampleMode, Converter={StaticResource swdm-BoolToVisibility}}">
+                <!-- t68 修：Binding.Converter 非 DependencyProperty=不能用 DynamicResource（XamlParseException 启动崩);改 StaticResource(App.xaml 已注册键） -->
                 <TextBlock Text="示例数据 · 离线兜底——从「工坊」列表点击 mod 条目查看真实详情"
                            FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"
                            Foreground="{DynamicResource swdm-Warning500Brush}"/>

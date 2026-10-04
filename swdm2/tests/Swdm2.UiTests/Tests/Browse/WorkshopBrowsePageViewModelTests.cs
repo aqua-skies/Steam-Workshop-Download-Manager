@@ -29,7 +29,11 @@ public sealed class WorkshopBrowsePageViewModelTests
     {
         var vm = new WorkshopBrowsePageViewModel(Sample());
         var probe = vm.PageItems[7];
-        vm.SearchText = probe.Title.Substring(3, 8);
+        // D9.1:标题改为短中文名（不再"Mod #xxx"长串）=探针截取须钳长度防越界
+        var probeText = probe.Title.Length > 4
+            ? probe.Title.Substring(1, 3)
+            : probe.Title;
+        vm.SearchText = probeText;
 
         Assert.Equal(1000, vm.SourceCount);
         Assert.All(vm.PageItems, i => Assert.Contains(vm.SearchText, i.Title, StringComparison.OrdinalIgnoreCase));

@@ -1,4 +1,5 @@
 using Swdm2.App.Ui.Pages;
+using System.Threading.Tasks;
 
 using Swdm2.App.Games;
 using Swdm2.Steam.Web;
@@ -109,13 +110,18 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         _gameSelect = new GameSelectPageViewModel(navigateToDetail: _ => NavigateToModDetail());
         // [arch-20 t44] D5.5 浏览页（合成千项；网络源 D5.x 同契约注入）
         // D5.20b(t63):条目级动作接线——详情跳转传真实物品 id+下载入队（队列契约不变）
+        // D9.1(t67):顶栏当前游戏（DefaultGameService 即时响应）+切换钮→GameSelect+样本标注
+        // t68(D9.2):**真实工坊条目**=CommunityWorkshopBrowseSource 社区 HTML 源
+        // （SampleData 接线删除=用户"全是假数据"整改；初始空+加载失败 ErrorMessage 显式原因）
+        var defaultGame = new DefaultGameService();
+        defaultGame.Load(paths);
         _browse = new WorkshopBrowsePageViewModel(
-            WorkshopBrowseItem.SampleData(),
+            Array.Empty<WorkshopBrowseItem>(), // t68:空起步（真源到达前不显假数据）
             openDetail: item => NavigateToModDetail(
                 new PublishedFileId((ulong)item.Id)),
             downloadTaskFactory: item =>
             {
-                var app = item.AppId ?? new AppId(4000);
+                var app = item.AppId ?? new AppId(550);
                 var workshopItem = new WorkshopItem(
                     new PublishedFileId((ulong)item.Id), app, item.Title);
                 return new DownloadTask(DownloadTaskId.New(), workshopItem, app,
@@ -129,7 +135,13 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
             downloads: _downloads,
             provider: provider,
             scheduler: scheduler,
-            navigateToDownloads: NavigateToDownloads);
+            navigateToDownloads: NavigateToDownloads,
+            defaultGame: defaultGame,
+            switchGame: () => AppHost.Navigation.Navigate<GameSelectPage>(
+                () => new GameSelectPage { DataContext = _gameSelect }),
+            isSampleData: false); // t68:真源=社区 HTML(L4D2 默认 appid 550)
+        // t68(D9.2):Browse 真源加载（fire-and-forget;失败=VM ErrorMessage 显式原因不静默）
+        _ = LoadBrowseRealAsync(_browse, defaultGame);
         // D5.12: 库页（P0 旅程 5 载体；LocalLibraryScanner 轻扫，D6.1 替换真实库管理）
         // D6.2(t59): 注入真实更新检查源+下载队列（角标/Hint 不阻塞；入队询问才下载）
         _library = new LibraryPageViewModel(new LocalLibraryScanner(paths), paths, updateSource, queue);
@@ -160,13 +172,26 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
                 () => new LibraryPage { DataContext = _library }));
 
         // D5.15: 球体主页（贴图点击→跳该游戏 mod 选择页；开始/下载钮直通）
-        // D5.20c:默认游戏服务=设置页绑定后主页即时响应（单例共享）
-        var defaultGame = new DefaultGameService();
-        defaultGame.Load(paths);
+        // D5.20c:默认游戏服务=设置页绑定后主页即时响应（单例共享=顶栏 L113 提前创建）
         _sphereHome = new SphereHomePageViewModel(
             navigateToGameSelect: _ => AppHost.Navigation.Navigate<GameSelectPage>(
                 () => new GameSelectPage { DataContext = _gameSelect }),
-            startGame: () => { /* D5.x:启动默认游戏（阶段 6 启动器） */ },
+            // D9.1(t67) 死钮修复：开始游戏=steam://run/{appid} 协议拉起
+            // （Steam 客户端协议；未装/失败=catch 静默不崩。未绑定时 VM 侧禁用）
+            startGame: () =>
+            {
+                var g = defaultGame.Current;
+                if (g is null) return;
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                        $"steam://run/{g.AppId}") { UseShellExecute = true });
+                }
+                catch
+                {
+                    // Steam 协议不可用=不崩（客户端拉起失败=日志级，不阻塞 UI）
+                }
+            },
             downloadMod: () => AppHost.Navigation.Navigate<GameSelectPage>(
                 () => new GameSelectPage { DataContext = _gameSelect }),
             defaultGame: defaultGame);
@@ -183,6 +208,28 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         NavigateSettingsCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<Ui.Pages.Settings.SettingsPage>(
                 () => new Ui.Pages.Settings.SettingsPage { DataContext = _settings }));
+    }
+
+    /// <summary>
+    /// t68(D9.2):Browse=真实工坊条目加载。appid=绑定默认游戏（未绑定=L4D2 550,
+    /// 1.x 实测公开可匿名下载的热门工坊）。失败=VM ErrorMessage 中文原因（网络
+    /// 受限不装 SampleData;用户原话"拉取到的全是假数据"整改）。
+    /// </summary>
+    private static async Task LoadBrowseRealAsync(
+        WorkshopBrowsePageViewModel vm, DefaultGameService defaultGame)
+    {
+        try
+        {
+            var app = defaultGame.Current is { AppId: > 0 }
+                ? new AppId(defaultGame.Current.AppId)
+                : new AppId(550);
+            var source = new CommunityWorkshopBrowseSource(AppHost.HttpFactory);
+            await vm.LoadFromSourceAsync(source, app).ConfigureAwait(false);
+        }
+        catch
+        {
+            // VM.LoadFromSourceAsync 内部已 ErrorMessage 展示（双保险）
+        }
     }
 
     /// <summary>#10 旅程：详情页下载入队后跳下载页。</summary>

@@ -6,8 +6,17 @@
         xmlns:pages="clr-namespace:Swdm2.App.Ui.Pages"
         xmlns:vm="clr-namespace:Swdm2.App.ViewModels"
         xmlns:ctrl="clr-namespace:Swdm2.App.Ui.Controls"
+        xmlns:cvt="clr-namespace:Swdm2.App.Ui.Converters"
         mc:Ignorable="d"
         d:DesignHeight="560" d:DesignWidth="840">
+    <!--
+      D9.1(t67):页面级转换器注册（XamlReader 无 App 资源上下文也能解析=
+      虚拟化测试 LoadPage 直构页面不崩；App 运行时同键页面级优先）。
+    -->
+    <pages:PageBase.Resources>
+        <cvt:BoolToVisibilityConverter x:Key="swdm-BoolToVisibility"/>
+        <cvt:InverseBoolToVisibilityConverter x:Key="swdm-InverseBoolToVisibility"/>
+    </pages:PageBase.Resources>
     <!--
     D5.5 工坊浏览页（t44;t2 §4.3 路线 A 裁决载体）：
     - 虚拟化路线 A：VirtualizingPanel.IsVirtualizing=True + Recycling + ScrollUnit=Pixel
@@ -21,13 +30,48 @@
     -->
     <Grid Margin="12,10">
         <Grid.RowDefinitions>
+            <!-- D9.1(t67):顶栏=当前游戏+切换钮；示例数据标注条占独立行 -->
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <!-- 筛选条 -->
+        <!-- D9.1(t67) 顶栏：当前游戏名 + 切换钮（用户"免点出去切换"） -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock VerticalAlignment="Center" FontSize="13"
+                       Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="WorkshopBrowsePage_CurrentGameLabel"
+                       Text="{Binding CurrentGameText}"/>
+            <Button Content="切换" Margin="10,0,0,0" Padding="12,4"
+                    AutomationProperties.AutomationId="WorkshopBrowsePage_SwitchGameButton"
+                    Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                    Background="{DynamicResource swdm-Accent500Brush}"
+                    Command="{Binding SwitchGameCommand}"/>
+        </StackPanel>
+        <!-- D9.1(t67) 示例数据醒目标注（假数据期间不混充真列表） -->
+        <Border Grid.Row="1" Margin="0,0,0,8" CornerRadius="6" Padding="10,5"
+                Background="{DynamicResource swdm-Warning100Brush}"
+                BorderBrush="{DynamicResource swdm-Warning500Brush}" BorderThickness="1"
+                Visibility="{Binding IsSampleData, Converter={StaticResource swdm-BoolToVisibility}}">
+            <TextBlock FontSize="12" VerticalAlignment="Center"
+                       Foreground="{DynamicResource swdm-Warning500Brush}"
+                       AutomationProperties.AutomationId="WorkshopBrowsePage_SampleBanner"
+                       Text="示例数据 · 离线兜底——真实工坊浏览源接入中（条目/封面/订阅数均为合成样本）"/>
+        </Border>
+        <!-- t68(D9.2):真实源加载失败=明确原因显示（不静默；用户"别装"纪律） -->
+        <Border Grid.Row="1" Margin="0,0,0,8" CornerRadius="6" Padding="10,5"
+                Background="{DynamicResource swdm-Danger100Brush}"
+                BorderBrush="{DynamicResource swdm-Danger500Brush}" BorderThickness="1"
+                Visibility="{Binding HasError, Converter={StaticResource swdm-BoolToVisibility}}">
+            <TextBlock FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource swdm-Danger500Brush}"
+                       AutomationProperties.AutomationId="WorkshopBrowsePage_ErrorBanner"
+                       Text="{Binding ErrorMessage}"/>
+        </Border>
+        <!-- 筛选条 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
             <TextBox x:Name="SearchBox" Width="220" Padding="6,4"
                      AutomationProperties.AutomationId="WorkshopBrowsePage_SearchBox"
                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=150}"/>
@@ -47,7 +91,7 @@
                     Command="{Binding ResetFiltersCommand}"/>
         </StackPanel>
         <!-- 分页大小条 -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
             <TextBlock Text="每页:" VerticalAlignment="Center"
                        Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
             <ComboBox x:Name="PageSizeCombo" Width="90" Margin="6,0,0,0"
@@ -64,7 +108,7 @@
                        Text="{Binding ItemCountText}"/>
         </StackPanel>
         <!-- 列表（A2 虚拟化路线 A；Note:ListBox 无外部 ScrollViewer 祖先） -->
-        <ListBox x:Name="ItemList" Grid.Row="2"
+        <ListBox x:Name="ItemList" Grid.Row="4"
                  AutomationProperties.AutomationId="WorkshopBrowsePage_ItemList"
                  ItemsSource="{Binding PageItems}"
                  ctrl:SmoothScrollAttach.IsEnabled="True"
@@ -92,38 +136,41 @@
                             CornerRadius="6" Padding="12,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
+                                <!-- D9.1(t67):缩略图槽位（无图=占位灰底，别空着） -->
+                                <ColumnDefinition Width="56"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <!-- D5.20b(t63):条目级动作列（详情/下载实物钮） -->
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock FontWeight="Bold"
+                            <!-- D9.1(t67) 图标缩略图槽位：真实 PreviewImageUrl→Image;空=占位 -->
+                            <Grid Grid.Column="0" Width="48" Height="48" Margin="0,0,10,0"
+                                  VerticalAlignment="Center">
+                                <Image Source="{Binding PreviewImageUrl}" Stretch="UniformToFill"
+                                       Visibility="{Binding HasPreview, Converter={StaticResource swdm-BoolToVisibility}}"/>
+                                <Border CornerRadius="6"
+                                        Background="{DynamicResource swdm-SurfaceCardHoverBrush}"
+                                        Visibility="{Binding HasPreview, Converter={StaticResource swdm-InverseBoolToVisibility}}">
+                                    <TextBlock Text="暂无封面" FontSize="10"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                                </Border>
+                            </Grid>
+                            <StackPanel Grid.Column="1">
+                                <!-- D9.1(t67):标题=mod 名字优先（无"Mod #xxx"前缀） -->
+                                <TextBlock FontWeight="Bold" FontSize="14"
                                            Foreground="{DynamicResource swdm-TextPrimaryBrush}"
-                                           Text="{Binding Title}"/>
-                                <TextBlock Margin="0,4,0,0"
+                                           Text="{Binding Title}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <!-- 类别/标签降为副标题后置 -->
+                                <TextBlock Margin="0,4,0,0" FontSize="12"
                                            Foreground="{DynamicResource swdm-TextSecondaryBrush}"
+                                           Text="{Binding CategorySubtitle}"/>
+                                <TextBlock Margin="0,2,0,0" FontSize="11"
+                                           Foreground="{DynamicResource swdm-TextTertiaryBrush}"
                                            Text="{Binding Author}"/>
-                                <!-- 标签条 -->
-                                <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding Tags}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Margin="0,0,6,0" Padding="6,2" CornerRadius="3"
-                                                    Background="{DynamicResource swdm-SurfaceCardHoverBrush}">
-                                                <TextBlock FontSize="11"
-                                                           Foreground="{DynamicResource swdm-TextSecondaryBrush}"
-                                                           Text="{Binding}"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
                                 <TextBlock HorizontalAlignment="Right"
                                            Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                                            Text="{Binding Subscribers, StringFormat={}{0:N0} 订阅}"/>
@@ -137,7 +184,7 @@
                               - 未接线（独立页/设计期）CanExecute=false=禁用≠死钮
                               - AutomationId 契约 `<页面>_<语义>`
                             -->
-                            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            <StackPanel Grid.Column="3" Orientation="Horizontal"
                                         VerticalAlignment="Center" Margin="12,0,0,0">
                                 <Button Content="详情" Padding="12,5" Margin="0,0,8,0"
                                         AutomationProperties.AutomationId="WorkshopBrowsePage_Item_DetailButton"
@@ -158,7 +205,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <!-- 分页栏 -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button x:Name="PrevPage" Content="‹ 上一页" Padding="12,5"
                     Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                     Command="{Binding PrevPageCommand}"

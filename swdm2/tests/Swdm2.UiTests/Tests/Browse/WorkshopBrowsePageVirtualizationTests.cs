@@ -48,8 +48,9 @@ public sealed class WorkshopBrowsePageVirtualizationTests
         xaml = Regex.Replace(xaml, "clr-namespace:([\\w.]+)(?<!;assembly=Swdm2.App)(?=\")",
             "clr-namespace:$1;assembly=Swdm2.App");
         // PageBase 抽象+无参 ctor → XamlReader 无法直构；根换 UserControl 载体
-        // （内容树等效；起止标签同步替换）
-        xaml = Regex.Replace(xaml, @"<pages:PageBase", "<UserControl");
+        // （内容树等效；起止标签同步替换；D9.1：页面级 Resources 起止标签同替换）
+        xaml = Regex.Replace(xaml, @"<pages:PageBase(?=[\s>/.])", "<UserControl");
+        xaml = Regex.Replace(xaml, @"</pages:PageBase\.Resources>", "</UserControl.Resources>");
         xaml = Regex.Replace(xaml, @"</pages:PageBase>", "</UserControl>");
         return XamlReader.Parse(xaml);
     }

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using Swdm2.App.Games;
@@ -65,13 +65,22 @@ public sealed class SphereHomePageViewModel : ViewModelBase
 
         TileClickedCommand = new RelayCommand(
             p => navigateToGameSelect?.Invoke(Convert.ToInt32(p, System.Globalization.CultureInfo.InvariantCulture)));
-        StartGameCommand = new RelayCommand(() => startGame?.Invoke());
+        // D9.1(t67) 用户硬约束"死钮禁止交付"：开始钮=未绑定游戏时禁用
+        // （CanExecute 随绑定状态刷新；t64/t65 订阅链同源）
+        StartGameCommand = new RelayCommand(
+            () => startGame?.Invoke(),
+            () => _defaultGame?.Current is not null);
         DownloadModCommand = new RelayCommand(() => downloadMod?.Invoke());
 
         // D5.20c/t64:默认游戏即时响应（订阅变更=设置页绑定后主页立即刷新）
         if (_defaultGame is not null)
         {
-            _defaultGame.PropertyChanged += (_, _) => ApplyDefaultGame();
+            _defaultGame.PropertyChanged += (_, e) =>
+            {
+                ApplyDefaultGame();
+                if (e.PropertyName == nameof(DefaultGameService.Current))
+                    System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            };
             ApplyDefaultGame();
         }
     }

@@ -16,6 +16,8 @@
             </ResourceDictionary.MergedDictionaries>
             <!-- t59 bool→Visibility 转换器（库页更新角标/Hint/行标记） -->
             <cvt:BoolToVisibilityConverter x:Key="swdm-BoolToVisibility" />
+            <!-- D9.1/t67 反向（缩略图占位槽位） -->
+            <cvt:InverseBoolToVisibilityConverter x:Key="swdm-InverseBoolToVisibility" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

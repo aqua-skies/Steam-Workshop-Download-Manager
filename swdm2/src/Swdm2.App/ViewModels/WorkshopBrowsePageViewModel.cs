@@ -1,7 +1,11 @@
 using System.Collections.ObjectModel;
+using Swdm2.App.Games;
+using System.Globalization;
+using System.Threading;
+using Swdm2.Core.Domain;
+using Swdm2.Steam.Workshop;
 using System.ComponentModel;
 using System.Windows.Input;
-using Swdm2.Core.Domain;
 using Swdm2.Core.Results;
 using Swdm2.Downloads.Providers;
 using Swdm2.Downloads.Queue;
@@ -17,7 +21,8 @@ namespace Swdm2.App.ViewModels;
 /// </summary>
 public sealed class WorkshopBrowsePageViewModel : ViewModelBase
 {
-    private readonly IReadOnlyList<WorkshopBrowseItem> _source;
+    private IReadOnlyList<WorkshopBrowseItem> _source;
+    private string? _errorMessage;
 
     /// <summary>分页后条目（ListBox 绑定源；重建=重新引用）。</summary>
     public ObservableCollection<WorkshopBrowseItem> PageItems { get; } = new();
@@ -155,8 +160,107 @@ public sealed class WorkshopBrowsePageViewModel : ViewModelBase
     /// <summary>条目「下载」命令（点击入队；IDownloadQueue 契约不变）。</summary>
     public ICommand DownloadItemCommand { get; }
 
+    /// <summary>D9.2:错误态显隐（错误横幅 Visibility 绑定源）。</summary>
+    public bool HasError => !string.IsNullOrEmpty(_errorMessage);
+
+    /// <summary>D9.2:加载/失败状态文案（失败=明确原因中文，不静默；空=已加载或未加载）。</summary>
+    public string? ErrorMessage
+    {
+        get => _errorMessage;
+        private set => SetProperty(ref _errorMessage, value);
+    }
+
+    /// <summary>D9.2:是否加载中（防重复并发加载；UI 菊花/禁用提示）。</summary>
+    private bool _isLoading;
+    public bool IsLoading
+    {
+        get => _isLoading;
+        private set => SetProperty(ref _isLoading, value);
+    }
+
+    /// <summary>
+    /// D9.2:从真实工坊源加载条目（失败=ErrorMessage 中文原因+保留旧数据不静默）。
+    /// </summary>
+    public async Task LoadFromSourceAsync(
+        IWorkshopBrowseSource source, AppId appId, CancellationToken ct = default)
+    {
+        if (IsLoading) return;
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var query = new WorkshopBrowseQuery(
+                SearchText: appId.Value.ToString(CultureInfo.InvariantCulture),
+                Tag: null, Author: null,
+                SortKey: WorkshopBrowseSortKey.UpdatedAt, SortDescending: true,
+                Page: 1, PageSize: 50);
+            var result = await source.FetchAsync(query, ct).ConfigureAwait(false);
+            if (result is { IsOk: true, Value: not null })
+            {
+                var items = WorkshopBrowseItem.FromEntries(result.Value, appId);
+                _source = items;
+                SourceCount = items.Count;
+                TagOptions.Clear();
+                foreach (var t in new[] { "全部" }
+                             .Concat(items.SelectMany(i => i.Tags).Distinct().OrderBy(t => t)))
+                    TagOptions.Add(t);
+                Rebuild();
+                if (items.Count == 0)
+                    ErrorMessage = $"工坊条目为 0（appid {appId.Value} 可能无条目或页面结构变化）";
+            }
+            else
+            {
+                ErrorMessage = MapErrorMessage(result.Error ?? SteamError.None);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            ErrorMessage = "加载已取消";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载失败：{ex.GetType().Name}（{ex.Message}）";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>SteamError→中文失败原因（1.x"明确不装"纪律）。</summary>
+    private static string MapErrorMessage(SteamError err) => err switch
+    {
+        SteamError.Network => "网络不可达（steamcommunity.com 连接失败；检查代理/网络）",
+        SteamError.Timeout => "请求超时（steamcommunity.com 响应过慢）",
+        SteamError.RateLimited => "被限流（Steam 429/熔断开态；稍后重试）",
+        SteamError.Blocked => "被屏蔽（403;IP/区域限制）",
+        SteamError.NotFound => "工坊页 404（appid 无效）",
+        SteamError.CircuitOpen => "熔断开（近期多次失败；稍后重试）",
+        SteamError.Deserialization => "页面解析失败（Steam 页面结构变更；需适配）",
+        SteamError.InvalidConfiguration => "查询配置无效（缺 appid）",
+        _ => $"加载失败：{err}",
+    };
+
+    // ---- D9.1(t67):当前游戏快切+示例数据显式标注 ----
+    private readonly DefaultGameService? _defaultGame;
+    private string _currentGameText = "当前游戏：未绑定";
+
+    /// <summary>顶栏当前游戏文本（绑定 DefaultGameService 即时响应）。</summary>
+    public string CurrentGameText
+    {
+        get => _currentGameText;
+        private set => SetProperty(ref _currentGameText, value);
+    }
+
+    /// <summary>切换游戏命令（顶栏钮→GameSelect 搜索选择，用户"免点出去切换"）。</summary>
+    public ICommand SwitchGameCommand { get; }
+
+    /// <summary>示例数据态（列表为合成样本=醒目标注 banner;真实源接入后 false)。</summary>
+    public bool IsSampleData { get; }
+
     public WorkshopBrowsePageViewModel(IReadOnlyList<WorkshopBrowseItem> source)
-        : this(source, null, null, null, null, null, null, null)
+        : this(source, null, null, null, null, null, null, null,
+               defaultGame: null, switchGame: null, isSampleData: true)
     {
     }
 
@@ -167,6 +271,9 @@ public sealed class WorkshopBrowsePageViewModel : ViewModelBase
     /// <param name="provider">下载 provider（行注册需要）。</param>
     /// <param name="scheduler">调度器（行注册需要）。</param>
     /// <param name="navigateToDownloads">入队后跳下载页（同详情页旅程）。</param>
+    /// <param name="defaultGame">D9.1:默认游戏服务（顶栏当前游戏名即时响应）。</param>
+    /// <param name="switchGame">D9.1:切换游戏导航（→GameSelect)。</param>
+    /// <param name="isSampleData">D9.1:示例数据态（banner 醒目标注）。</param>
     public WorkshopBrowsePageViewModel(
         IReadOnlyList<WorkshopBrowseItem> source,
         Action<WorkshopBrowseItem>? openDetail,
@@ -175,7 +282,10 @@ public sealed class WorkshopBrowsePageViewModel : ViewModelBase
         DownloadsPageViewModel? downloads,
         IDownloadProvider? provider,
         DownloadScheduler? scheduler,
-        Action? navigateToDownloads)
+        Action? navigateToDownloads,
+        DefaultGameService? defaultGame = null,
+        Action? switchGame = null,
+        bool isSampleData = false)
     {
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
@@ -209,7 +319,33 @@ public sealed class WorkshopBrowsePageViewModel : ViewModelBase
             async param => await DownloadItemAsync((WorkshopBrowseItem)param!).ConfigureAwait(false),
             _ => _downloadTaskFactory is not null && _queue is not null);
 
+        // D9.1(t67):当前游戏快切+样本标注
+        _defaultGame = defaultGame;
+        IsSampleData = isSampleData;
+        // 注：0 参 execute 绑 (Action, Func<bool>) 重载→canExecute 亦 0 参（_ => 会 CS1593)
+        SwitchGameCommand = new RelayCommand(
+            () => switchGame?.Invoke(),
+            () => switchGame is not null);
+        if (_defaultGame is not null)
+        {
+            RefreshCurrentGameText();
+            _defaultGame.PropertyChanged += OnDefaultGameChanged;
+        }
+
         Rebuild();
+    }
+
+    private void OnDefaultGameChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(DefaultGameService.Current))
+            RefreshCurrentGameText();
+    }
+
+    private void RefreshCurrentGameText()
+    {
+        CurrentGameText = _defaultGame?.Current is { } g
+            ? $"当前游戏：{g.Title}"
+            : "当前游戏：未绑定";
     }
 
     /// <summary>D5.20b:条目→详情（传真实 id;MainShellVM.NavigateToModDetail(id))。</summary>
