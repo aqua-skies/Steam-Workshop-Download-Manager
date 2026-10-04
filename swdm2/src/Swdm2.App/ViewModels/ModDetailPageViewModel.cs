@@ -65,9 +65,28 @@ public sealed class ModDetailPageViewModel : ViewModelBase
                 RaisePropertyChanged(nameof(ItemTitle));
                 RaisePropertyChanged(nameof(ItemCreator));
                 RaisePropertyChanged(nameof(ItemDescription));
+                RaisePropertyChanged(nameof(IsSampleMode));
             }
         }
     }
+
+    /// <summary>当前关联的工坊物品 id（Browse 项点击传入；null=示例/默认兜底）。</summary>
+    public PublishedFileId? CurrentId
+    {
+        get => _currentId;
+        private set
+        {
+            if (SetProperty(ref _currentId, value))
+                RaisePropertyChanged(nameof(IsSampleMode));
+        }
+    }
+
+    /// <summary>
+    /// 示例数据态（D5.20b 用户反馈"详情通篇编号 sample"整改）:
+    /// true=未关联真实物品 id 且未加载成功=页面显示示例兜底（标题/依赖为 ctor 样本）。
+    /// banner 显式标注"示例"，真实 id 一经传入立即转 false。
+    /// </summary>
+    public bool IsSampleMode => Item is null && CurrentId is null;
 
     public bool IsLoading
     {
@@ -139,6 +158,9 @@ public sealed class ModDetailPageViewModel : ViewModelBase
     /// <summary>冲突列表（本地规则检测；空=无冲突）。</summary>
     public ObservableCollection<ConflictRow> Conflicts { get; } = new();
 
+    // ---- D5.20b:真实物品 id 关联（Browse→Detail 传参） ----
+    private PublishedFileId? _currentId;
+
     /// <summary>评论列表（社区页解析；空=无评论/解析为空）。</summary>
     public ObservableCollection<WorkshopComment> Comments { get; } = new();
 
@@ -176,7 +198,7 @@ public sealed class ModDetailPageViewModel : ViewModelBase
     }
 
     /// <summary>加载详情（API→社区回退→评论；失败=整页错误态）。</summary>
-    /// <param name="id">要加载的工坊物品 id（默认=示例物品 17906)。</param>
+    /// <param name="id">要加载的工坊物品 id（默认=当前关联 id 或示例物品 17906)。</param>
     public async Task LoadDetailAsync(ulong? id = null)
     {
         if (_api is null)
@@ -188,7 +210,10 @@ public sealed class ModDetailPageViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         try
         {
-            var pubId = new PublishedFileId(id ?? 17906UL);
+            // D5.20b:显式 id→关联（转非示例态）；未传=当前 id 或示例兜底
+            if (id.HasValue)
+                CurrentId = new PublishedFileId(id.Value);
+            var pubId = CurrentId ?? new PublishedFileId(17906UL);
             var apiResult = await _api.GetPublishedFileDetailsAsync(pubId)
                 .ConfigureAwait(true);
             if (!apiResult.IsOk || apiResult.Value is null)
@@ -308,6 +333,18 @@ public sealed class ModDetailPageViewModel : ViewModelBase
                 // 循环检测网络失败=不阻塞展示（主依赖已显）
             }
         }
+    }
+
+    /// <summary>
+    /// D5.20b:Browse 项点击导航入口——关联真实工坊物品 id 并立即触发加载
+    /// （自动 LoadDetailAsync:API→社区回退→评论+冲突检测）。页面导航前调用，
+    /// 页面 Loaded 见 CurrentId 已加载则不重复请求（重试纽走 ReloadCommand)。
+    /// </summary>
+    public async Task TryLoadAsync(PublishedFileId id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        CurrentId = id; // 立即转非示例态（banner 消失）
+        await LoadDetailAsync(id.Value).ConfigureAwait(true);
     }
 
     /// <summary>评论区加载（失败=状态文本降级，不抛到整页）。</summary>

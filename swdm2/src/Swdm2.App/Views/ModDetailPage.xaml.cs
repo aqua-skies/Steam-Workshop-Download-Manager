@@ -21,7 +21,9 @@ public partial class ModDetailPage : PageBase
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         // 每次页面载入触发一次真详情加载（ReloadCommand 同入口；失败可重试）
-        if (DataContext is ModDetailPageViewModel vm)
+        // D5.20b:Browse 传入 id 时 TryLoadAsync 已发起加载（CurrentId 非空），
+        // 不重复请求；无 id 入口=默认物品/示例兜底加载。
+        if (DataContext is ModDetailPageViewModel vm && vm.CurrentId is null)
             _ = vm.LoadDetailAsync();
     }
 }

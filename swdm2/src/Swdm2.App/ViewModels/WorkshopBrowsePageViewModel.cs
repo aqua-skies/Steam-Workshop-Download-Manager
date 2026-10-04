@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
+using Swdm2.Core.Domain;
 using Swdm2.Core.Results;
+using Swdm2.Downloads.Providers;
+using Swdm2.Downloads.Queue;
 
 namespace Swdm2.App.ViewModels;
 
@@ -137,7 +140,42 @@ public sealed class WorkshopBrowsePageViewModel : ViewModelBase
     public ICommand PrevPageCommand { get; }
     public ICommand ResetFiltersCommand { get; }
 
+    // ---- D5.20b:条目级动作（详情跳转+下载入队；缺省=命令禁用，非死钮） ----
+    private readonly Action<WorkshopBrowseItem>? _openDetail;
+    private readonly Func<WorkshopBrowseItem, DownloadTask>? _downloadTaskFactory;
+    private readonly IDownloadQueue? _queue;
+    private readonly DownloadsPageViewModel? _downloads;
+    private readonly IDownloadProvider? _provider;
+    private readonly DownloadScheduler? _scheduler;
+    private readonly Action? _navigateToDownloads;
+
+    /// <summary>条目「详情」命令（Browse→Detail 传真实 id;PartDetail=本自身）。</summary>
+    public ICommand OpenItemDetailCommand { get; }
+
+    /// <summary>条目「下载」命令（点击入队；IDownloadQueue 契约不变）。</summary>
+    public ICommand DownloadItemCommand { get; }
+
     public WorkshopBrowsePageViewModel(IReadOnlyList<WorkshopBrowseItem> source)
+        : this(source, null, null, null, null, null, null, null)
+    {
+    }
+
+    /// <param name="openDetail">条目→详情页导航（传真实物品 id)。</param>
+    /// <param name="downloadTaskFactory">条目→DownloadTask 构建（AppId/标题来自条目）。</param>
+    /// <param name="queue">下载队列（入队）。</param>
+    /// <param name="downloads">下载页 VM（行注册，与详情页入队同模式）。</param>
+    /// <param name="provider">下载 provider（行注册需要）。</param>
+    /// <param name="scheduler">调度器（行注册需要）。</param>
+    /// <param name="navigateToDownloads">入队后跳下载页（同详情页旅程）。</param>
+    public WorkshopBrowsePageViewModel(
+        IReadOnlyList<WorkshopBrowseItem> source,
+        Action<WorkshopBrowseItem>? openDetail,
+        Func<WorkshopBrowseItem, DownloadTask>? downloadTaskFactory,
+        IDownloadQueue? queue,
+        DownloadsPageViewModel? downloads,
+        IDownloadProvider? provider,
+        DownloadScheduler? scheduler,
+        Action? navigateToDownloads)
     {
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
@@ -155,7 +193,45 @@ public sealed class WorkshopBrowsePageViewModel : ViewModelBase
             SortDescending = true;
             PageSize = 100;
         });
+
+        // D5.20b
+        _openDetail = openDetail;
+        _downloadTaskFactory = downloadTaskFactory;
+        _queue = queue;
+        _downloads = downloads;
+        _provider = provider;
+        _scheduler = scheduler;
+        _navigateToDownloads = navigateToDownloads;
+        OpenItemDetailCommand = new RelayCommand(
+            param => OpenDetail((WorkshopBrowseItem)param!),
+            _ => _openDetail is not null);
+        DownloadItemCommand = new RelayCommand(
+            async param => await DownloadItemAsync((WorkshopBrowseItem)param!).ConfigureAwait(false),
+            _ => _downloadTaskFactory is not null && _queue is not null);
+
         Rebuild();
+    }
+
+    /// <summary>D5.20b:条目→详情（传真实 id;MainShellVM.NavigateToModDetail(id))。</summary>
+    private void OpenDetail(WorkshopBrowseItem item)
+        => _openDetail?.Invoke(item);
+
+    /// <summary>
+    /// D5.20b:条目下载入队（同详情页 DownloadAsync 模式：入队+行注册+跳下载页）。
+    /// **1.x 学费：真实队列契约不变；条目来源样本 AppId=4000（演示默认游戏）。
+    /// </summary>
+    private async Task DownloadItemAsync(WorkshopBrowseItem item)
+    {
+        var task = _downloadTaskFactory!(item);
+        await _queue!.EnqueueAsync(task).ConfigureAwait(false);
+
+        // 行注册（UI 线程：ObservableCollection.Add;与详情页 DownloadAsync 同模式）
+        if (_downloads is not null && _provider is not null && _scheduler is not null)
+        {
+            var row = new DownloadTaskRowViewModel(task, _provider, _scheduler);
+            System.Windows.Application.Current?.Dispatcher.Invoke(() => _downloads.RegisterRow(row));
+        }
+        _navigateToDownloads?.Invoke();
     }
 
     private void GoPage(int delta)

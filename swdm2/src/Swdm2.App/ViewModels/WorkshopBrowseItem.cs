@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using Swdm2.Core.Domain;
 
 namespace Swdm2.App.ViewModels;
 
 /// <summary>
-/// 工坊浏览条目（D5.5):record 不可变（C1 不变量：集合只读、不原地改）。
+/// 工坊浏览条目（D5.5;D5.20b 增 AppId 供下载入队/详情跳转）:
+/// record 不可变（C1 不变量：集合只读、不原地改）。
 /// 生产源=Web API/community 浏览（D5.x 接入）；本阶段 VM 注入（合成千项=流畅性基准）。
 /// </summary>
 public sealed record WorkshopBrowseItem(
@@ -13,9 +15,11 @@ public sealed record WorkshopBrowseItem(
     IReadOnlyList<string> Tags,
     long Subscribers,
     DateTimeOffset UpdatedAt,
-    string? PreviewImageUrl)
+    string? PreviewImageUrl,
+    AppId? AppId = null)
 {
     /// <summary>合成千项样本（1000 条：流畅性/虚拟化基准与 VM 逻辑测试共用）。</summary>
+    /// <remarks>D5.20b:样本 AppId=Garry's Mod(4000)=演示默认游戏（真实条目由网络源填实值）。</remarks>
     public static IReadOnlyList<WorkshopBrowseItem> SampleData(int count = 1000)
     {
         var tagPool = new[] { "地图", "模型", "玩法", "皮肤", "工具", "剧情", "音乐", "UI" };
@@ -35,7 +39,8 @@ public sealed record WorkshopBrowseItem(
                 Tags: tags.ToArray(),
                 Subscribers: Rnd(50000),
                 UpdatedAt: DateTimeOffset.Now.AddDays(-Rnd(365)),
-                PreviewImageUrl: null));
+                PreviewImageUrl: null,
+                AppId: new AppId(4000)));
         }
         return items;
     }

@@ -94,6 +94,8 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <!-- D5.20b(t63):条目级动作列（详情/下载实物钮） -->
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock FontWeight="Bold"
@@ -128,6 +130,27 @@
                                 <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right" FontSize="11"
                                            Foreground="{DynamicResource swdm-TextTertiaryBrush}"
                                            Text="{Binding UpdatedAt, StringFormat={}{0:yyyy-MM-dd}}"/>
+                            </StackPanel>
+                            <!--
+                              D5.20b(t63) 条目动作钮：
+                              - 命令源=页面 VM（ListBox.DataContext)+CommandParameter=本条目
+                              - 未接线（独立页/设计期）CanExecute=false=禁用≠死钮
+                              - AutomationId 契约 `<页面>_<语义>`
+                            -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                        VerticalAlignment="Center" Margin="12,0,0,0">
+                                <Button Content="详情" Padding="12,5" Margin="0,0,8,0"
+                                        AutomationProperties.AutomationId="WorkshopBrowsePage_Item_DetailButton"
+                                        Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                                        Background="{DynamicResource swdm-Accent500Brush}"
+                                        Command="{Binding DataContext.OpenItemDetailCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        CommandParameter="{Binding}"/>
+                                <Button Content="⬇ 下载" Padding="12,5"
+                                        AutomationProperties.AutomationId="WorkshopBrowsePage_Item_DownloadButton"
+                                        Foreground="{DynamicResource swdm-TextOnAccentBrush}"
+                                        Background="{DynamicResource swdm-Accent500Brush}"
+                                        Command="{Binding DataContext.DownloadItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        CommandParameter="{Binding}"/>
                             </StackPanel>
                         </Grid>
                     </Border>

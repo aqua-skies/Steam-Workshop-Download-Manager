@@ -6,6 +6,7 @@ using Swdm2.App.Community;
 using Swdm2.App.Connectivity;
 using Swdm2.App.ViewModels;
 using Swdm2.App.Views;
+using Swdm2.Core.Domain;
 using Swdm2.Core.Paths;
 using Swdm2.Downloads.Events;
 using Swdm2.Downloads.Providers;
@@ -105,7 +106,28 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         // 确认后回详情页（旅程 2:搜索→确认→详情可下载）
         _gameSelect = new GameSelectPageViewModel(navigateToDetail: _ => NavigateToModDetail());
         // [arch-20 t44] D5.5 浏览页（合成千项；网络源 D5.x 同契约注入）
-        _browse = new WorkshopBrowsePageViewModel(WorkshopBrowseItem.SampleData());
+        // D5.20b(t63):条目级动作接线——详情跳转传真实物品 id+下载入队（队列契约不变）
+        _browse = new WorkshopBrowsePageViewModel(
+            WorkshopBrowseItem.SampleData(),
+            openDetail: item => NavigateToModDetail(
+                new PublishedFileId((ulong)item.Id)),
+            downloadTaskFactory: item =>
+            {
+                var app = item.AppId ?? new AppId(4000);
+                var workshopItem = new WorkshopItem(
+                    new PublishedFileId((ulong)item.Id), app, item.Title);
+                return new DownloadTask(DownloadTaskId.New(), workshopItem, app,
+                    paths.WorkshopContent(app))
+                {
+                    Provider = DownloadProvider.SteamCmd,
+                    TotalBytes = workshopItem.FileSize,
+                };
+            },
+            queue: queue,
+            downloads: _downloads,
+            provider: provider,
+            scheduler: scheduler,
+            navigateToDownloads: NavigateToDownloads);
         // D5.12: 库页（P0 旅程 5 载体；LocalLibraryScanner 轻扫，D6.1 替换真实库管理）
         // D6.2(t59): 注入真实更新检查源+下载队列（角标/Hint 不阻塞；入队询问才下载）
         _library = new LibraryPageViewModel(new LocalLibraryScanner(paths), paths, updateSource, queue);
@@ -163,6 +185,18 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     public void NavigateToModDetail()
         => AppHost.Navigation.Navigate<ModDetailPage>(
             () => new ModDetailPage { DataContext = _modDetail });
+
+    /// <summary>
+    /// D5.20b(t63):Browse 条目点击→详情页，传真实 PublishedFileId
+    /// （TryLoadAsync 立即加载真实详情：标题/描述/作者/依赖；sample 横幅转隐藏）。
+    /// 页面 Loaded 见 CurrentId 已加载不重复请求。
+    /// </summary>
+    public void NavigateToModDetail(PublishedFileId id)
+    {
+        _ = _modDetail.TryLoadAsync(id);
+        AppHost.Navigation.Navigate<ModDetailPage>(
+            () => new ModDetailPage { DataContext = _modDetail });
+    }
 
     public void Dispose()
     {

@@ -38,6 +38,17 @@
                 </StackPanel>
             </Border>
 
+            <!-- D5.20b:示例数据显式标注（sample 仅离线/无 id 兜底；真实条目从浏览页点入） -->
+            <Border AutomationProperties.AutomationId="ModDetailPage_SampleBanner"
+                    Background="{DynamicResource swdm-Warning100Brush}"
+                    BorderBrush="{DynamicResource swdm-Warning500Brush}" BorderThickness="1"
+                    CornerRadius="6" Padding="10,6" Margin="0,0,0,12"
+                    Visibility="{Binding IsSampleMode, Converter={StaticResource swdm-BoolToVisibility}}">
+                <TextBlock Text="示例数据 · 离线兜底——从「工坊」列表点击 mod 条目查看真实详情"
+                           FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource swdm-Warning500Brush}"/>
+            </Border>
+
             <TextBlock AutomationProperties.AutomationId="ModDetailPage_TitleText"
                        Text="{Binding ItemTitle}" FontSize="18" FontWeight="Bold"
                        Foreground="{DynamicResource swdm-TextPrimaryBrush}"
