@@ -105,6 +105,21 @@ public sealed class GameSelectJourneySmokeTests
             var suggestion = Retry.WhileNull(
                 () => FirstSuggestionContaining(window, "Don't Starve"),
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.3)).Result;
+            // 键盘未路由兜底：无联想→查搜索框文本。文本空=输入未路由（前台锁）
+            // =ENV-DOWNGRADE 降级;文本在但无联想=产品 bug（别名归一化域）。
+            if (suggestion is null)
+            {
+                var typedText = searchBox.AsTextBox().Text;
+                Console.WriteLine($"DIAG journey2 no suggestion; searchBox text=\"{typedText}\"");
+                if (string.IsNullOrEmpty(typedText))
+                {
+                    Console.WriteLine(
+                        "ENV-DOWNGRADE: keyboard typing not routed (foreground lock / no interactive " +
+                        "desktop); bilingual input journey re-run on the desktop channel (t28/t38 gate).");
+                    UiTestHelpers.DumpTree(window, "env-downgrade: typing not routed");
+                    return;
+                }
+            }
             Assert.NotNull(suggestion);
             Console.WriteLine($"DIAG journey2 CN input hit: {suggestion!.Name}");
 
