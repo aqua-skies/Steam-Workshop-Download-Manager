@@ -103,7 +103,16 @@ public sealed class P0MainJourneySmokeTests
             Assert.NotNull(window);
             window!.Focus();
 
-            // 旅程 3 Layer 1：详情页三保留 id 在位（ModDetail 为初始页，t26 余绪）。
+            // 旅程 3 Layer 1：先导航到详情页（初始页=t54 球体主页，「初始页=ModDetail」为 t26 余绪
+            // 过时假设；t62 后导航流转改为导航后断言）。InvokePattern 命令链口径=
+            // 前台锁吞物理点击的沙箱兜底（t63 沉淀同族；真实用户点击=最终证据）。
+            var navDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(navDetail);
+            navDetail!.AsButton().Invoke();
+
+            // 详情页三保留 id 在位（导航后断言，不绑初始页）。
             foreach (var id in new[]
                      {
                          "ModDetailPage_TitleText", "ModDetailPage_DependencyList_Items",
@@ -133,8 +142,7 @@ public sealed class P0MainJourneySmokeTests
                 TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(0.2)).Result;
             Assert.NotNull(listVisible);
 
-            // 回详情页（旅程 3：真实点击导航）。
-            var navDetail = UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton");
+            // 回详情页（旅程 3：真实点击导航；navDetail 已在上方 Layer 1 解析）。
             Assert.NotNull(navDetail);
             UiTestHelpers.RealClick(navDetail!);
             var downloadButton = Retry.WhileNull(

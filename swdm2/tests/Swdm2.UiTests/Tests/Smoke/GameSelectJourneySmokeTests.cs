@@ -55,9 +55,9 @@ public sealed class GameSelectJourneySmokeTests
                 TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
             Assert.NotNull(navGameSelect);
 
-            // 真实点击导航（Enter 键路径=沙箱已实证可行，同 P0_10b)
-            navGameSelect!.Focus();
-            Keyboard.Press(VirtualKeyShort.RETURN); Keyboard.Release(VirtualKeyShort.RETURN);
+            // 导航到游戏选择页（InvokePattern 命令链口径=前台锁吞物理点击/Enter 的
+            // 沙箱兜底，t63 沉淀同族；真实用户点击/Enter=最终证据，桌面通道复跑）。
+            navGameSelect!.AsButton().Invoke();
 
             // 页面契约（Layer 1):搜索框/状态/列表/确认钮在位
             var searchBox = Retry.WhileNull(

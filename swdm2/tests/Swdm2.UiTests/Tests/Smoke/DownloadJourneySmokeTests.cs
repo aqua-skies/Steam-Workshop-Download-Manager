@@ -49,7 +49,16 @@ public sealed class DownloadJourneySmokeTests
             Assert.NotNull(window);
             window!.Focus();
 
-            // Layer 1 (sandbox-verified): download button present, enabled, on-screen.
+            // Layer 1 (sandbox-verified)：先导航到详情页（初始页=t54 球体主页，
+            // 「初始页=ModDetail」为 t26 余绪过时假设，t62 后改导航后断言）。
+            // InvokePattern 命令链口径=前台锁吞物理点击的沙箱兜底（t63 沉淀同族）。
+            var navDetail = Retry.WhileNull(
+                () => VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+                TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(navDetail);
+            navDetail!.AsButton().Invoke();
+
+            // download button present, enabled, on-screen.
             var downloadButton = Retry.WhileNull(
                 () => VisibleElement(window, "ModDetailPage_DownloadButton"),
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;

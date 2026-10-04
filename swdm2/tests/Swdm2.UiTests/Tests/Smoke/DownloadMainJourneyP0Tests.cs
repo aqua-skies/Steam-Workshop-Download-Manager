@@ -81,7 +81,16 @@ public sealed class DownloadMainJourneyP0Tests
             Assert.NotNull(window);
             window!.Focus();
 
-            // Layer 1 (sandbox-verifiable): detail page download button contract.
+            // Layer 1 (sandbox-verifiable):先导航到详情页（初始页=t54 球体主页，
+            // 「初始页=ModDetail」为 t26 余绪过时假设，t62 后改导航后断言）。
+            // InvokePattern 命令链口径=前台锁吞物理点击的沙箱兜底（t63 沉淀同族）。
+            var navDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+                TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(navDetail);
+            navDetail!.AsButton().Invoke();
+
+            // detail page download button contract.
             var downloadButton = Retry.WhileNull(
                 () => UiTestHelpers.VisibleElement(window, "ModDetailPage_DownloadButton"),
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;

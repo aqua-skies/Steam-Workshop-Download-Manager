@@ -50,7 +50,14 @@ public sealed class DownloadRowExperienceTests
             Assert.NotNull(window);
             window!.Focus();
 
-            // Layer 1：详情页下载按钮在位（可点击前提）。
+            // Layer 1：先导航到详情页（初始页=t54 球体主页，t26 余绪过时假设；
+            // InvokePattern 命令链口径=沙箱兜底，t63 沉淀同族）。下载按钮在位（可点击前提）。
+            var navDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+                TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(navDetail);
+            navDetail!.AsButton().Invoke();
+
             var downloadButton = Retry.WhileNull(
                 () => UiTestHelpers.VisibleElement(window, "ModDetailPage_DownloadButton"),
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
@@ -188,6 +195,13 @@ public sealed class DownloadRowExperienceTests
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
             Assert.NotNull(window);
             window!.Focus();
+
+            // 导航到详情页（初始页=t54 球体主页；InvokePattern 命令链口径=沙箱兜底）。
+            var navDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+                TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(navDetail);
+            navDetail!.AsButton().Invoke();
 
             var downloadButton = Retry.WhileNull(
                 () => UiTestHelpers.VisibleElement(window, "ModDetailPage_DownloadButton"),
