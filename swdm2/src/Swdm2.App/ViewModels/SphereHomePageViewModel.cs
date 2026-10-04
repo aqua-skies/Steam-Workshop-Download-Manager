@@ -1,4 +1,6 @@
-using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
+using System.Windows.Media.Imaging;
+using System.Windows.Media;
 using Swdm2.App.Games;
 using System.Windows;
 using System.Windows.Input;
@@ -85,21 +87,42 @@ public sealed class SphereHomePageViewModel : ViewModelBase
     /// <summary>
     /// D5.20c:DefaultGameService.Current → 卡片+球体贴图刷新
     /// （贴图上浮=Tiles 首槽位=已绑定游戏；EmptyHint 消失）。
+    /// t65(D5.20d):真实游戏图标=AppId 拼 Steam CDN header 图（1.x 实证
+    /// cdn.cloudflare.steamstatic.com/steam/apps/{id}/header.jpg 可用；
+    /// 本机实测 322330→200 50512B)。BitmapImage 延迟下载=不阻塞 UI;
+    /// CDN 失败=WPF 静默降级空图（不崩；Icon 非空即贴图槽位生效）。
     /// </summary>
     private void ApplyDefaultGame()
     {
         var g = _defaultGame?.Current;
-        UpdateDefaultGame(g?.Title, g?.IconUrl);
+        // 卡片图标槽=同一 CDN header 图（WPF ImageSourceConverter 字符串 URL 自动转）
+        UpdateDefaultGame(g?.Title, g is { AppId: > 0 }
+            ? $"https://cdn.cloudflare.steamstatic.com/steam/apps/{g.AppId}/header.jpg"
+            : null);
 
         Tiles.Clear();
         if (g is not null)
         {
-            // 球体贴图区该游戏图标上浮（Icon=IconUrl→ImageSource;D6 真实图标源前=空=透明槽位在位）
+            // 球体贴图区该游戏图标上浮：Icon=BitmapImage(CDN header 图）
+            ImageSource? tileIcon = null;
+            if (g.AppId > 0)
+            {
+                try
+                {
+                    tileIcon = new BitmapImage(new Uri(
+                        $"https://cdn.cloudflare.steamstatic.com/steam/apps/{g.AppId}/header.jpg",
+                        UriKind.Absolute));
+                }
+                catch
+                {
+                    tileIcon = null; // URL 构造失败=诚实空（控件材质紫色 fallback）
+                }
+            }
             Tiles.Add(new SphereGameTile
             {
                 AppId = g.AppId,
                 Title = g.Title,
-                Icon = null, // 待 D6 图标源（IconUrl 不能直接转 ImageSource,保持诚实空）
+                Icon = tileIcon,
                 AssignedTriangles = new[] { 0 },
             });
         }

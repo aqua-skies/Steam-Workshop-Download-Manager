@@ -93,13 +93,17 @@ public partial class HomeSphereControl : UserControl
             new Vector3D(0, 1, 0), 45);
 
         // 鼠标光源（薄荷品牌色；2.8.3 条款）
+        // t65(D5.20d):深度衰减渐变=远暗近亮。球半径~1.5，光源 z=1.6：
+        // 近侧顶点距光~0.4→att(0.4)=1/(0.35+0.22+0.03)≈1.6(截 1)=最亮；
+        // 远侧顶点~3.5→att(3.5)=1/(0.35+1.93+2.21)≈0.23=远暗（+ambient 0.28 兜底
+        // 保线框可见）。Constant=0.35 抬底，Linear/Quadratic 造可见梯度。
         _mouseLight = new PointLight
         {
             Color = (Color)ColorConverter.ConvertFromString("#3ED598"),
-            Range = 12.0,
-            ConstantAttenuation = 1.0,
-            LinearAttenuation = 0.15,
-            QuadraticAttenuation = 0.02,
+            Range = 8.0,
+            ConstantAttenuation = 0.35,
+            LinearAttenuation = 0.55,
+            QuadraticAttenuation = 0.18,
         };
         var lightModel = new ModelVisual3D { Content = new AmbientLight(Color.FromScRgb(0.28f, 1f, 1f, 1f)) };
 

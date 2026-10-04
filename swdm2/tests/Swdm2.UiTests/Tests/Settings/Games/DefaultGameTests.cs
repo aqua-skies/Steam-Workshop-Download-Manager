@@ -84,6 +84,10 @@ public sealed class DefaultGameTests
         Assert.Equal("Don't Starve Together", home.DefaultGameTitle);
         Assert.True(home.Tiles.Count == 1);
         Assert.True(home.Tiles[0].AppId == 322330);
+        // t65:真实游戏图标=CDN header 图 BitmapImage（UriSource=322330）
+        Assert.NotNull(home.Tiles[0].Icon);
+        Assert.Equal("https://cdn.cloudflare.steamstatic.com/steam/apps/322330/header.jpg",
+            ((System.Windows.Media.Imaging.BitmapImage)home.Tiles[0].Icon!).UriSource.AbsoluteUri);
         Assert.Equal(System.Windows.Visibility.Collapsed, home.EmptyHintVisibility);
     }
 

@@ -21,11 +21,12 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- 左侧：默认游戏卡（t62:§2.8 「左侧选项卡」实物=切页编排 TabStrip/TextPanel 目标） -->
+        <!-- 左侧：默认游戏卡（t62:§2.8 「左侧选项卡」实物=切页编排 TabStrip/TextPanel 目标；
+             t65:TextPanel=内部 Grid/TabStrip=外壳 Border 分离=两相各自动画无跳变终值对齐） -->
         <Border x:Name="LeftTabStrip" Grid.Column="0" Margin="16,20,8,20" CornerRadius="8"
                 Background="{DynamicResource swdm-SurfaceCardBrush}"
                 BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
-            <Grid Margin="16">
+            <Grid x:Name="LeftTabStrip_Inner" Margin="16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>

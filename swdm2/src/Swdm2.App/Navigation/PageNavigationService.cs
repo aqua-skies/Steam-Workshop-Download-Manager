@@ -110,7 +110,7 @@ public sealed class PageNavigationService
         return true;
     }
 
-    /// <summary>直接替换内容（无时序，GoBack/初始化路径）。</summary>
+    /// <summary>直接替换内容（无时序，GoBack/初始化路径/编排接管动画路径）。</summary>
     private void PushContentDirect(PageBase page)
     {
         if (_host is null)
@@ -122,6 +122,21 @@ public sealed class PageNavigationService
         // t62 死钮修复：栈深度变化后必须传播 CanExecute 重查（DispatcherTimer
         // 切页不触发 CommandManager.RequerySuggested → GoBack 钮停在初始禁用态）
         CommandManager.InvalidateRequerySuggested();
+    }
+
+    /// <summary>
+    /// t65(D5.20d):无动画直接换页=切页编排 DetailEnter 相接线路径。
+    /// 由调用方编排（PageTransitionOrchestrator)持有动画时序；本方法只挂树+入栈。
+    /// A7 终值由编排 Storyboard Completed 钉死（Opacity 终值 1)。
+    /// </summary>
+    public void SwapDirect(PageBase page, bool keepInStack = true)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        if (_host is null)
+            throw new InvalidOperationException("PageNavigationService 未 Attach 页面容器");
+        if (keepInStack && _current is not null)
+            _backStack.Push(() => _current);
+        PushContentDirect(page);
     }
 
     /// <summary>初始化首页（无退出动画，直接放置）。</summary>
