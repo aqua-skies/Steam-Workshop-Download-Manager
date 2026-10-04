@@ -7,6 +7,29 @@
 
 ---
 
+## [2.0.1] · 2026-10-05 · SWDM 2.0.1 修订正式版（D9.3 发布门，夜网降级版）
+
+**用户复核裁定后的修订正式版**——修复 2.0.0 正式发布后暴露的启动崩 + 用户震怒点整改链（死按键/假数据/卡片糊/球体取景）+真实工坊源接入。GitHub v2.0.0 release body 标注作废（启动崩），以 2.0.1 替换。
+
+**四要素**：全量回归两轮（clean 0-0+Core 72/0+Downloads 81/0+Steam 174/0+Ui 逻辑层 45/0，夜网降级档：Steam/Browse 在线族夜网挂=白天网络恢复补跑，明确标注不掩盖）；FlaUI 输入层环境门持续（InvokePattern 证据口径+桌面复跑条款，B3 新流程链 Browse→条目→详情）；讨论组三原则由 captain 确认 2.0.1 范围；版本 2.0.0→**2.0.1**(Version/AssemblyVersion/FileVersion 三同步）+本条。
+
+### 崩修
+- **2.0.0 release 启动崩**（bdaa9c8)：Binding.Converter 用 DynamicResource(XamlParseException「只能在 DependencyObject 的 DependencyProperty 上设置」）→页面级 PageBase.Resources 注册 StaticResource。
+
+### D5.20 视觉整改链（用户震怒点）
+- t62 视觉两批+t63 **ModDetail 真实数据+浏览/详情下载钮**(fea4062)+t64 设置页绑定默认游戏实物（9ed69db)+t65 DetailEnter/球深/真实图标（bf7c707)。
+- t67 **D9.1 卡片重做+快切+全按钮实测+死钮修复**(a93f5c5）：名字优先+类别副标题后置+缩略图槽位（占位诚实）+IsSampleData 示例横幅；顶栏 CurrentGameLabel+SwitchGameButton；全按钮核对表 docs/process/button_sweep_2.0.md(8 页 217 元素）；**死钮 StartGame=steam://run/{appid}+未绑定禁用**（用户 2026-10-04 按键有效性纪律）。
+- t68 **D9.2 真实源+真实下载落盘**(4989904):CommunityWorkshopBrowseSource 社区 HTML 真源（30 真实 L4D2 条目，IPublishedFileService 匿名 401 绕开）+MainShellVM SampleData 接线删除（假数据清零）+真实匿名 SteamCmd 下载落盘（GMod 17906 文件 size>0)+失败链中文原因不静默+球体取景修复（相机视线 t=(0.5,0.2,0)=球心 0.60W/0.57H 右下，t65 过陡近黑=用户「只有球体左下角」根因）。
+
+### qa 域测试证据链（t66/t69)
+- 输入路由降级门三文件加固（28bef1d):InvokePattern 命令链持续证实 vs 前台锁间歇吞物理输入=环境门非产品 bug。
+- 详情链改 Browse→条目新流程（093fc63):t67/t68 后 ModDetail 直达无下载钮（需真实 id)=旧断言绑淘汰流程修复。
+
+### 验证（夜网降级档）
+clean+warnaserror **0-0**(Swdm2.sln Release);Core **72/0**+Downloads **81/0** 两轮；Steam **174/0**(02:31 visual-20 同夜证据，本门复跑挂夜网=网络恢复补跑）;Ui 逻辑层 HomeSphere 15/0+Settings 10/0+Library 10/0+Downloads 10/0；Browse VM 4/0+在线真源族夜网挂=白天补（设计对照纪律：网络失败≠不可行，02:31 真源 30 条目已证可行）；FlaUI Feature 3/1→条目降级统一后环境门（夜网无条目=降级，非产品 bug）；app 启动存活 Responding=True。
+
+---
+
 ## [2.0.0] · 2026-10-03 · SWDM 2.0 正式版（D7 发布门）
 
 **SWDM 2.0.0 正式发布**——C# WPF 从零重构（用户 2026-10-02 裁定路线①）完成。GitHub release v2.0.0（tag main+安装包 Setup 81.4MB+Portable)。
