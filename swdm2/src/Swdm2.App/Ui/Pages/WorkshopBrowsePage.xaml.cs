@@ -27,8 +27,10 @@ public partial class WorkshopBrowsePage
     public WorkshopBrowsePage()
     {
         InitializeComponent();
+        // t68(D9.2):SampleData 兜底删除=空起步（生产路径由 MainShellVM 注入真源 VM;
+        // 设计器/headless 无注入=空 VM 不造假；虚拟化测试显式注入合成源）
         if (DataContext is null)
-            DataContext = new WorkshopBrowsePageViewModel(WorkshopBrowseItem.SampleData());
+            DataContext = new WorkshopBrowsePageViewModel(Array.Empty<WorkshopBrowseItem>());
         CompositionTarget.Rendering += OnRendering;
         Unloaded += Page_Unloaded;
         ItemList.ItemContainerGenerator.ItemsChanged += (_, _) => UpdateGeneratedCount();

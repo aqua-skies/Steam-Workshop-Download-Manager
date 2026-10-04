@@ -160,14 +160,19 @@ public sealed class WorkshopBrowsePageViewModel : ViewModelBase
     /// <summary>条目「下载」命令（点击入队；IDownloadQueue 契约不变）。</summary>
     public ICommand DownloadItemCommand { get; }
 
-    /// <summary>D9.2:错误态显隐（错误横幅 Visibility 绑定源）。</summary>
+    /// <summary>D9.2:错误态显隐（错误横幅 Visibility 绑定源）。
+    /// 计算属性=随 ErrorMessage 变化显式通知（否则 WPF 绑定不更新=t68 实测横幅不现的根因）。</summary>
     public bool HasError => !string.IsNullOrEmpty(_errorMessage);
 
     /// <summary>D9.2:加载/失败状态文案（失败=明确原因中文，不静默；空=已加载或未加载）。</summary>
     public string? ErrorMessage
     {
         get => _errorMessage;
-        private set => SetProperty(ref _errorMessage, value);
+        private set
+        {
+            if (SetProperty(ref _errorMessage, value))
+                RaisePropertyChanged(nameof(HasError));
+        }
     }
 
     /// <summary>D9.2:是否加载中（防重复并发加载；UI 菊花/禁用提示）。</summary>

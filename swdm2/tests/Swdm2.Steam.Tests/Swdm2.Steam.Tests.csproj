@@ -29,4 +29,7 @@
     <EmbeddedResource Include="Community\fixtures\*.html" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Workshop/browse_l4d2_snapshot.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

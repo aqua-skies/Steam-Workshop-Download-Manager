@@ -125,8 +125,11 @@ public sealed class WorkshopBrowsePageVirtualizationTests
     [WpfFact]
     public void Page_Default_VM_Thousand_Synthetic_And_Binds()
     {
-        // 真实例化（非 XamlReader):默认 VM=合成千项；单页 100
-        var page = new WorkshopBrowsePage();
+        // t68:页面默认兜底=空 VM（假数据清除）→虚拟化基准显式注入合成千项
+        var page = new WorkshopBrowsePage
+        {
+            DataContext = new WorkshopBrowsePageViewModel(WorkshopBrowseItem.SampleData()),
+        };
         Assert.IsType<WorkshopBrowsePageViewModel>(page.DataContext);
         var vm = (WorkshopBrowsePageViewModel)page.DataContext;
         Assert.Equal(1000, vm.SourceCount);

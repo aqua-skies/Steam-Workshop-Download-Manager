@@ -83,6 +83,26 @@ internal static class UiTestHelpers
     }
 
     /// <summary>
+    /// Q10：失败截图落 TestArtifacts/（wpf_ui_testing §3.3.5;t68 移入公共助手，
+    /// 与 P0MainJourneySmokeTests 同实现同路径——去重后 P0 改调本方法）。
+    /// </summary>
+    internal static void CaptureFailure(string testName)
+    {
+        try
+        {
+            var dir = Path.Combine(AppContext.BaseDirectory, "TestArtifacts");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, $"fail_{testName}_{DateTime.Now:HHmmss}.png");
+            Capture.MainScreen().ToFile(path);
+            Console.WriteLine($"DIAG Q10 failure screenshot: {path}");
+        }
+        catch
+        {
+            // 截图本身为诊断辅助，失败不阻断测试结论
+        }
+    }
+
+    /// <summary>
     /// Headless-sandbox detection evidence: when the harness session has no interactive
     /// desktop, Capture.MainScreen produces a fully black image (verified t26/t28 runs).
     /// Used to tag ENV-DOWNGRADE for the physical-input journey layer (desktop channel rerun,

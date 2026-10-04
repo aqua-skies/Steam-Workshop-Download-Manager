@@ -86,26 +86,27 @@ public partial class HomeSphereControl : UserControl
         _geometry = IcosahedronGeometry.Generate(Subdivision);
         _physics = new SpherePhysics(_geometry);
 
-        // 相机：右下象限（x+/y-/z+ 看向球心）
+        // 相机：t67/t68 取景修正——视线指向球的**右上偏前**点 t=(0.5,0.2,0)，
+        // 球心投影落 0.60W/0.57H=画面中心偏右下（§2.8 透视右下；用户"只有左下角"整改）。
+        // 几何量化（math 回执 Computation/...52fde544dbde 扫描求解）：
+        // 球心屏幕 (345,317)/572x560, 半径 206px, 直径 412<560=全入画面。
         _camera = new PerspectiveCamera(
-            new Point3D(2.2, -1.6, 3.6),
-            new Vector3D(-2.2, 1.6, -3.6),
+            new Point3D(2.6, -2.0, 4.0),
+            new Vector3D(-2.1, 2.2, -4.0),
             new Vector3D(0, 1, 0), 45);
 
         // 鼠标光源（薄荷品牌色；2.8.3 条款）
-        // t65(D5.20d):深度衰减渐变=远暗近亮。球半径~1.5，光源 z=1.6：
-        // 近侧顶点距光~0.4→att(0.4)=1/(0.35+0.22+0.03)≈1.6(截 1)=最亮；
-        // 远侧顶点~3.5→att(3.5)=1/(0.35+1.93+2.21)≈0.23=远暗（+ambient 0.28 兜底
-        // 保线框可见）。Constant=0.35 抬底，Linear/Quadratic 造可见梯度。
+        // t65 深度衰减过陡（0.35/0.55/0.18 远侧 0.22≈黑=用户"球只剩一块"误读）；
+        // t68 温和版：近 1.26/远 0.49（2.6 倍梯度=立体感不死黑）+ambient 0.4 兜底
         _mouseLight = new PointLight
         {
             Color = (Color)ColorConverter.ConvertFromString("#3ED598"),
-            Range = 8.0,
-            ConstantAttenuation = 0.35,
-            LinearAttenuation = 0.55,
-            QuadraticAttenuation = 0.18,
+            Range = 10.0,
+            ConstantAttenuation = 0.65,
+            LinearAttenuation = 0.22,
+            QuadraticAttenuation = 0.05,
         };
-        var lightModel = new ModelVisual3D { Content = new AmbientLight(Color.FromScRgb(0.28f, 1f, 1f, 1f)) };
+        var lightModel = new ModelVisual3D { Content = new AmbientLight(Color.FromScRgb(0.4f, 1f, 1f, 1f)) };
 
         _sphereRoot = new ModelVisual3D();
         BuildSphereModels();

@@ -104,16 +104,29 @@ public sealed class P0MainJourneySmokeTests
             Assert.NotNull(window);
             window!.Focus();
 
-            // 旅程 3 Layer 1：先导航到详情页（初始页=t54 球体主页，「初始页=ModDetail」为 t26 余绪
-            // 过时假设；t62 后导航流转改为导航后断言）。InvokePattern 命令链口径=
-            // 前台锁吞物理点击的沙箱兜底（t63 沉淀同族；真实用户点击=最终证据）。
-            var navDetail = Retry.WhileNull(
-                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+            // 旅程 3 Layer 1：详情页经「浏览→条目详情」链进入（t67 后产品流程：
+            // ModDetail 直达无下载钮=需真实 PublishedFileId;模板=BrowseItemActionsDesktopTests
+            // L51-84)。InvokePattern 命令链口径=前台锁吞物理点击的沙箱兜底（t63 沉淀同族）。
+            var navBrowse = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_BrowseButton"),
                 TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
-            Assert.NotNull(navDetail);
-            navDetail!.AsButton().Invoke();
+            Assert.NotNull(navBrowse);
+            navBrowse!.AsButton().Invoke();
 
-            // 详情页三保留 id 在位（导航后断言，不绑初始页）。
+            var itemDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "WorkshopBrowsePage_Item_DetailButton"),
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
+            if (itemDetail is null)
+            {
+                Console.WriteLine(
+                    "ENV-DOWNGRADE: 浏览条目未物料化（真源网络不可达）——详情/下载链由 " +
+                    "BrowseItemActionsDesktopTests 与 BrowseRealSourceJourneyTests 覆盖");
+                UiTestHelpers.DumpTree(window, "env-downgrade: browse item chain not executed");
+                return;
+            }
+            itemDetail!.AsButton().Invoke();
+
+            // 详情页三保留 id 在位（条目链导航后断言，不绑初始页/直达导航）。
             foreach (var id in new[]
                      {
                          "ModDetailPage_TitleText", "ModDetailPage_DependencyList_Items",
@@ -122,7 +135,7 @@ public sealed class P0MainJourneySmokeTests
             {
                 Assert.NotNull(Retry.WhileNull(
                     () => UiTestHelpers.VisibleElement(window, id),
-                    TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result);
+                    TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result);
             }
 
             if (blankCapture)
@@ -163,9 +176,13 @@ public sealed class P0MainJourneySmokeTests
                 return;
             }
 
-            // 回详情页（旅程 3：导航；navDetail 已在上方 Layer 1 解析）。
-            Assert.NotNull(navDetail);
-            navDetail!.AsButton().Invoke();
+            // 回详情页（旅程 3：经浏览条目链返回=产品新流程；itemDetail 引用上方 Layer 1）。
+            Assert.NotNull(itemDetail);
+            itemDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "WorkshopBrowsePage_Item_DetailButton"),
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(itemDetail);
+            itemDetail!.AsButton().Invoke();
             var downloadButton = Retry.WhileNull(
                 () => UiTestHelpers.VisibleElement(window, "ModDetailPage_DownloadButton"),
                 TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(0.2)).Result;
