@@ -52,3 +52,10 @@
 - MyButton.xaml:CornerRadius=3;**Foreground=BorderBrush 绑定（自对比机制）**;FontSize=13;TextFormattingMode=Display
 - MyListItem.xaml:ScaleTransform 驻点+网格列 2/0/4/auto/1*/4
 - ThemeManager.cs:LCH 色彩空间明度系（0.84/0.96 ×darkLight)=对比度保证
+## t62 第二批整改（死钮 bug + 切页编排接线,2026-10-04)
+1. 死钮修复（captain 实锤：返回钮 DISABLED @632,398):PageNavigationService.Navigate/GoBack/Initialize 调 InvalidateRequerySuggested + ViewModelBase.RaisePropertyChanged 统一传播同病治理；回归 DeadButton 2/0
+2. 切页编排接线：SphereHomePage.OnLoaded 拦截贴图命令先跑 PageTransitionOrchestrator 前进三相对 LeftTabStrip+SphereHostControl 再导航（失败降级）
+3. 环境层诚实：沙箱真实鼠标点击不路由（两次点击浏览均未导航，同 FlaUI 输入族基线）=桌面复跑条款
+4. 对比度实算表 contrast_real.md(math_computation):全 token 合格
+5. Updates 集成测改动态版本断言（feed=ignored 构建产物随发布门变 0.6.0->2.0.0 硬编码漂移假失败）
+截图：C:\tmp\swdm2fix2\app.png/app5.png=沙箱无桌面合成=z-order 遮挡错位（像素青/暗墨绿色系非 SWDM 渲染）=真机复跑条款

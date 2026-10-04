@@ -130,9 +130,9 @@
             </ListBox>
 
             <Button AutomationProperties.AutomationId="ModDetailPage_DownloadButton"
-                    Content="Download"
+                    Content="⬇ 下载 Mod"
                     Command="{Binding DownloadCommand}"
-                    Padding="20,8" FontSize="14" HorizontalAlignment="Left"
+                    Padding="20,10" FontSize="15" FontWeight="Bold" HorizontalAlignment="Left"
                     Foreground="{DynamicResource swdm-TextOnAccentBrush}"
                     Background="{DynamicResource swdm-Accent500Brush}"/>
         </StackPanel>

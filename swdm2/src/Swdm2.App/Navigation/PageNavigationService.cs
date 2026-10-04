@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Swdm2.App.Ui.Pages;
@@ -83,6 +84,9 @@ public sealed class PageNavigationService
                     next.Opacity = 1;
                     next.RunEnter();
                     _navigating = false;
+                    // t62 死钮修复：计时器式切页结束后传播 CanExecute 重查
+                    // （GoBack 等依赖 BackStackDepth 的命令否则停在旧禁用态）
+                    CommandManager.InvalidateRequerySuggested();
                 };
                 enterTimer.Start();
             };
@@ -115,6 +119,9 @@ public sealed class PageNavigationService
         _current = page;
         page.Opacity = 1;
         _host.Content = page;
+        // t62 死钮修复：栈深度变化后必须传播 CanExecute 重查（DispatcherTimer
+        // 切页不触发 CommandManager.RequerySuggested → GoBack 钮停在初始禁用态）
+        CommandManager.InvalidateRequerySuggested();
     }
 
     /// <summary>初始化首页（无退出动画，直接放置）。</summary>

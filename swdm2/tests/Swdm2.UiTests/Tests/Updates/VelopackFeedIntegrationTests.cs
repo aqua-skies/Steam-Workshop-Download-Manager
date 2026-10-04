@@ -56,10 +56,12 @@ public sealed class VelopackFeedIntegrationTests
             Assert.True(manager.IsVelopackInstalled); // locator 生效=升级通道开
             Assert.Equal(new Version(0, 5, 0), manager.CurrentVersion);
 
-            // 检查（读 releases.win.json → 0.6.0 最新版）
+            // 检查（读 feed 最新版&gt; 模拟当前 0.5.0;feed 是 ignored 构建产物会随
+            // 发布门更新=动态断言而非硬编码版本号，避免 0.6.0→2.0.0 漂移假失败）
             var info = await manager.CheckForUpdatesAsync();
             Assert.NotNull(info);
-            Assert.Equal(new Version(0, 6, 0), info!.TargetVersion);
+            Assert.True(info!.TargetVersion > new Version(0, 5, 0),
+                $"feed latest={info.TargetVersion} 应高于模拟安装 0.5.0");
 
             // 下载（真 nupkg 落 packages 目录）
             await manager.DownloadUpdatesAsync(info);

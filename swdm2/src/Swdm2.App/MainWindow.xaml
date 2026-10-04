@@ -103,6 +103,10 @@
         - 契约 id 全保留（t3 §3.2)
         -->
         <StackPanel Orientation="Horizontal" Margin="10,8" Grid.Row="1">
+            <Button AutomationProperties.AutomationId="MainShell_Nav_BackButton"
+                    Content="‹ 返回" Padding="10,5" Margin="8,0,0,0"
+                    Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                    Command="{Binding GoBackCommand}"/>
             <Button AutomationProperties.AutomationId="MainShell_Nav_HomeButton"
                     Content="主页" Padding="14,6" Margin="8,0,0,0" FontWeight="Bold"
                     Foreground="{DynamicResource swdm-TextOnAccentBrush}"

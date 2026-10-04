@@ -68,6 +68,8 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
     public ICommand NavigateDownloadsCommand { get; }
     public ICommand NavigateBrowseCommand { get; } // [arch-20 t44]
     public ICommand NavigateGameSelectCommand { get; }
+    /// <summary>D5.19/t62:返回上一页（用户"没有返回入口"整改）。</summary>
+    public ICommand GoBackCommand { get; }
     public ICommand NavigateLibraryCommand { get; } // D5.12
     public ICommand NavigateSphereHomeCommand { get; } // D5.15
     public ICommand NavigateSettingsCommand { get; } // D5.18
@@ -109,6 +111,10 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
         _library = new LibraryPageViewModel(new LocalLibraryScanner(paths), paths, updateSource, queue);
 
         // D5.3: 导航委托 PageNavigationService（返回栈+时序）
+        // D5.19/t62: 返回上一页（PageNavigationService.GoBack;用户"没有返回入口"整改）
+        GoBackCommand = new RelayCommand(
+            () => AppHost.Navigation.GoBack(),
+            () => AppHost.Navigation.BackStackDepth > 0);
         NavigateModDetailCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<ModDetailPage>(
                 () => new ModDetailPage { DataContext = _modDetail }));
