@@ -176,8 +176,13 @@ public sealed class P0MainJourneySmokeTests
                 return;
             }
 
-            // 回详情页（旅程 3：经浏览条目链返回=产品新流程；itemDetail 引用上方 Layer 1）。
-            Assert.NotNull(itemDetail);
+            // 回详情页（旅程 3：下载页→浏览→条目详情=产品新流程）。
+            Assert.NotNull(navBrowse);
+            navBrowse = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_BrowseButton"),
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(navBrowse);
+            navBrowse!.AsButton().Invoke();
             itemDetail = Retry.WhileNull(
                 () => UiTestHelpers.VisibleElement(window, "WorkshopBrowsePage_Item_DetailButton"),
                 TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;

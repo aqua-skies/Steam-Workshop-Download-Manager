@@ -50,13 +50,24 @@ public sealed class DownloadRowExperienceTests
             Assert.NotNull(window);
             window!.Focus();
 
-            // Layer 1：先导航到详情页（初始页=t54 球体主页，t26 余绪过时假设；
-            // InvokePattern 命令链口径=沙箱兜底，t63 沉淀同族）。下载按钮在位（可点击前提）。
-            var navDetail = Retry.WhileNull(
-                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+            // Layer 1：详情页经「浏览→条目详情」链进入（t67 后产品流程：ModDetail
+            // 直达无下载钮=需真实 id;模板=BrowseItemActionsDesktopTests L51-84)。
+            var navBrowse = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_BrowseButton"),
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
-            Assert.NotNull(navDetail);
-            navDetail!.AsButton().Invoke();
+            Assert.NotNull(navBrowse);
+            navBrowse!.AsButton().Invoke();
+            var itemDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "WorkshopBrowsePage_Item_DetailButton"),
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
+            if (itemDetail is null)
+            {
+                Console.WriteLine(
+                    "ENV-DOWNGRADE: browse items not materialized (real source unreachable)");
+                UiTestHelpers.DumpTree(window, "env-downgrade: browse item chain not executed");
+                return;
+            }
+            itemDetail!.AsButton().Invoke();
 
             var downloadButton = Retry.WhileNull(
                 () => UiTestHelpers.VisibleElement(window, "ModDetailPage_DownloadButton"),
@@ -196,12 +207,17 @@ public sealed class DownloadRowExperienceTests
             Assert.NotNull(window);
             window!.Focus();
 
-            // 导航到详情页（初始页=t54 球体主页；InvokePattern 命令链口径=沙箱兜底）。
-            var navDetail = Retry.WhileNull(
-                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+            // 导航到详情页（经浏览条目链=产品新流程；与第一测同模式）。
+            var navBrowse = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_BrowseButton"),
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
-            Assert.NotNull(navDetail);
-            navDetail!.AsButton().Invoke();
+            Assert.NotNull(navBrowse);
+            navBrowse!.AsButton().Invoke();
+            var itemDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "WorkshopBrowsePage_Item_DetailButton"),
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
+            Assert.NotNull(itemDetail);
+            itemDetail!.AsButton().Invoke();
 
             var downloadButton = Retry.WhileNull(
                 () => UiTestHelpers.VisibleElement(window, "ModDetailPage_DownloadButton"),

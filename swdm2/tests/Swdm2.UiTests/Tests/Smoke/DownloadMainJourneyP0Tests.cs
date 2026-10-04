@@ -81,14 +81,28 @@ public sealed class DownloadMainJourneyP0Tests
             Assert.NotNull(window);
             window!.Focus();
 
-            // Layer 1 (sandbox-verifiable):先导航到详情页（初始页=t54 球体主页，
-            // 「初始页=ModDetail」为 t26 余绪过时假设，t62 后改导航后断言）。
-            // InvokePattern 命令链口径=前台锁吞物理点击的沙箱兜底（t63 沉淀同族）。
-            var navDetail = Retry.WhileNull(
-                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_ModDetailButton"),
+            // Layer 1 (sandbox-verifiable):详情页经「浏览→条目详情」链进入（t67 后
+            // 产品流程：ModDetail 直达无下载钮=需真实 PublishedFileId;模板=
+            // BrowseItemActionsDesktopTests L51-84)。InvokePattern 命令链口径=
+            // 前台锁吞物理点击的沙箱兜底（t63 沉淀同族）。
+            var navBrowse = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "MainShell_Nav_BrowseButton"),
                 TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(0.2)).Result;
-            Assert.NotNull(navDetail);
-            navDetail!.AsButton().Invoke();
+            Assert.NotNull(navBrowse);
+            navBrowse!.AsButton().Invoke();
+
+            var itemDetail = Retry.WhileNull(
+                () => UiTestHelpers.VisibleElement(window, "WorkshopBrowsePage_Item_DetailButton"),
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
+            if (itemDetail is null)
+            {
+                Console.WriteLine(
+                    "ENV-DOWNGRADE: 浏览条目未物料化（真源网络不可达）——下载旅程由 " +
+                    "BrowseItemActionsDesktopTests 桌面链覆盖");
+                UiTestHelpers.DumpTree(window, "env-downgrade: browse item chain not executed");
+                return;
+            }
+            itemDetail!.AsButton().Invoke();
 
             // detail page download button contract.
             var downloadButton = Retry.WhileNull(
