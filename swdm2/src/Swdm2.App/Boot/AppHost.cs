@@ -55,6 +55,11 @@ private static ConnectivityStateService? _connectivity;
     public static PageNavigationService Navigation
         => _navigation ?? throw new InvalidOperationException("AppHost 未启动（先调 Start()）。");
 
+    /// <summary>HTTP 工厂（D5.20c:设置页默认游戏搜索 storesearch 复用同指纹通道）。</summary>
+    public static SteamHttpClientFactory HttpFactory
+        => _httpFactory ?? throw new InvalidOperationException("AppHost 未启动（先调 Start())");
+    private static SteamHttpClientFactory? _httpFactory;
+
     public static void Start()
     {
         var config = SwdmConfiguration.LoadConfiguration();
@@ -66,6 +71,7 @@ private static ConnectivityStateService? _connectivity;
 
         var redaction = new RegexRedactionPolicy();
         var httpFactory = new SteamHttpClientFactory(steam);
+        _httpFactory = httpFactory;
         // D5.9(状态栏端点可达性）：IConnectivityState 数据源+代理切换（S5 工厂快照语义→切代理重建）
         _connectivity = new ConnectivityStateService(steam);
         _ = Task.Run(async () => await _connectivity.RefreshAsync().ConfigureAwait(false)); // 启动后首探（异步不阻塞壳）

@@ -1,4 +1,7 @@
 using Swdm2.App.Ui.Pages;
+
+using Swdm2.App.Games;
+using Swdm2.Steam.Web;
 using System.Windows.Input;
 using Swdm2.App.Boot;
 using Swdm2.App.Library;
@@ -12,7 +15,6 @@ using Swdm2.Downloads.Events;
 using Swdm2.Downloads.Providers;
 using Swdm2.Downloads.Queue;
 using Swdm2.Steam.Community;
-using Swdm2.Steam.Web;
 // t59: 别名规避（Steam.Workshop.WorkshopBrowsePage=缓存载体 ≠ UI 页 WorkshopBrowsePage)
 using Swdm2.Steam.Workshop;
 using IWorkshopUpdateSource = Swdm2.Steam.Workshop.IWorkshopUpdateSource;
@@ -158,19 +160,26 @@ public sealed class MainShellViewModel : ViewModelBase, IDisposable
                 () => new LibraryPage { DataContext = _library }));
 
         // D5.15: 球体主页（贴图点击→跳该游戏 mod 选择页；开始/下载钮直通）
+        // D5.20c:默认游戏服务=设置页绑定后主页即时响应（单例共享）
+        var defaultGame = new DefaultGameService();
+        defaultGame.Load(paths);
         _sphereHome = new SphereHomePageViewModel(
             navigateToGameSelect: _ => AppHost.Navigation.Navigate<GameSelectPage>(
                 () => new GameSelectPage { DataContext = _gameSelect }),
             startGame: () => { /* D5.x:启动默认游戏（阶段 6 启动器） */ },
             downloadMod: () => AppHost.Navigation.Navigate<GameSelectPage>(
-                () => new GameSelectPage { DataContext = _gameSelect }));
+                () => new GameSelectPage { DataContext = _gameSelect }),
+            defaultGame: defaultGame);
         NavigateSphereHomeCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<Ui.Pages.SphereHomePage>(
                 () => new Ui.Pages.SphereHomePage { DataContext = _sphereHome }));
 
         // D5.18: 设置页（契约 id MainShell_Nav_SettingsButton;主页空态「前往设置」入口）
+        // D5.20c:默认游戏搜索=复用 t43 GameAliasTable+storesearch 在线合并
         _settings = new SettingsPageViewModel(paths, AppHost.Connectivity,
-            new Ui.Themes.ThemeService());
+            new Ui.Themes.ThemeService(),
+            storeSearch: new StoreSearchClient(AppHost.HttpFactory),
+            defaultGame: defaultGame);
         NavigateSettingsCommand = new RelayCommand(
             () => AppHost.Navigation.Navigate<Ui.Pages.Settings.SettingsPage>(
                 () => new Ui.Pages.Settings.SettingsPage { DataContext = _settings }));

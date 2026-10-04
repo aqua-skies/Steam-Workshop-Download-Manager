@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Swdm2.App.Games;
 using System.Windows;
 using System.Windows.Input;
 using Swdm2.App.Ui.Controls.HomeSphere;
@@ -17,6 +18,8 @@ public sealed class SphereHomePageViewModel : ViewModelBase
     private string _defaultGameTitle = string.Empty;
     private string? _defaultGameIcon;
     private Visibility _emptyHintVisibility = Visibility.Collapsed;
+    // D5.20c/t64:默认游戏服务（设置页绑定=主页即时响应）
+    private readonly DefaultGameService? _defaultGame;
 
     public ObservableCollection<SphereGameTile> Tiles { get; } = new();
 
@@ -53,12 +56,22 @@ public sealed class SphereHomePageViewModel : ViewModelBase
     public SphereHomePageViewModel(
         Action<int>? navigateToGameSelect = null,
         Action? startGame = null,
-        Action? downloadMod = null)
+        Action? downloadMod = null,
+        DefaultGameService? defaultGame = null)
     {
+        _defaultGame = defaultGame;
+
         TileClickedCommand = new RelayCommand(
             p => navigateToGameSelect?.Invoke(Convert.ToInt32(p, System.Globalization.CultureInfo.InvariantCulture)));
         StartGameCommand = new RelayCommand(() => startGame?.Invoke());
         DownloadModCommand = new RelayCommand(() => downloadMod?.Invoke());
+
+        // D5.20c/t64:默认游戏即时响应（订阅变更=设置页绑定后主页立即刷新）
+        if (_defaultGame is not null)
+        {
+            _defaultGame.PropertyChanged += (_, _) => ApplyDefaultGame();
+            ApplyDefaultGame();
+        }
     }
 
     /// <summary>更新默认游戏卡（无默认游戏=空态灰字）。</summary>
@@ -67,5 +80,28 @@ public sealed class SphereHomePageViewModel : ViewModelBase
         DefaultGameTitle = string.IsNullOrEmpty(title) ? "未绑定默认游戏" : title;
         DefaultGameIcon = icon;
         EmptyHintVisibility = string.IsNullOrEmpty(title) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// D5.20c:DefaultGameService.Current → 卡片+球体贴图刷新
+    /// （贴图上浮=Tiles 首槽位=已绑定游戏；EmptyHint 消失）。
+    /// </summary>
+    private void ApplyDefaultGame()
+    {
+        var g = _defaultGame?.Current;
+        UpdateDefaultGame(g?.Title, g?.IconUrl);
+
+        Tiles.Clear();
+        if (g is not null)
+        {
+            // 球体贴图区该游戏图标上浮（Icon=IconUrl→ImageSource;D6 真实图标源前=空=透明槽位在位）
+            Tiles.Add(new SphereGameTile
+            {
+                AppId = g.AppId,
+                Title = g.Title,
+                Icon = null, // 待 D6 图标源（IconUrl 不能直接转 ImageSource,保持诚实空）
+                AssignedTriangles = new[] { 0 },
+            });
+        }
     }
 }

@@ -53,6 +53,47 @@
                 </StackPanel>
             </Border>
 
+            <!-- D5.20c/t64 默认游戏分组（设置里绑定游戏实物=用户"一句空话"整改） -->
+            <Border CornerRadius="6" Padding="16" Margin="0,0,0,12"
+                    Background="{DynamicResource swdm-SurfaceCardBrush}"
+                    BorderBrush="{DynamicResource swdm-StrokeCardBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="默认游戏" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <TextBlock Text="搜索游戏名（中英均可）并选中=主页立即显示该游戏卡+球体贴图"
+                               FontSize="12" Margin="0,0,0,8" TextWrapping="Wrap"
+                               Foreground="{DynamicResource swdm-TextSecondaryBrush}"/>
+                    <!-- 当前绑定显示（空态诚实引导） -->
+                    <TextBlock AutomationProperties.AutomationId="SettingsPage_Game_BoundDisplay"
+                               Text="{Binding BoundGameDisplay}" FontSize="12" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <TextBox AutomationProperties.AutomationId="SettingsPage_Game_SearchTextBox"
+                             Text="{Binding GameSearchTerm, UpdateSourceTrigger=PropertyChanged}" Padding="8,5"
+                             Background="{DynamicResource swdm-SurfaceInputBrush}"
+                             Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                             BorderBrush="{DynamicResource swdm-StrokeInputBrush}"/>
+                    <TextBlock Text="{Binding GameSearchHint}" FontSize="11" Margin="0,4,0,4"
+                               Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                    <!-- 候选列表（点击=绑定；sample/别名/在线来源显式标注） -->
+                    <ListBox AutomationProperties.AutomationId="SettingsPage_Game_SuggestionsList"
+                             ItemsSource="{Binding GameSuggestions}" MaxHeight="180" Margin="0,0,0,8"
+                             Background="{DynamicResource swdm-SurfaceInputBrush}"
+                             BorderBrush="{DynamicResource swdm-StrokeInputBrush}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding DataContext.SelectGameCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        CommandParameter="{Binding}" Padding="8,5" HorizontalAlignment="Stretch"
+                                        Background="Transparent" BorderThickness="0"
+                                        Foreground="{DynamicResource swdm-TextPrimaryBrush}"
+                                        Content="{Binding Name}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Text="{Binding GameSourceNote}" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource swdm-TextTertiaryBrush}"/>
+                </StackPanel>
+            </Border>
+
             <!-- 网络组（代理模式下拉 + A2 抽屉 Custom 输入 + 必填校验） -->
             <Border CornerRadius="6" Padding="16" Margin="0,0,0,12"
                     Background="{DynamicResource swdm-SurfaceCardBrush}"

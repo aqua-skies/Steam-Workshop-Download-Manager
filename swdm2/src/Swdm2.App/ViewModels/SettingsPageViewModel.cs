@@ -1,4 +1,10 @@
 using System.IO;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Collections.Generic;
+using Swdm2.Core.Domain;
+using Swdm2.App.Games;
+using Swdm2.Steam.Web;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
@@ -35,6 +41,14 @@ public sealed class SettingsPageViewModel : ViewModelBase
     private bool _customPanelVisible;
     private string _userName = string.Empty;
     private string _steamCmdDirectory = string.Empty;
+    // D5.20c: 默认游戏搜索（复用 t43 GameAliasTable+storesearch 合并）
+    private string _gameSearchTerm = string.Empty;
+    private bool _isSearchingGames;
+    private string _gameSearchHint = string.Empty;
+    private readonly IStoreSearchClient? _storeSearch;
+    private readonly DefaultGameService? _defaultGame;
+    private System.Windows.Threading.DispatcherTimer? _gameDebounce;
+    private CancellationTokenSource? _gameCts;
 
     public ProxyMode ProxyMode
     {
@@ -144,6 +158,53 @@ public sealed class SettingsPageViewModel : ViewModelBase
     /// <summary>D6.3:应用更新并重启（VelopackApp.Run 钩子消费）。</summary>
     public ICommand ApplyUpdateCommand { get; }
 
+    // ===== D5.20c/t64:默认游戏（设置页绑定游戏实物）=====
+
+    /// <summary>搜索候选（别名表本地即时+storesearch 在线合并，t43 同算法）。</summary>
+    public ObservableCollection<GameInfo> GameSuggestions { get; } = new();
+
+    /// <summary>搜索词（防抖 350ms)。</summary>
+    public string GameSearchTerm
+    {
+        get => _gameSearchTerm;
+        set
+        {
+            if (!SetProperty(ref _gameSearchTerm, value)) return;
+            IsSearchingGames = true;
+            _gameDebounce?.Stop();
+            if (!string.IsNullOrWhiteSpace(value)) _gameDebounce?.Start();
+            else { GameSuggestions.Clear(); IsSearchingGames = false; GameSearchHint = string.Empty; }
+        }
+    }
+
+    public bool IsSearchingGames
+    {
+        get => _isSearchingGames;
+        private set => SetProperty(ref _isSearchingGames, value);
+    }
+
+    /// <summary>候选来源提示（离线兜底显式标注：sample/别名表/在线）。</summary>
+    public string GameSearchHint
+    {
+        get => _gameSearchHint;
+        private set => SetProperty(ref _gameSearchHint, value);
+    }
+
+    /// <summary>选中候选=绑定默认游戏并持久化（主页即时响应）。</summary>
+    public ICommand SelectGameCommand { get; }
+
+    /// <summary>当前已绑定游戏（null=空态）。</summary>
+    public BoundGame? BoundGame => _defaultGame?.Current;
+
+    /// <summary>已绑定显示文本（未绑定=空态引导）。</summary>
+    public string BoundGameDisplay => _defaultGame?.Current is { } g
+        ? $"{g.Title} (AppId {g.AppId})" : "未绑定（搜索并选择游戏后保存）";
+
+    /// <summary>sample 离线兜底显式标注（搜索源说明）。</summary>
+    public string GameSourceNote => _storeSearch is null
+        ? "离线别名表（在线源未装配）"
+        : "内置别名表+Steam storesearch 在线合并（离线时仅别名表兜底）";
+
     /// <summary>D6.3:升级服务状态镜像（绑 Message/Progress)。</summary>
     public UpdateService? Updates => _updates;
 
@@ -207,7 +268,9 @@ public sealed class SettingsPageViewModel : ViewModelBase
         SteamOptions? steamOptions = null,
         DownloadOptions? downloadOptions = null,
         IUpdateManager? updateManager = null,
-        string? releasesFeedUrl = null)
+        string? releasesFeedUrl = null,
+        IStoreSearchClient? storeSearch = null,
+        DefaultGameService? defaultGame = null)
     {
         _paths = paths ?? throw new ArgumentNullException(nameof(paths));
         _connectivity = connectivity ?? throw new ArgumentNullException(nameof(connectivity));
@@ -215,6 +278,10 @@ public sealed class SettingsPageViewModel : ViewModelBase
 
         // D6.3:升级服务（可注入桩测试；默认=上溯本地 artifacts feed(t60 实测通道；
         // Velopack 安装环境=update.exe 同级 feed，GitHub Releases 于 D7 发布期配置化）
+        _storeSearch = storeSearch;
+        _defaultGame = defaultGame;
+        _gameDebounce = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+        _gameDebounce.Tick += OnGameDebounceTick;
         _updates = new UpdateService(
             updateManager ?? CreateDefaultUpdateManager(releasesFeedUrl));
 
@@ -248,6 +315,18 @@ public sealed class SettingsPageViewModel : ViewModelBase
             if (_updates is null) return;
             await _updates.ApplyAsync();
             RaiseUpdateMirrors();
+        });
+
+        // D5.20c/t64:选中候选=绑定默认游戏（持久化+主页即时响应）
+        SelectGameCommand = new RelayCommand(obj =>
+        {
+            if (obj is not GameInfo g || _defaultGame is null) return;
+            _defaultGame.Bind(_paths, new BoundGame(g.Id.Value, g.Name, null)); // IconUrl 待 D6 图标源
+            GameSearchTerm = string.Empty;
+            GameSuggestions.Clear();
+            RaisePropertyChanged(nameof(BoundGame));
+            RaisePropertyChanged(nameof(BoundGameDisplay));
+            ValidationMessage = $"已绑定默认游戏：{g.Name}";
         });
     }
 
@@ -305,5 +384,48 @@ public sealed class SettingsPageViewModel : ViewModelBase
         {
             ValidationMessage = $"保存失败：{ex.GetType().Name}"; // 诚实不吞
         }
+    }
+
+    /// <summary>D5.20c:防抖到点=本地别名表即时+storesearch 在线合并（t43 同算法）。</summary>
+    private async void OnGameDebounceTick(object? sender, EventArgs e)
+    {
+        _gameDebounce?.Stop();
+        _gameCts?.Cancel();
+        _gameCts = new CancellationTokenSource();
+        var ct = _gameCts.Token;
+        var term = _gameSearchTerm;
+        if (string.IsNullOrWhiteSpace(term)) { GameSuggestions.Clear(); IsSearchingGames = false; return; }
+
+        var local = GameAliasTable.Match(term, maxCount: 10);
+        GameSuggestions.Clear();
+        foreach (var g in local) GameSuggestions.Add(g);
+
+        if (_storeSearch is not null)
+        {
+            try
+            {
+                var result = await _storeSearch.SearchGamesAsync(term, ct);
+                if (!ct.IsCancellationRequested && result is { IsOk: true, Value: not null })
+                {
+                    var merged = new List<GameInfo>(result.Value);
+                    var ids = new HashSet<int>(result.Value.Select(x => x.Id.Value));
+                    foreach (var g in local) if (ids.Add(g.Id.Value)) merged.Add(g);
+                    GameSuggestions.Clear();
+                    foreach (var g in merged) GameSuggestions.Add(g);
+                    GameSearchHint = merged.Count + " 条候选（内置别名表+在线合并）";
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch
+            {
+                if (!ct.IsCancellationRequested)
+                    GameSearchHint = GameSuggestions.Count + " 条候选（在线不可达=别名表兜底）";
+            }
+        }
+        else
+        {
+            GameSearchHint = local.Count + " 条候选（仅本地别名表）";
+        }
+        if (!ct.IsCancellationRequested) IsSearchingGames = false;
     }
 }
