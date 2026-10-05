@@ -16,7 +16,14 @@
       DownloadButton 不动——P0 旅程锚点）+新增 `<页面>_<语义>`。
       颜色一律 DynamicResource swdm-*（t2 §1.4 不变量③）。
     -->
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+    <!-- t71/t70 e2e：下载钮固定底部操作栏（PCL2 同款）——ScrollViewer 内容再长
+         钮也始终可见可点（用户"按键每页真实有效"纪律；qa e2e rect y887>809 出界修复） -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="16">
         <StackPanel>
             <!-- 整页错误态（加载失败；重试命令） -->
             <Border AutomationProperties.AutomationId="ModDetailPage_ErrorBanner"
@@ -141,12 +148,23 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
+            <ListBox AutomationProperties.AutomationId="ModDetailPage_Comments"
+                     ItemsSource="{Binding Comments}" Height="200" Margin="0,0,0,12">
+            </ListBox>
+        </StackPanel>
+    </ScrollViewer>
+
+        <!-- t71/t70:固定底部操作栏——ScrollViewer 内容再长，下载钮始终在可见区
+             （qa e2e rect y887>winBottom809 出界修复；AutomationId 不变=P0 旅程锚点） -->
+        <Border Grid.Row="1" Background="{DynamicResource swdm-SurfaceBrush}"
+                BorderBrush="{DynamicResource swdm-DividerBrush}" BorderThickness="0,1,0,0"
+                Padding="16,10" HorizontalAlignment="Stretch">
             <Button AutomationProperties.AutomationId="ModDetailPage_DownloadButton"
                     Content="⬇ 下载 Mod"
                     Command="{Binding DownloadCommand}"
                     Padding="20,10" FontSize="15" FontWeight="Bold" HorizontalAlignment="Left"
                     Foreground="{DynamicResource swdm-TextOnAccentBrush}"
                     Background="{DynamicResource swdm-Accent500Brush}"/>
-        </StackPanel>
-    </ScrollViewer>
+        </Border>
+    </Grid>
 </pages:PageBase>

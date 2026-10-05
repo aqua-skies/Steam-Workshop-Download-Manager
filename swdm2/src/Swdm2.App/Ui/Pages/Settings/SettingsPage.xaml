@@ -67,8 +67,12 @@
                     <TextBlock AutomationProperties.AutomationId="SettingsPage_Game_BoundDisplay"
                                Text="{Binding BoundGameDisplay}" FontSize="12" FontWeight="Bold" Margin="0,0,0,8"
                                Foreground="{DynamicResource swdm-TextPrimaryBrush}"/>
+                    <!-- t71/t70 e2e:IME 组合拦截修复——zh-CN 微软拼音把字母组拼音（g'mo'd 分隔符）
+                         导致英文搜索词打不出来（Shift 切英文无效）；游戏搜索=英文名/AppId 主场景
+                         （1.x 教训：中文名搜索不可靠）→ 显式关闭输入法（中文仍可粘贴） -->
                     <TextBox AutomationProperties.AutomationId="SettingsPage_Game_SearchTextBox"
                              Text="{Binding GameSearchTerm, UpdateSourceTrigger=PropertyChanged}" Padding="8,5"
+                             InputMethod.IsInputMethodEnabled="False"
                              Background="{DynamicResource swdm-SurfaceInputBrush}"
                              Foreground="{DynamicResource swdm-TextPrimaryBrush}"
                              BorderBrush="{DynamicResource swdm-StrokeInputBrush}"/>
