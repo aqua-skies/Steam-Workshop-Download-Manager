@@ -125,9 +125,39 @@ public class E2EJourneyRealInputTests
                     () => UiTestHelpers.VisibleElement(window, "SettingsPage_Game_SearchTextBox"),
                     TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(0.2)).Result;
                 Assert.NotNull(searchBox);
-                searchBox.Focus();
-                Keyboard.Type("gmod"); // 物理键盘输入
-                Console.WriteLine($"E2E [{T()}] STEP2a typed gmod; waiting suggestions...");
+                // 物理打字验证：文本框内容==gmod 才算路由（前台锁可能吞键
+                // 盘=重试打字≤3 次；zh-CN 会话默认微软拼音 IME 会把字母组合
+                // 成拼音（boxText="g'mo'd")=先物理按 Shift 切英文模式=真实用户动作）
+                var typedOk = false;
+                for (var tAttempt = 1; tAttempt <= 3 && !typedOk; tAttempt++)
+                {
+                    searchBox.Focus();
+                    await Task.Delay(200);
+                    if (tAttempt == 1) // 切 IME 英文模式一次（Shift 按下/释放）
+                    {
+                        Keyboard.Press(VirtualKeyShort.SHIFT);
+                        Keyboard.Release(VirtualKeyShort.SHIFT);
+                        await Task.Delay(300);
+                    }
+                    else
+                    {
+                        // 未路由：清场重试（物理键全选+删除）
+                        searchBox.Focus();
+                        Keyboard.Press(VirtualKeyShort.CONTROL); Keyboard.Type("a");
+                        Keyboard.Release(VirtualKeyShort.CONTROL);
+                        Keyboard.Type(VirtualKeyShort.BACK);
+                    }
+
+                    Keyboard.Type("gmod"); // 物理键盘输入
+                    await Task.Delay(400);
+                    var tb = searchBox.AsTextBox();
+                    var text = tb?.Text ?? "";
+                    Console.WriteLine(
+                        $"E2E [{T()}] STEP2a typed gmod attempt {tAttempt}: boxText=\"{text}\"");
+                    typedOk = text.Contains("gmod");
+                }
+
+                Console.WriteLine($"E2E [{T()}] STEP2a typing routed={typedOk}; waiting suggestions...");
                 await Task.Delay(1500); // 防抖 350ms + 请求 + 渲染
                 Shot("02_gmod_suggestions");
 
@@ -236,11 +266,19 @@ public class E2EJourneyRealInputTests
                     else
                     {
                         var title = titleEl.Name;
+                        // 真条目详情不应显 demo 兜底标题（v5/v6 实测 TryLoadAsync 二义）
+                        if (title.Contains("示例 mod") || title.Contains("Download Demo"))
+                            failures.Add($"STEP4: 真条目详情=demo 兜底标题 \"{title}\"");
                         var banner = window.FindFirstDescendant(
                             cf => cf.ByAutomationId("ModDetailPage_SampleBanner"));
                         var sampleShown = banner is { IsEnabled: true, IsOffscreen: false };
                         Console.WriteLine(
                             $"E2E [{T()}] STEP4-PASS detail title=\"{title}\" sampleBanner={sampleShown} in {Elapsed(sw)}");
+                        // STEP4 证据：错误横幅（API 401 匿名=详情加载失败诚实态）
+                        var errEl = window.FindFirstDescendant(
+                            cf => cf.ByAutomationId("ModDetailPage_ErrorMessageText"));
+                        Console.WriteLine(
+                            $"E2E [{T()}] STEP4-CTX detail error=\"{errEl?.Name ?? "(none)"}\"");
                         Shot("05_detail_real");
 
                         // ---------- STEP5 下载→任务行→落盘 ----------
@@ -255,10 +293,36 @@ public class E2EJourneyRealInputTests
                         }
                         else
                         {
+                            var btnRect = downloadBtn.BoundingRectangle;
+                            var winRect = window.BoundingRectangle;
+                            // 按钮矩形中心是否在窗口可见区内（v3 实测按钮 y=887 落
+                            // 底缘外=点击出界被任务栏吞；出界=物理 Enter 激活兜底）
+                            var clickableInWindow = btnRect.Y >= winRect.Y
+                                                     && btnRect.Bottom <= winRect.Bottom - 8;
+                            Console.WriteLine(
+                                $"E2E [{T()}] STEP5-CTX downloadBtn rect=({btnRect.X},{btnRect.Y}) " +
+                                $"{btnRect.Width:F0}x{btnRect.Height:F0} enabled={downloadBtn.IsEnabled} " +
+                                $"inWindow={clickableInWindow} (winBottom={winRect.Bottom:F0})");
                             window.Focus();
-                            UiTestHelpers.RealClick(downloadBtn); // 物理点「下载」
-                            Console.WriteLine($"E2E [{T()}] STEP5a clicked download");
-                            await Task.Delay(600);
+                            if (clickableInWindow)
+                            {
+                                UiTestHelpers.RealClick(downloadBtn); // 物理鼠标
+                            }
+                            else
+                            {
+                                // 物理键盘激活（真实输入口径；焦点在钮+物理 Enter)
+                                downloadBtn.Focus();
+                                Keyboard.Press(VirtualKeyShort.RETURN);
+                                Keyboard.Release(VirtualKeyShort.RETURN);
+                            }
+                            Console.WriteLine($"E2E [{T()}] STEP5a clicked download (mode={(clickableInWindow ? "mouse" : "enter")})");
+                            await Task.Delay(1500);
+                            // 点击后副证：详情页错误/状态变化+是否自动跳下载页
+                            UiTestHelpers.DumpTree(window, "e2e step5 after download click");
+                            var autoNav = UiTestHelpers.VisibleElement(window,
+                                "DownloadsPage_TaskList_Items");
+                            Console.WriteLine(
+                                $"E2E [{T()}] STEP5-CTX autoNavToDownloads={autoNav is not null}");
                             if (!RealClickNav(window, "MainShell_Nav_DownloadsButton",
                                     "DownloadsPage_TaskList_Items", "5-nav-downloads"))
                             {
@@ -314,10 +378,18 @@ public class E2EJourneyRealInputTests
 
                                     Console.WriteLine(
                                         $"E2E [{T()}] STEP5-wait done={done} state=\"{lastState}\" after {Elapsed(sw)}");
+                                    if (!done)
+                                    {
+                                        // 10min 超时=下载 stall(v5/v6 实测 provider 回退 AuthRequired 后无进展）
+                                        // 不能假绿：超时即失败（v6 教训=timeout 路径漏记 failures)
+                                        failures.Add(
+                                            $"STEP5: 下载 10min 未完成 state=\"{lastState}\"（provider 回退后 stall?)");
+                                    }
+
                                     Shot("07_download_state");
 
-                                    // 落盘检查：Installed 模式 =
-                                    // %LOCALAPPDATA%\Swdm2\steamcmd\steamapps\workshop\content\4000\<pubfile>
+                                    // 落盘检查：Installed 模式 Root=%APPDATA%\Swdm2(v5 路径错 LocalAppData 教训）
+                                    // PathService L69:GetDefaultRoot(Installed)=SpecialFolder.ApplicationData
                                     if (done)
                                     {
                                         var pubFile = new string(fileName.Where(char.IsDigit).ToArray());
