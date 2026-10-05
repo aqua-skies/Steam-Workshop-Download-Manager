@@ -265,15 +265,27 @@ public class E2EJourneyRealInputTests
                     }
                     else
                     {
+                        // 社区回退富化=异步（v8 实测 1.7s 读到 demo 兜底，2s 后任务行
+                        // 已显真名）：标题轮询 ≤10s 等「非 demo 标题」出现
                         var title = titleEl.Name;
-                        // 真条目详情不应显 demo 兜底标题（v5/v6 实测 TryLoadAsync 二义）
+                        var demoAt = Elapsed(sw);
+                        for (var i = 0; i < 20 && (title.Contains("示例 mod") || title.Contains("Download Demo")); i++)
+                        {
+                            await Task.Delay(500);
+                            titleEl = UiTestHelpers.VisibleElement(window, "ModDetailPage_TitleText");
+                            title = titleEl?.Name ?? title;
+                        }
+
+                        // 真条目详情不应显 demo 兜底标题（v5/v6/v8 实测：富化完成后
+                        // 应换真名；持久 demo=产品缺陷；瞬态 demo 已等富化消除）
                         if (title.Contains("示例 mod") || title.Contains("Download Demo"))
-                            failures.Add($"STEP4: 真条目详情=demo 兜底标题 \"{title}\"");
+                            failures.Add($"STEP4: 真条目详情=demo 兜底标题 \"{title}\"（富化后仍 demo?)");
                         var banner = window.FindFirstDescendant(
                             cf => cf.ByAutomationId("ModDetailPage_SampleBanner"));
                         var sampleShown = banner is { IsEnabled: true, IsOffscreen: false };
                         Console.WriteLine(
-                            $"E2E [{T()}] STEP4-PASS detail title=\"{title}\" sampleBanner={sampleShown} in {Elapsed(sw)}");
+                            $"E2E [{T()}] STEP4-PASS detail title=\"{title}\" sampleBanner={sampleShown} " +
+                            $"in {Elapsed(sw)} (demo at {demoAt} before enrich)");
                         // STEP4 证据：错误横幅（API 401 匿名=详情加载失败诚实态）
                         var errEl = window.FindFirstDescendant(
                             cf => cf.ByAutomationId("ModDetailPage_ErrorMessageText"));
