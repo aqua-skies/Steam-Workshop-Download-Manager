@@ -16,9 +16,9 @@ namespace Swdm2.UiTests.Tests.HomeSphere;
 public sealed class SphereCameraFramingTests
 {
     // 相机参数（须与 HomeSphereControl 构造器一致;漂移=本测试失败）
-    // 数值来源：math 回执 Computation/...52fde544dbde（t=(0.5,0.2,0) 扫描求解）
-    private const double CamX = 2.6, CamY = -2.0, CamZ = 4.0;
-    private const double LookX = -2.1, LookY = 2.2, LookZ = -4.0;
+    // 数值来源：t71 白天截图复核后 math 求解回执 Computation/...3111e44503a0（t=(0.65,0.45,-0.2)）
+    private const double CamX = 3.46, CamY = -2.66, CamZ = 5.32;
+    private const double LookX = -2.81, LookY = 3.11, LookZ = -5.52;
     private const double SphereRadius = 1.5;
     private const double FovDeg = 45.0;
     private const double ViewportW = 572, ViewportH = 560; // 右侧列实际像素（窗口 900x600）
@@ -87,7 +87,7 @@ public sealed class SphereCameraFramingTests
     public void Light_Attenuation_Gradual_Not_Blackout()
     {
         // att(d)=1/(0.65+0.22d+0.05d²)（HomeSphereControl 构造器参数）
-        static double Att(double d) => 1.0 / (0.65 + 0.22 * d + 0.05 * d * d);
+        static double Att(double d) => 1.0 / (0.55 + 0.18 * d + 0.02 * d * d);
         Assert.True(Att(3.5) > 0.30, "远侧 >0.30=可见不死黑（t65 0.22 教训）");
         Assert.True(Att(0.4) / Att(3.5) > 2.0, "近远比 >2=深度梯度仍在");
     }

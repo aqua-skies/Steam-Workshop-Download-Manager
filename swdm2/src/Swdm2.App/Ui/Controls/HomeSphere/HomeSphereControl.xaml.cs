@@ -86,25 +86,26 @@ public partial class HomeSphereControl : UserControl
         _geometry = IcosahedronGeometry.Generate(Subdivision);
         _physics = new SpherePhysics(_geometry);
 
-        // 相机：t67/t68 取景修正——视线指向球的**右上偏前**点 t=(0.5,0.2,0)，
-        // 球心投影落 0.60W/0.57H=画面中心偏右下（§2.8 透视右下；用户"只有左下角"整改）。
-        // 几何量化（math 回执 Computation/...52fde544dbde 扫描求解）：
-        // 球心屏幕 (345,317)/572x560, 半径 206px, 直径 412<560=全入画面。
+        // 相机：t67/t68/t71 取景——白天真实截图复核（sphere_framing_day_1607.png)
+        // 旧 t=(0.5,0.2,0) 球心 0.62W/0.57H 但**右缘 901>890 被裁 11px+整体过暗**;
+        // t71 拉远取景（|pos| 5.72→7.6):球心 (662,325)=右栏 0.618W/0.58H 右下，
+        // 半径 152px(直径 304<560)=**完整入画无裁切**(math 求解回执
+        // Computation/...3111e44503a0 扫描 t=(0.65,0.45,-0.2))
         _camera = new PerspectiveCamera(
-            new Point3D(2.6, -2.0, 4.0),
-            new Vector3D(-2.1, 2.2, -4.0),
+            new Point3D(3.46, -2.66, 5.32),
+            new Vector3D(-2.81, 3.11, -5.52),
             new Vector3D(0, 1, 0), 45);
 
         // 鼠标光源（薄荷品牌色；2.8.3 条款）
-        // t65 深度衰减过陡（0.35/0.55/0.18 远侧 0.22≈黑=用户"球只剩一块"误读）；
-        // t68 温和版：近 1.26/远 0.49（2.6 倍梯度=立体感不死黑）+ambient 0.4 兜底
+        // t65 过陡（远侧 0.22 近黑）→t68 温和 →t71 白天截图实测仍暗（L88)：
+        // Constant 0.55+Quadratic 0.02=近 1.0/远 0.57 明亮立体可见
         _mouseLight = new PointLight
         {
             Color = (Color)ColorConverter.ConvertFromString("#3ED598"),
             Range = 10.0,
-            ConstantAttenuation = 0.65,
-            LinearAttenuation = 0.22,
-            QuadraticAttenuation = 0.05,
+            ConstantAttenuation = 0.55,
+            LinearAttenuation = 0.18,
+            QuadraticAttenuation = 0.02,
         };
         var lightModel = new ModelVisual3D { Content = new AmbientLight(Color.FromScRgb(0.4f, 1f, 1f, 1f)) };
 
