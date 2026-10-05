@@ -79,8 +79,20 @@ public sealed class SteamCmdProvider : IDownloadProvider
             return false;
         }
 
-        // 2) 部署保障（D3.3 幂等）
-        var deployment = await _deployer.EnsureAsync(ct).ConfigureAwait(false);
+        // 2) 部署保障（D3.3 幂等）；D10.1/t70：逃逸 IO/ACL 异常显式失败
+        Result<SteamCmdDeployment, SteamError> deployment;
+        try
+        {
+            deployment = await _deployer.EnsureAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // 文件系统 ACL/IO 等（非业务 Result）=上报原因不静默卡死
+            await _bus.ReportProgressAsync(taskId, 0, null, DownloadState.Failed,
+                message: $"steamcmd 部署异常：{ex.GetType().Name}：{ex.Message}", ct: ct).ConfigureAwait(false);
+            _breaker.RecordFailure(CircuitBucket);
+            return false;
+        }
         if (!deployment.IsOk)
         {
             await _bus.ReportProgressAsync(taskId, 0, null, DownloadState.Failed,

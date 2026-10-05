@@ -218,7 +218,28 @@ public sealed class ModDetailPageViewModel : ViewModelBase
                 .ConfigureAwait(true);
             if (!apiResult.IsOk || apiResult.Value is null)
             {
-                ErrorMessage = $"详情加载失败：API {apiResult.Error}";
+                // D10.1/t70 断点②：匿名 IPublishedFileService 401=API 死路（实测）→
+                // 社区详情页整体回退（同 CommunityWorkshopBrowseSource 浏览真源）；
+                // 社区也失败=双原因合计错误态（不静默不 sample 兜底标题)
+                if (_community is null)
+                {
+                    ErrorMessage = $"详情加载失败：API {apiResult.Error}（且无社区回退源）";
+                    return;
+                }
+                var communityResult = await _community.EnrichDetailAsync(pubId).ConfigureAwait(true);
+                if (!communityResult.IsOk || communityResult.Value is null)
+                {
+                    ErrorMessage = $"详情加载失败：API {apiResult.Error}；社区回退 {communityResult.Error}";
+                    return;
+                }
+                var c = communityResult.Value;
+                Item = c;
+                DescriptionSource = string.IsNullOrEmpty(c.Description) ? "字段缺失" : "社区回退";
+                CreatorSource = string.IsNullOrEmpty(c.Creator) ? "字段缺失" : "社区回退";
+                PreviewSource = string.IsNullOrEmpty(c.PreviewUrl) ? "字段缺失" : "社区回退";
+                DependenciesSource = "社区（无依赖解析）";
+                DependencyRows.Clear();
+                await LoadCommentsAsync(pubId);
                 return;
             }
 

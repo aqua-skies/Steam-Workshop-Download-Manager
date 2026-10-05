@@ -153,4 +153,46 @@ public sealed class DownloadProviderRouterTests
             Assert.Contains("provider 已切换", Assert.Single(bus.Messages));
         }
     }
+
+    /// <summary>D10.1/t70 断点①：回退 provider 抛逃逸异常=显式 Failed 消息，
+    /// 禁止静默卡死（qa e2e provider 切换后 10min 冻结根因）。</summary>
+    private sealed class ThrowingProvider : IDownloadProvider
+    {
+        public Task<bool> ExecuteAsync(DownloadTaskEntry entry, CancellationToken ct)
+            => throw new UnauthorizedAccessException("模拟 ACL 拒绝（e2e 沙箱实测同族）");
+        public Task PauseAsync(DownloadTaskId taskId) => Task.CompletedTask;
+        public Task CancelAsync(DownloadTaskId taskId) => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Fallback_Escaping_Exception_Reports_Failure_Not_Silent_Stall()
+    {
+        var primary = new StubProvider(SteamError.AuthRequired);
+        var fallback = new ThrowingProvider();
+        var bus = new RecordingBus();
+        var router = new DownloadProviderRouter(primary, fallback, bus);
+        var entry = Entry();
+
+        var ok = await router.ExecuteAsync(entry, CancellationToken.None);
+
+        Assert.False(ok);
+        Assert.Contains(bus.Messages, m => m.Contains("provider 已切换", StringComparison.Ordinal));
+        Assert.Contains(bus.Messages, m => m.Contains("provider 回退执行异常", StringComparison.Ordinal));
+        Assert.Contains(bus.Messages, m => m.Contains("UnauthorizedAccessException", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Primary_Escaping_Exception_Reports_Failure_Not_Silent_Stall()
+    {
+        var primary = new ThrowingProvider();
+        var fallback = new StubProvider();
+        var bus = new RecordingBus();
+        var router = new DownloadProviderRouter(primary, fallback, bus);
+
+        var ok = await router.ExecuteAsync(Entry(), CancellationToken.None);
+
+        Assert.False(ok);
+        Assert.Contains(bus.Messages, m => m.Contains("provider 执行异常", StringComparison.Ordinal));
+        Assert.Equal(0, fallback.Invocations);
+    }
 }

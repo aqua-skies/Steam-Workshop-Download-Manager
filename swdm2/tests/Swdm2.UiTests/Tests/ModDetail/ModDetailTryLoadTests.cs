@@ -66,6 +66,18 @@ public sealed class ModDetailTryLoadTests
             provider, scheduler, navigateToDownloads: null, api);
     }
 
+    private static ModDetailPageViewModel NewVm(ISteamWebApiClient? api, ICommunitySource? community)
+    {
+        var paths = new PathService(PathMode.Portable, AppContext.BaseDirectory);
+        var bus = new DownloadEventBus(100);
+        var downloads = new DownloadsPageViewModel(bus);
+        var provider = new DownloadProviderRouter(
+            new StubProvider(), new StubProvider(), bus);
+        var scheduler = new DownloadScheduler(new DownloadQueue(), (e, ct) => Task.FromResult(true), 1);
+        return new ModDetailPageViewModel(paths, new DownloadQueue(), downloads,
+            provider, scheduler, navigateToDownloads: null, api, community);
+    }
+
     private sealed class StubProvider : IDownloadProvider
     {
         public Task<bool> ExecuteAsync(DownloadTaskEntry entry, CancellationToken ct) => Task.FromResult(true);
@@ -140,12 +152,76 @@ public sealed class ModDetailTryLoadTests
     {
         public Task<Result<WorkshopItem, SteamError>> GetPublishedFileDetailsAsync(
             PublishedFileId id, CancellationToken ct = default)
-            => Task.FromResult(Result<WorkshopItem, SteamError>.Fail(SteamError.Network));
+            => Task.FromResult(Result<WorkshopItem, SteamError>.Fail(SteamError.AuthRequired)); // 401 同款
         public Task<Result<IReadOnlyList<WorkshopItem>, SteamError>> GetPublishedFileDetailsBatchAsync(
             IReadOnlyList<PublishedFileId> ids, CancellationToken ct = default)
             => Task.FromResult(Result<IReadOnlyList<WorkshopItem>, SteamError>.Ok(Array.Empty<WorkshopItem>()));
         public Task<Result<CollectionDetails, SteamError>> GetCollectionDetailsAsync(
             PublishedFileId collectionId, CancellationToken ct = default)
             => Task.FromResult(Result<CollectionDetails, SteamError>.Fail(SteamError.NotFound));
+    }
+
+    /// <summary>社区源桩（D10.1/t70 断点②:API 401→社区整体回退）。</summary>
+    private sealed class StubCommunity : ICommunitySource
+    {
+        private readonly WorkshopItem? _item;
+        private readonly SteamError _error;
+        public List<PublishedFileId> Requested { get; } = new();
+
+        public StubCommunity(WorkshopItem? item, SteamError error = SteamError.None)
+        {
+            _item = item;
+            _error = error;
+        }
+
+        public Task<Result<IReadOnlyList<WorkshopItem>, SteamError>> BrowseAsync(
+            AppId appId, CancellationToken ct = default)
+            => Task.FromResult(Result<IReadOnlyList<WorkshopItem>, SteamError>.Ok(Array.Empty<WorkshopItem>()));
+
+        public Task<Result<WorkshopItem, SteamError>> EnrichDetailAsync(
+            PublishedFileId id, CancellationToken ct = default)
+        {
+            Requested.Add(id);
+            return _item is null || _error != SteamError.None
+                ? Task.FromResult(Result<WorkshopItem, SteamError>.Fail(_error == SteamError.None ? SteamError.Network : _error))
+                : Task.FromResult(Result<WorkshopItem, SteamError>.Ok(_item));
+        }
+    }
+
+    /// <summary>D10.1/t70 断点②：API 401=社区详情整体回退（真实标题，非 demo 兜底）。</summary>
+    [WpfFact]
+    public async Task Api_Failure_Falls_Back_To_Community_Detail()
+    {
+        var community = new StubCommunity(new WorkshopItem(new(555), new(4000), "社区真实标题")
+        {
+            Creator = "社区作者",
+            PreviewUrl = "https://cdn/preview.jpg",
+        });
+        var vm = NewVm(new FailApi(), community);
+
+        await vm.TryLoadAsync(new PublishedFileId(555));
+
+        Assert.False(vm.IsSampleMode);
+        Assert.NotNull(vm.Item);
+        Assert.Equal("社区真实标题", vm.ItemTitle); // 非"示例 mod · Workshop Download Demo"
+        Assert.Equal("社区作者", vm.ItemCreator);
+        Assert.Equal("社区回退", vm.CreatorSource);
+        Assert.Equal("社区回退", vm.PreviewSource);
+        Assert.Equal("字段缺失", vm.DescriptionSource); // 社区不解析描述=诚实标注
+        Assert.Equal("社区（无依赖解析）", vm.DependenciesSource);
+        Assert.Empty(vm.ErrorMessage);
+    }
+
+    /// <summary>API 与社区双失败=双原因合计错误态（不静默不 sample 兜底）。</summary>
+    [WpfFact]
+    public async Task Api_And_Community_Both_Fail_Shows_Combined_Error()
+    {
+        var vm = NewVm(new FailApi(), new StubCommunity(null));
+
+        await vm.TryLoadAsync(new PublishedFileId(555));
+
+        Assert.Null(vm.Item);
+        Assert.Contains("详情加载失败", vm.ErrorMessage);
+        Assert.Contains("社区回退", vm.ErrorMessage);
     }
 }

@@ -70,7 +70,20 @@ public sealed class DownloadProviderRouter : IDownloadProvider
         var taskId = entry.Task.Id;
         _currentProvider[taskId] = _primary.GetType().Name;
 
-        var ok = await _primary.ExecuteAsync(entry, ct).ConfigureAwait(false);
+        var ok = false;
+        try
+        {
+            ok = await _primary.ExecuteAsync(entry, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // D10.1/t70：主 provider 逃逸异常=显式失败（不静默）
+            await _bus.ReportProgressAsync(
+                taskId, 0, null, DownloadState.Failed,
+                message: $"provider 执行异常：{ex.GetType().Name}：{ex.Message}",
+                ct: ct).ConfigureAwait(false);
+            return false;
+        }
         if (ok) return true;
 
         // 错误类型路由
@@ -88,7 +101,20 @@ public sealed class DownloadProviderRouter : IDownloadProvider
             message: $"provider 已切换：{_primary.GetType().Name}→{_fallback.GetType().Name}（原因：{providerError}）",
             ct: ct).ConfigureAwait(false);
 
-        return await _fallback.ExecuteAsync(entry, ct).ConfigureAwait(false);
+        // D10.1/t70：回退 provider 内部任何逃逸异常（文件 ACL/IO 等）必须
+        // 显式上报 Failed=行文本可见原因；禁止静默卡死（qa e2e 10min 冻结根因）
+        try
+        {
+            return await _fallback.ExecuteAsync(entry, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            await _bus.ReportProgressAsync(
+                taskId, 0, null, DownloadState.Failed,
+                message: $"provider 回退执行异常：{ex.GetType().Name}：{ex.Message}",
+                ct: ct).ConfigureAwait(false);
+            return false;
+        }
     }
 
     public Task PauseAsync(DownloadTaskId taskId)
