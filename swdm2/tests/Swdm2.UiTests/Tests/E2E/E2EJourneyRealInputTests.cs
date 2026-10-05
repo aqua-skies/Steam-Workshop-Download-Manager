@@ -16,8 +16,8 @@ namespace Swdm2.UiTests.Tests.E2E;
 /// D10.1(t70): 全链真实输入实跑——用户原话「你自己有没有实地测试过
 /// 从选择游戏到选择mod到下载mod」。每步=物理鼠标/键盘+截图+UIA 副证+时间戳。
 /// 链：①启动→主页球体 ②设置→gmod→选 Garry's Mod ③浏览→真实条目
-/// ④条目详情→真实标题/作者 ⑤下载→任务行→落盘（Installed 模式=
-/// %LOCALAPPDATA%\Swdm2\steamcmd\steamapps\workshop\content\4000\&lt;pubfile&gt;)。
+/// ④条目详情→真实标题/作者 ⑤下载→任务行→落盘（Installed 数据根=
+/// %APPDATA%\SWDM\steamcmd\steamapps\workshop\content\4000\&lt;pubfile&gt;)。
 /// 失败步骤如实记录（退货归属），不假绿。
 /// </summary>
 public class E2EJourneyRealInputTests
@@ -400,14 +400,16 @@ public class E2EJourneyRealInputTests
 
                                     Shot("07_download_state");
 
-                                    // 落盘检查：Installed 模式 Root=%APPDATA%\Swdm2(v5 路径错 LocalAppData 教训）
-                                    // PathService L69:GetDefaultRoot(Installed)=SpecialFolder.ApplicationData
+                                    // 落盘检查：Installed 数据根=%APPDATA%\SWDM(PathService L16
+                                    // AppFolderName="SWDM";arch-20 18:55 核证=全库唯一目录常量，
+                                    // 部署器/WorkshopContent/配置/日志共用同一 paths 实例；
+                                    // %LOCALAPPDATA%\Swdm2\current=Velopack exe 目录=有意双目录设计）
                                     if (done)
                                     {
                                         var pubFile = new string(fileName.Where(char.IsDigit).ToArray());
                                         var root = Path.Combine(
-                                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                                            "Swdm2");
+                                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                                            "SWDM");
                                         var contentDir = Path.Combine(root, "steamcmd", "steamapps",
                                             "workshop", "content", "4000");
                                         var landed = false;
