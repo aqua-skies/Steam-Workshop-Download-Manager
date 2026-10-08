@@ -39,6 +39,7 @@ git -c http.sslBackend=schannel -c http.proxy=http://127.0.0.1:7897 push origin 
 
 **先读**:本文件 → `swdm2/docs/process/e2e_2.0.1.md`（七通一拦证据）→ `swdm2/docs/architecture_2.0.md` §6(DAG)。
 **不要做**:自己写产品代码修 bug（captain 只协调，派给域 owner);重启 12h 定时关机规则（用户已删）;夜间跑 FlaUI/UIA 全量（无交互桌面会挂死）;输出用 pwsh 管道（用 cmd /c 直重定向）。
+**超时纪律**：所有阻塞等待/`job_output`/后台任务超时**不超过 2 分钟**（240000ms 上限，默认更短）；超时即查进度文件再决定，不干等。
 
 ---
 

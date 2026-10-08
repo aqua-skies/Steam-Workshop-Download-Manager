@@ -7,6 +7,26 @@
 
 ---
 
+## [2.0.2] · 2026-10-08 · SWDM 2.0.2 修订版（e2e 全链真实输入终局修复）
+
+2.0.1 之后的修复收口：**e2e「选游戏→浏览→详情→下载」真实物理输入链七通一拦**（唯一拦=DSH 沙箱驱动进程 %APPDATA% 只写 ACL 拒 steamcmd 部署；用户真机不受限，10-04 16:24 正常权限完整 bootstrap 为证）。产品无已知阻塞断点。
+
+**四要素**：全量回归两轮（clean+warnaserror 0-0+Core 72/0+Downloads 84/0+Steam 174/0+Ui 逻辑层全绿）；讨论组三原则确认 2.0.2 范围=仅 e2e 修复收口不加新功能（精简）；版本 2.0.1→**2.0.2**(Version/AssemblyVersion/FileVersion 三同步）+本条。
+
+### 修复（2.0.1 → 2.0.2)
+- **t71 球体取景修复**（88752bf):旧 t68 参数右缘 901>890 裁 11px+球面 L24-88 过暗=用户「只看到球体左下角」真实根因；相机拉远 |pos| 5.72→7.6,pos(3.46,-2.66,5.32)+look(-2.81,3.11,-5.52),球心 (662,325)=右栏 0.618W/0.58H 右下完整入画（半径 152)+光 0.55/0.02 明亮立体；docs/process/sphere_framing.md+两白天真实截图像素证据。
+- **t70 e2e 两 UI 断点**（84ea955):IME 组合拦截（zh-CN 微软拼音把 gmod 组合成 g'mo'd)=InputMethod.IsInputMethodEnabled=False;下载钮 y887>winBottom809 挤出窗口可见区=粘性底部操作栏（PCL2 同款，钮移 ScrollViewer 外，AutomationId 不变）。物理复测通过。
+- **t70 e2e 两 arch 断点**（62bcc90):provider 回退静默卡死=router 主/回退 try/catch 逃逸异常→显式 Failed 消息+EnsureAsync IO 异常同报（根因=逃逸异常被 scheduler 静默吞 10min 卡死）；真条目详情 demo 兜底=IPublishedFileService 匿名 401 死路实锤→ModDetail 社区详情页整体回退+字段来源诚实标注+双失败合计 ErrorMessage。
+- e2e 终局（b4fe1cc):七通=启动球体/打 gmod 选中 Garry's Mod/真源 30 条目 2.4s/详情真名 xdReanimsBase (L4D2) Anim Mods base/物理鼠标 5.6s 入队 autoNav/回归全绿。
+- 测试治理：假绿（0a284be,timeout→failure+demo 标题→failure)+STEP4 富化等待（f5a3180)+落盘根修正 %APPDATA%\SWDM(b692bcd)+路径疑点核清（068bf35，有意双目录非分叉）。
+- **令牌化**（3e821dd,2.0.2 门 visual 域）:SphereHomePage.xaml:71 硬编码 `#14000000/0.92` scrim(t54 引入，NoHardcodedColor 唯一违规）→Common.xaml 新令牌 `swdm-SphereScrim`（同色值，主题无关故落 Common)+页面 DynamicResource=单一事实源（t2 §1.5）。
+
+### 验证
+全量回归**两轮**：clean+warnaserror 0-0(sln Release 双跑）;Core **72/0**+Downloads **84/0**+Steam **174/0** 两轮同绿；Ui 逻辑层两轮绿色（Themes 13/0+HomeSphere 15/0+Settings 10/0+Browse 32/0+ModDetail 19/0+Downloads 10/0+GameSelect 8/0+Library 10/0+Controls/Animation/DeadButton/Transition/Updates/Logging/Connectivity 等族绿色；E2E 族=九轮物理输入实跑终局报告 b4fe1cc，不在驱动回归口径内）。
+环境门（不掩盖）:ZZChrome/ZZNavigation/Feature 三族在 UiTestsDriver 进程内 XamlParseException(TitleButtonHover 附加属性解析）=**预存测试环境门**（A/B 实证：stash 版本号改动前后同样失败），产品实机正常（安装存活 13min Responding=True+e2e 启动链七通）。TMP 需重定向 .dtmp（沙箱 %TEMP% 只写 ACL)。
+
+---
+
 ## [2.0.1] · 2026-10-05 · SWDM 2.0.1 修订正式版（D9.3 发布门，夜网降级版）
 
 **用户复核裁定后的修订正式版**——修复 2.0.0 正式发布后暴露的启动崩 + 用户震怒点整改链（死按键/假数据/卡片糊/球体取景）+真实工坊源接入。GitHub v2.0.0 release body 标注作废（启动崩），以 2.0.1 替换。
