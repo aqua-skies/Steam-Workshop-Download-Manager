@@ -66,9 +66,10 @@
         </Border>
 
         <!-- 右侧：球体区（液态玻璃半透明黑底;t62 切页编排=SphereHostControl 即 MainArea 目标） -->
+        <!-- 2.0.2:硬编码 #14000000→令牌 swdm-SphereScrim(Themes/Common.xaml;视觉同色值不变） -->
         <Border Grid.Column="1" Margin="8,20,20,20" CornerRadius="8" ClipToBounds="True">
             <Border.Background>
-                <SolidColorBrush Color="#14000000" Opacity="0.92"/>
+                <DynamicResource ResourceKey="swdm-SphereScrim"/>
             </Border.Background>
             <sphere:HomeSphereControl x:Name="SphereHostControl"
                                       AutomationProperties.AutomationId="SphereHome_HostShell"

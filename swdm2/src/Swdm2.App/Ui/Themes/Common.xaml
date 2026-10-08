@@ -55,4 +55,10 @@
     <sys:Double x:Key="swdm-ShadowBlurRadius">3</sys:Double>
     <sys:Double x:Key="swdm-ShadowOpacityMenu">0.4</sys:Double>
     <Thickness x:Key="swdm-CardShadowMargin">-3,-3,-3,-4</Thickness>  <!-- 底部多 1px 模拟自然光 -->
+
+<!-- ===== 球体主页遮罩（2.0.2 发布门·NoHardcodedColor 唯一违规整改）=====
+     t54 引入的液态玻璃半透明黑底（#14000000=alpha 8% 黑+Opacity 0.92 折算）；
+     不随主题切换（Light/Dark 同色=玻璃本色），故落 Common 而非 Dark/Light。
+     SphereHomePage.xaml:71 原硬编码同色值搬此令牌，视觉完全一致。 -->
+<SolidColorBrush x:Key="swdm-SphereScrim" Color="#14000000" Opacity="0.92"/>
 </ResourceDictionary>
