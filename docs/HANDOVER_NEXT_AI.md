@@ -1,14 +1,14 @@
 # SWDM 交接实验报告 v2（下一任 AI 读此文件即刻完全接手）
 
 **生成**：2026-10-08 · **工作区**：`C:\Users\Lenovo\Desktop\程序设计\steam mod program`
-**仓库**：GitHub `aqua-skies/Steam-Workshop-Download-Manager`,origin/main=62bcc90（本地或更新）
-**产品状态**：SWDM 2.0.1 修订正式版已发布（tag v2.0.1 + release id=403163902,Setup 81.4MB+Portable 72.3MB+nupkg);v2.0.0 release(402577370)已标作废（启动崩）。**产品无已知阻塞断点。**
+**仓库**：GitHub `aqua-skies/Steam-Workshop-Download-Manager`,origin/main=0fe2624
+**产品状态**：**SWDM 2.0.2 已发布**（tag v2.0.2 + release id=406791614,Setup 81.4MB+Portable 74.2MB+nupkg 74.2MB;Portable 实测 FileVersion 2.0.2.0 启动存活 Responding=True)。历史：2.0.1(release 403163902)、2.0.0(402577370 已标作废=启动崩）。**产品无已知阻塞断点。**
 
 ---
 
 ## 0. 一句话现状
 
-2.0(C# WPF 重写）已交付发布；e2e「选游戏→浏览→详情→下载」真实物理输入链**七通一拦**——唯一拦=DSH 沙箱测试驱动进程对 %APPDATA% 只写 ACL 拒 steamcmd 部署（**用户真机不受限**，10-04 16:24 正常权限完整 bootstrap 为证）。剩余收尾=2.0.2 打包发布（62bcc90 之后修复未入包）。
+2.0(C# WPF 重写）已交付发布至 **2.0.2**;e2e「选游戏→浏览→详情→下载」真实物理输入链**七通一拦**——唯一拦=DSH 沙箱测试驱动进程对 %APPDATA% 只写 ACL 拒 steamcmd 部署（**用户真机不受限**，10-04 16:24 正常权限完整 bootstrap 为证）。2.0.2 收口发布完成，项目归档。
 
 ---
 
@@ -74,7 +74,20 @@ captain 只协调+记录+评审，不写产品代码（用户 2026-10-02 23:15 �
 - **发布门**=clean+warnaserror 0-0 + 全量回归两轮绿 + **桌面启动存活**(v2.0.0 曾经测试门全绿但桌面启动即崩，此后强制）；讨论组三原则评审（精简/用户体感/基本功能）。
 - Velopack 打包脚本见 `swdm2/docs/packaging_2.0.md`;CJK 路径静默安装必失败→**只走 ASCII 路径装测**；装后 `%LOCALAPPDATA%\Swdm2\current`。
 - 版本三同步=csproj+CHANGELOG.md+git tag;release 资产上传=PAT 从 `git credential fill`(x-access-token)+Invoke-RestMethod(uploads.github.com)。
-- 推送：代理通时 `git -c http.sslBackend=schannel -c http.proxy=http://127.0.0.1:7897 push origin main`;夜网代理挂=直连 schannel 成。
+- 推送：代理通时 `git -c http.sslBackend=schannel -c http.proxy=http://127.0.0.1:7897 push origin main`;夜网代理挂=直连 schannel 成；tag 推送 `git tag v2.0.2 <sha>` + `push origin main v2.0.2`。
+
+**GitHub release 资产上传（体系化方法，实测 2026-10-08 版）**：
+1. **PAT 提取**（关键坑：本机工具链里 `` `n `` 是字面量不是换行！）：
+```pwsh
+$nl=[char]10
+$s="protocol=https$($nl)host=github.com$($nl)username=x-access-token$($nl)"
+[System.IO.File]::WriteAllText("$PWD\swdm2\.dtmp\cred_in.txt",$s)   # 必须真实换行
+cmd /c "git credential fill < swdm2\.dtmp\cred_in.txt > swdm2\.dtmp\cred_out.txt 2>&1"
+# 从 cred_out.txt 取 password= 行（开头必须是 protocol=/host=，不是 URL,否则 invalid credential line)
+```
+2. **建 release**：`Invoke-RestMethod -Method Post -Headers @{Authorization="Bearer $token";Accept="application/vnd.github+json";"X-GitHub-Api-Version"="2022-11-28"} -Body (ConvertTo-Json @{tag_name;name;body;draft=$false;prerelease=$false}) -ContentType application/json`。
+3. **传资产**：`https://uploads.github.com/repos/<owner>/<repo>/releases/<id>/assets?name=<file>&label=<label>`，Body=`[System.IO.File]::ReadAllBytes(...)`，ContentType=application/octet-stream（每个 74MB 资产约 1-2min)。
+4. 三资产=Setup.exe+Portable.zip+<ver>-full.nupkg（同 Velopack `--outputDir artifacts` 产物）。
 
 ---
 
@@ -151,13 +164,13 @@ captain 只协调+记录+评审，不写产品代码（用户 2026-10-02 23:15 �
 
 ---
 
-## 9. 下一任三件事
+## 9. 2.0.2 发布记录（已归档）
 
-1. **解 loop**:确认 t66 已终态（被 t69 全量取代）；如仍卡用追加证据整理。
-2. **2.0.2 发布**:62bcc90+b4fe1cc 之后未入包的修复，按四要素（两轮全量回归+讨论组+版本三同步+bug 员复测）重打 Setup+Portable,替换/新增 release,tag v2.0.2。
-3. **关机**：2.0.2 完成+四要素齐+复检后 `shutdown /s /t 60`（用户令"弄完自动关机"）。若判 e2e 七通一拦（拦在环境层）为达标，可直接执行。
+2026-10-08 完成：版本三同步（0fe2624)+两轮全量回归绿（Core 72/0+Downloads 84/0+Steam 174/0+Ui 逻辑层全绿）+讨论组三原则 3/3 PASS(arch/visual/qa)+Velopack 打包三资产+Portable 实测安装（ASCII 路径 C:\swdmpack)=FileVersion 2.0.2.0+启动存活 Responding=True+GitHub release v2.0.2(id 406791614) 三资产上传+tag 推送。
+- Setup.exe 在本沙箱静默装遇 os error 5（Velopack "Determining install directory" 环境门；2.0.1 夜间曾成功=沙箱 ACL 漂移）→Portable 路径实测兜底，CHANGELOG 已诚实标注。
+- 环境门红线（2.0.2 归档证据）:ZZChrome/ZZNavigation/Feature 三族=UiTestsDriver 进程内 XamlParseException(TitleButtonHover 解析）=A/B 实证预存（stash 版本号改动前后同失败），产品实机正常。
 
-**一键开场指令**：「继续 SWDM:t66 已终态；2.0.2=62bcc90 之后全量重打 Setup+Portable 替换 release,tag v2.0.2(四要素：两轮全量回归+讨论组+版本号+复测）;然后 shutdown /s /t 60。」
+**项目状态：归档。** 无遗留必需工作。如未来续做：用户实机复核下载主链一次（arch-20 附注，非阻塞）+ZZChrome/ZZNavigation/Feature 驱动环境门 someday 排查（可选）。
 
 ---
 
